@@ -22,8 +22,8 @@ body {
 
 #video-player-container {
     height: fit-content;
-    width: fit-content;
-    flex-grow: 0 1 50%;
+    max-width: fit-content;
+    flex: 1 1 50%;
 }
 
 #video-player-container:has(> video.stall) {
@@ -246,3 +246,8 @@ label#drop-box.active {
     word-break: break-all;
 }
 
+@media (max-width: 480px) {
+    #video-player-container {
+        max-width: unset;
+    }    
+}
