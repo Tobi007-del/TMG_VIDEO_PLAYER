@@ -4,29 +4,245 @@
     padding: 0;
 }
 
+:root {
+    --T_M_G-brand-color: rgb(226,110,2); 
+    --T_M_G-lighter-brand-color: hsl(from var(--T_M_G-brand-color) h s calc(l + 40));
+    --scrollbar-track-color: rgb(20,20,20);
+    --scrollbar-thumb-color: #f0ad5f;
+    --scrollbar-thumb-hover-color: #eb9634;
+    --scrollbar-thumb-active-color: #ed8f23;
+}
+
 body {
     background-color: black;
     padding: 0;
     margin: 0;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
 }
 
-.content-wrapper {
+#video-player-container {
+    height: fit-content;
+    width: fit-content;
+    flex-grow: 0 1 50%;
+}
+
+#video-player-container:has(> video.stall) {
+    display: none;
+}
+
+#content-wrapper {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: center;
+    flex-wrap: wrap;
+    column-gap: 15px;
+}
+
+#content-header {
+    flex: 0 0 100%;
+    padding: 30px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    margin: 30px;
-    gap: 10vh;
+    gap: 20px;
 }
 
-.file-picker {
-    width: 500px;
-    max-width: 70vw;
-    height: 90px;
-    background: linear-gradient(red, blue);
-    border-radius: 25px;
+#content-header > * {
+    max-width: 500px;
+    text-align: center;
+}
+
+#content-header > h1 {
+    color: whitesmoke;
+}
+
+#content-header > h3 {
+    color: grey;
+}
+
+#content-helper-wrapper {
     display: flex;
-    align-items; center;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    max-width: 500px;
+    flex: 1 1 50%;
+    gap: 30px;
+}
+
+#file-picker {
+    background: linear-gradient(to left, var(--T_M_G-brand-color), rgb(244,143,177), var(--T_M_G-lighter-brand-color));
+    border-radius: 20px;
+    height: fit-content;
+    width: 100%;
+    padding: 15px;
+}
+
+#drop-box {
+    background: linear-gradient(to right, var(--T_M_G-brand-color), rgb(244,143,177), var(--T_M_G-lighter-brand-color));
+    border-radius: 10px;
+    flex: 0 0 100%;
+    height: 110px;
+    position: relative;
+    inset: 0;
+    margin: auto;
+    display: flex;
     justify-content: center;
+    align-items: center;
+    color: black;
+    cursor: pointer;
+    transition: 200ms ease;
+    border: 2px solid grey;
+    font-weight: bolder;
+}
+
+#drop-box::after {
+    content: "Click to select videos or just drag and drop";
+    color: black;
+    position: absolute;
+    bottom: 0%;
+    font-size: 85%;
+    font-weight: light;
+    opacity: .5;
+    white-space: wrap;
+    text-align: center;
+    margin: 5px;
+}
+
+#drop-box:hover {
+    background: linear-gradient(to right, var(--T_M_G-brand-color), rgb(244,143,177), var(--T_M_G-lighter-brand-color), var(--T_M_G-brand-color));
+    background-size: 200%;
+    animation: background-pan 600ms ease;    
+}
+
+label#drop-box.active {
+    background: linear-gradient(to right, var(--T_M_G-brand-color), rgb(244,143,177), var(--T_M_G-lighter-brand-color), var(--T_M_G-brand-color));
+    background-size: 200%;
+    animation: background-pan 600ms infinite ease;
+}
+
+@keyframes background-pan {
+    from{
+        background-position: 0% center;
+    } to {
+        background-position: -200% center;
+    }
+}
+
+#file-picker input[type="file"] {
+    clip: (0, 0, 0, 0);
+    clip-path: inset(50%);
+    height: 1px;
+    width: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+}
+
+#file-picker > form > div {
+    display: flex;
+    flex-direction: column;
+    gap: 12.5px;
+}
+
+#file-picker > form > div > span {
+    flex: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+#file-picker > form > div > span > label:not(#drop-box) {
+    color: grey;
+}
+
+#file-picker > form > div > span > output {
+    color: lightgrey;
+    text-align: end;
+}
+
+#file-list-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    padding: 10px;
+    gap: 20px;
+}
+
+#no-files-text {
+    margin: 20px;
+}
+
+#file-list-wrapper h2 {
+    text-decoration: underline;
+}
+
+#file-list ul {
+    display: flex;
+    flex-direction: column;
+    flex: 0 1 100%;
+}
+
+#file-list li {
+    height: fit-content;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px;
+    font-size: 15px;
+    gap: 10px;
+}
+
+#file-list li:not(:last-child) {
+    border-bottom: 1px solid grey;
+}
+
+#file-list .thumbnail-container {
+    flex: 0 0 25%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    color: white;
+}
+
+.thumbnail-container button {
+    background-color: var(--T_M_G-brand-color);
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    color: white;
+    padding-inline: 5px;
+    cursor: pointer;
+    transition: 200ms ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    z-index: 1;
+    transition: transform 200ms ease;
+}
+
+.thumbnail-container button:hover {
+    transform: scale(1.1);
+}
+
+.thumbnail-container svg {
+    width: 26px;
+    height: 26px;
+}
+
+.thumbnail {
+    width: 100%;
+    height: 60px;
+    border-radius: 5px;
+}
+
+#file-list .file-info {
+    flex: 0 0 75%;
+    color: lightgrey;
+    word-break: break-all;
 }
 
