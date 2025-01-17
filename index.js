@@ -133,3 +133,17 @@ function handleDrop(e) {
 
 window.addEventListener('online', () => document.body.classList.remove("offline"))
 window.addEventListener('offline', () => document.body.classList.add("offline"))
+
+window.addEventListener("load", () => {
+    if ('navigator' in window) {
+        document.body.classList.toggle("offline", !navigator.onLine)
+        if (navigator.onLine) {
+            fetch("https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", {
+                method: "HEAD", 
+                cache: "no-cache"
+            })
+            .then(response => document.body.classList.toggle("offline",!response.ok))
+            .catch(error => document.body.classList.add("offline"))
+        }
+    }
+})
