@@ -1,3 +1,9 @@
+void async function registerServiceWorker() {
+    if ("serviceWorker" in navigator) 
+        await navigator.serviceWorker.register('TVP_sw.js').catch(error => console.log('Service Worker Registration failed with ' + error))
+    else console.error("Service workers are not supported")
+}()
+
 const uploadInput = document.getElementById("file-input"),
 fileList = document.getElementById("file-list"),
 video = document.getElementById("video"),
@@ -124,3 +130,6 @@ function handleDrop(e) {
     handleFiles(files);
     dropBox.classList.remove("active");
 }
+
+window.addEventListener('online', () => document.body.classList.remove("offline"))
+window.addEventListener('offline', () => document.body.classList.add("offline"))
