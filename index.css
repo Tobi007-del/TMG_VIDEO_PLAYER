@@ -1,3 +1,8 @@
+/* overriding some TMG styles */
+body .T_M_G-video-container.T_M_G-video-initial {
+    outline: .05px solid var(--T_M_G-video-brand-color) !important;
+}
+
 *,*::after, *::before {
     box-sizing: border-box;
     margin: 0;

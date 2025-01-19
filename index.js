@@ -38,7 +38,8 @@ if (files?.length) {
     const approx = numberOfBytes / 1e3 ** exponent;
     const output = exponent === 0 ? `${numberOfBytes} bytes` : `${approx.toFixed(3)} ${units[exponent]} (${numberOfBytes} bytes)`;
 
-    const list = document.createElement("ul");
+    const list = document.getElementById("media-list") || document.createElement("ul");
+    list.id = "media-list"
     fileList.appendChild(list);
     let playlist = []
     for (let i = 0; i < files.length; i++) {
@@ -84,11 +85,11 @@ if (files?.length) {
         }
     }
     if (!videoPlayer) {
-        video.classList.remove("stall")
-        videoPlayer = new tmg.Player({media: null, playlist: playlist})
-        videoPlayer.attach(video)
+        video.classList.remove("stall");
+        videoPlayer = new tmg.Player({media: null, playlist: playlist});
+        videoPlayer.attach(video);
     } else {
-        videoPlayer.playlist = videoPlayer.playlist ? [...videoPlayer.playlist, ...playlist] : playlist;
+        setTimeout(() => videoPlayer.playlist = videoPlayer.playlist ? [...videoPlayer.playlist, ...playlist] : playlist);
     }
     document.getElementById("total-num").textContent = numberOfFiles;
     document.getElementById("total-size").textContent = output;
