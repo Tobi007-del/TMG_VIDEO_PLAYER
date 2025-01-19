@@ -4,6 +4,12 @@
     padding: 0;
 }
 
+@property --T_M_G-brand-color {
+    syntax: "<color>";
+    inherits: false;
+    initial-value: rgb(226, 110, 2);
+}
+
 :root {
     --T_M_G-lighter-brand-color: hsl(from var(--T_M_G-brand-color) h s calc(l + 40));
     --T_M_G-brand-accent-color: rgb(244, 143, 177);
@@ -60,8 +66,63 @@ body.offline::before {
     flex: 1 1 50%;
 }
 
-#video-player-container:has(video.stall) {
+#video-player-container.loading:has(video.stall) {
+    position: relative;
+    max-width: 700px;
+    width: 90dvw;
+    aspect-ratio: 16 / 9;
+}
+
+#video-player-container.loading::before {
+    display: block;
+}
+
+#video-player-container::before {
     display: none;
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    height: 75px;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    border-style: solid;
+    border-width: 4px;
+    border-top-color: var(--T_M_G-brand-color);
+    border-bottom-color: var(--T_M_G-brand-color);
+    border-left-color: var(--T_M_G-brand-color);
+    border-right-color: grey;
+    rotate: 0;
+    animation: spin 800ms linear infinite, switch 800ms infinite ease forwards;
+}
+
+@keyframes switch {
+    to {
+        --T_M_G-brand-color: var(--T_M_G-brand-accent-color);
+    }
+}
+
+@keyframes spin {
+    from {
+        rotate: 0;
+    } to {
+        rotate: 360deg;
+    }
+}
+
+@media(max-width: 780px) {
+    #video-player-container::before {
+        height: 60px;
+        border-width: 3px;
+    }
+}
+
+@media (max-width: 480px),
+(max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+    #video-player-container::before {
+        height: 40px;
+        border-width: 2px;
+    }
 }
 
 #content-wrapper {
@@ -161,46 +222,6 @@ label#drop-box.active {
         background-position: 0% center;
     } to {
         background-position: -200% center;
-    }
-}
-
-@property --T_M_G-brand-color {
-    syntax: "<color>";
-    inherits: false;
-    initial-value: rgb(226, 110, 2);
-}
-
-#content-helper-wrapper.loading::before {
-    display: block;
-}
-
-#content-helper-wrapper::before {
-    display: none;
-    content: '';
-    position: relative;
-    height: 75px;
-    aspect-ratio: 1 / 1;
-    margin: 100px;
-    top: -10px;
-    border-radius: 50%;
-    border: solid 10px;
-    border-top-color: var(--T_M_G-brand-color);
-    border-bottom-color: var(--T_M_G-brand-color);
-    border-left-color: var(--T_M_G-brand-color);
-    border-right-color: grey;
-    rotate: 0;
-    animation: spin 800ms linear infinite;
-}
-
-@keyframes spin {
-    0% {
-        rotate: 0;
-    } 
-    50% {
-        --T_M_G-brand-color: var(--T_M_G-brand-accent-color);
-    }
-    100% {
-        rotate: 360deg;
     }
 }
 

@@ -4,7 +4,7 @@ void async function registerServiceWorker() {
     else console.error("Service workers are not supported")
 }()
 
-const contentHelperWrapper = document.getElementById("content-helper-wrapper"),
+const videoPlayerContainer = document.getElementById("video-player-container"),
 uploadInput = document.getElementById("file-input"),
 fileList = document.getElementById("file-list"),
 video = document.getElementById("video"),
@@ -27,7 +27,7 @@ function handleFiles(files) {
 if (files?.length) {
     if (numberOfFiles < 1) {
         fileList.innerHTML = "";
-        contentHelperWrapper.classList.add("loading");
+        videoPlayerContainer.classList.add("loading");
     }
 
     // Calculate total size
@@ -92,7 +92,7 @@ if (files?.length) {
         videoPlayer = new tmg.Player({media: null, playlist: playlist});
         videoPlayer.attach(video);
         video.addEventListener("tmgload", () => {
-            contentHelperWrapper.classList.remove("loading")
+            videoPlayerContainer.classList.remove("loading")
             video.classList.remove("stall");
         })
     } else {
