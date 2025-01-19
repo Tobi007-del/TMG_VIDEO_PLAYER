@@ -1,3 +1,5 @@
+import Toast from "/T007_TOOLS/T007_toast_library/T007_toast.js";
+
 void async function registerServiceWorker() {
     if ("serviceWorker" in navigator) 
         await navigator.serviceWorker.register('TVP_sw.js').catch(error => console.log('Service Worker Registration failed with ' + error))
@@ -104,6 +106,7 @@ if (files?.length) {
 }
 
 function handleFileInput({target}) {
+    if ([...target.files].some(file => !file.type.includes("video"))) new Toast({text: "Only video files are supported"})
     const files = [...target.files]?.filter(file => file.type.includes("video"))
     handleFiles(files)
 }
@@ -129,7 +132,7 @@ function handleDrop(e) {
     e.stopPropagation();
     e.preventDefault(); 
     const dt = e.dataTransfer;
-    if ([...dt.files].some(file => file.type.includes("video"))) new Toast({text: "File format not supported"})
+    if ([...dt.files].some(file => !file.type.includes("video"))) new Toast({text: "You can only drop video files!"})
     const files = [...dt.files]?.filter(file => file.type.includes("video"))
     handleFiles(files);
     dropBox.classList.remove("active");
