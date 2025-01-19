@@ -5,8 +5,8 @@
 }
 
 :root {
-    --T_M_G-brand-color: rgb(226,110,2); 
     --T_M_G-lighter-brand-color: hsl(from var(--T_M_G-brand-color) h s calc(l + 40));
+    --T_M_G-brand-accent-color: rgb(244, 143, 177);
     --scrollbar-track-color: rgb(20,20,20);
     --scrollbar-thumb-color: #f0ad5f;
     --scrollbar-thumb-hover-color: #eb9634;
@@ -60,7 +60,7 @@ body.offline::before {
     flex: 1 1 50%;
 }
 
-#video-player-container:has(> video.stall) {
+#video-player-container:has(video.stall) {
     display: none;
 }
 
@@ -105,7 +105,7 @@ body.offline::before {
 }
 
 #file-picker {
-    background: linear-gradient(to left, var(--T_M_G-brand-color), rgb(244,143,177), var(--T_M_G-lighter-brand-color));
+    background: linear-gradient(to left, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-lighter-brand-color));
     border-radius: 20px;
     height: fit-content;
     width: 100%;
@@ -113,7 +113,7 @@ body.offline::before {
 }
 
 #drop-box {
-    background: linear-gradient(to right, var(--T_M_G-brand-color), rgb(244,143,177), var(--T_M_G-lighter-brand-color));
+    background: linear-gradient(to right, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-lighter-brand-color));
     border-radius: 10px;
     flex: 0 0 100%;
     height: 110px;
@@ -145,13 +145,13 @@ body.offline::before {
 }
 
 #drop-box:hover {
-    background: linear-gradient(to right, var(--T_M_G-brand-color), rgb(244,143,177), var(--T_M_G-lighter-brand-color), var(--T_M_G-brand-color));
+    background: linear-gradient(to right, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-lighter-brand-color), var(--T_M_G-brand-color));
     background-size: 200%;
     animation: background-pan 600ms ease;    
 }
 
 label#drop-box.active {
-    background: linear-gradient(to right, var(--T_M_G-brand-color), rgb(244,143,177), var(--T_M_G-lighter-brand-color), var(--T_M_G-brand-color));
+    background: linear-gradient(to right, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-lighter-brand-color), var(--T_M_G-brand-color));
     background-size: 200%;
     animation: background-pan 600ms infinite ease;
 }
@@ -161,6 +161,46 @@ label#drop-box.active {
         background-position: 0% center;
     } to {
         background-position: -200% center;
+    }
+}
+
+@property --T_M_G-brand-color {
+    syntax: "<color>";
+    inherits: false;
+    initial-value: rgb(226, 110, 2);
+}
+
+#content-helper-wrapper.loading::before {
+    display: block;
+}
+
+#content-helper-wrapper::before {
+    display: none;
+    content: '';
+    position: relative;
+    height: 75px;
+    aspect-ratio: 1 / 1;
+    margin: 100px;
+    top: -10px;
+    border-radius: 50%;
+    border: solid 10px;
+    border-top-color: var(--T_M_G-brand-color);
+    border-bottom-color: var(--T_M_G-brand-color);
+    border-left-color: var(--T_M_G-brand-color);
+    border-right-color: grey;
+    rotate: 0;
+    animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        rotate: 0;
+    } 
+    50% {
+        --T_M_G-brand-color: var(--T_M_G-brand-accent-color);
+    }
+    100% {
+        rotate: 360deg;
     }
 }
 

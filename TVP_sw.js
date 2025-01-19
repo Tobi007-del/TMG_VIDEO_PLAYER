@@ -1,5 +1,5 @@
 const cacheName = "TVP_user_interface_cache_1";
-const precachedResources = ["/TMG_VIDEO_PLAYER/", "/TMG_VIDEO_PLAYER/index.html", "/TMG_VIDEO_PLAYER/index.css", "/TMG_VIDEO_PLAYER/index.js", "/TMG_MEDIA_PROTOTYPE/prototype-2/prototype-2.js", "/RESTAURANT_THEMED_SITE/styles/scroll-bar.css", "/TMG_VIDEO_PLAYER/assets/icons/tmg-icon.jpeg"]
+const precachedResources = ["/TMG_VIDEO_PLAYER/", "/TMG_VIDEO_PLAYER/index.html", "/TMG_VIDEO_PLAYER/index.css", "/TMG_VIDEO_PLAYER/index.js", "/TMG_MEDIA_PROTOTYPE/prototype-2/prototype-2.js", "/TMG_MEDIA_PROTOTYPE/prototype-2/prototype-2-video.css", "/RESTAURANT_THEMED_SITE/styles/scroll-bar.css", "/TMG_VIDEO_PLAYER/assets/icons/tmg-icon.jpeg"]
 
 async function precache() {
     const cache = await caches.open(cacheName);

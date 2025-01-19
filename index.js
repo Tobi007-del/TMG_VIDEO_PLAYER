@@ -4,7 +4,8 @@ void async function registerServiceWorker() {
     else console.error("Service workers are not supported")
 }()
 
-const uploadInput = document.getElementById("file-input"),
+const contentHelperWrapper = document.getElementById("content-helper-wrapper"),
+uploadInput = document.getElementById("file-input"),
 fileList = document.getElementById("file-list"),
 video = document.getElementById("video"),
 dropBox = document.getElementById("drop-box");
@@ -12,10 +13,10 @@ dropBox = document.getElementById("drop-box");
 let videoPlayer
 
 uploadInput.addEventListener("change", handleFileInput);
-dropBox.addEventListener("dragenter", handleDragEnter)
-dropBox.addEventListener("dragover", handleDragOver)
-dropBox.addEventListener("dragleave", handleDragLeave)
-dropBox.addEventListener("drop", handleDrop)
+dropBox.addEventListener("dragenter", handleDragEnter);
+dropBox.addEventListener("dragover", handleDragOver);
+dropBox.addEventListener("dragleave", handleDragLeave);
+dropBox.addEventListener("drop", handleDrop);
 
 let numberOfBytes = 0,
 numberOfFiles = 0,
@@ -24,7 +25,10 @@ totalTime = 0;
 function handleFiles(files) {
     //showing preview thumbnails of files
 if (files?.length) {
-    if (numberOfFiles < 1) fileList.innerHTML = "";
+    if (numberOfFiles < 1) {
+        fileList.innerHTML = "";
+        contentHelperWrapper.classList.add("loading");
+    }
 
     // Calculate total size
     for (const file of files) {
@@ -85,9 +89,12 @@ if (files?.length) {
         }
     }
     if (!videoPlayer) {
-        video.classList.remove("stall");
         videoPlayer = new tmg.Player({media: null, playlist: playlist});
         videoPlayer.attach(video);
+        video.addEventListener("tmgload", () => {
+            contentHelperWrapper.classList.remove("loading")
+            video.classList.remove("stall");
+        })
     } else {
         setTimeout(() => videoPlayer.playlist = videoPlayer.playlist ? [...videoPlayer.playlist, ...playlist] : playlist);
     }
@@ -122,6 +129,7 @@ function handleDrop(e) {
     e.stopPropagation();
     e.preventDefault(); 
     const dt = e.dataTransfer;
+    if ([...dt.files].some(file => file.type.includes("video"))) new Toast({text: "File format not supported"})
     const files = [...dt.files]?.filter(file => file.type.includes("video"))
     handleFiles(files);
     dropBox.classList.remove("active");
