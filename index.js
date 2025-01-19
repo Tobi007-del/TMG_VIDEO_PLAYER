@@ -50,11 +50,6 @@ if (files?.length) {
             {
                 title: files[i].name,
                 author: "TMG Video Player",
-                artwork: [
-                    {
-                        src: "/TMG_MEDIA_PROTOTYPE/assets/icons/movie-tape.png"
-                    }
-                ]
             }
         });
         const thumbnailContainer = document.createElement("span");
@@ -90,7 +85,7 @@ if (files?.length) {
     }
     if (!videoPlayer) {
         video.classList.remove("stall")
-        videoPlayer = new tmg.Player({playlist: playlist})
+        videoPlayer = new tmg.Player({media: null, playlist: playlist})
         videoPlayer.attach(video)
     } else {
         videoPlayer.playlist = videoPlayer.playlist ? [...videoPlayer.playlist, ...playlist] : playlist;
