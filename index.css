@@ -266,7 +266,7 @@ label#drop-box.active {
 }
 
 #no-files-text {
-    margin-block: 50px;
+    margin: 20px;
 }
 
 #file-list-wrapper h2 {
