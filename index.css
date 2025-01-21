@@ -66,6 +66,10 @@ body.offline::before {
     flex: 1 1 50%;
 }
 
+video.stall {
+    display: none;
+}
+
 #video-player-container.loading:has(video.stall) {
     position: relative;
     max-width: 700px;
