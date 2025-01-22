@@ -56,7 +56,7 @@ if (files?.length) {
             src: videoSrc, media: 
             {
                 title: files[i].name,
-                author: "TMG Video Player",
+                artist: "TMG Video Player",
             }
         });
         const thumbnailContainer = document.createElement("span");
