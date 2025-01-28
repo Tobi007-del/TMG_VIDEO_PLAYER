@@ -83,7 +83,7 @@ if (files?.length) {
         span.innerHTML = `${files[i].name} -> (${exponent === 0 ? `${size}bytes` : `${approx.toFixed(3)} ${units[exponent]}`})`;
         li.appendChild(span);
         URL.revokeObjectURL(files[i]);
-        video.onloadeddata = function({target}) {
+        video.onloadedmetadata = function({target}) {
             totalTime += target.duration;
             target.currentTime = 2;
             document.getElementById("total-time").textContent = tmg.formatDuration(totalTime);
@@ -91,14 +91,14 @@ if (files?.length) {
         }
     }
     if (!videoPlayer) {
-        videoPlayer = new tmg.Player({media: null, playlist: playlist});
+        videoPlayer = new tmg.Player({playlist: playlist});
         videoPlayer.attach(video);
         video.addEventListener("tmgload", () => {
             videoPlayerContainer.classList.remove("loading")
             video.classList.remove("stall");
         })
     } else {
-        setTimeout(() => videoPlayer.playlist = videoPlayer.playlist ? [...videoPlayer.playlist, ...playlist] : playlist);
+        videoPlayer.playlist = videoPlayer.playlist ? [...videoPlayer.playlist, ...playlist] : playlist;
     }
     document.getElementById("total-num").textContent = numberOfFiles;
     document.getElementById("total-size").textContent = output;
