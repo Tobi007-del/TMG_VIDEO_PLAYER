@@ -11,6 +11,7 @@
 }
 
 :root {
+    --T_M_G-brand-color: rgb(226, 110, 2);
     --T_M_G-lighter-brand-color: hsl(from var(--T_M_G-brand-color) h s calc(l + 40));
     --T_M_G-brand-accent-color: rgb(244, 143, 177);
     --scrollbar-track-color: rgb(20,20,20);
