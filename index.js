@@ -14,6 +14,22 @@ dropBox = document.getElementById("drop-box");
 
 let videoPlayer
 
+function emptyUI() {
+    fileList.innerHTML = `<p id="no-files-text">No videos currently selected!</p>`;
+}
+
+function initLoader() {
+    fileList.innerHTML = "";
+    videoPlayerContainer.classList.add("loading");
+}
+
+function removeLoader() {
+    videoPlayerContainer.classList.remove("loading");
+}
+
+uploadInput.addEventListener("click", () => setTimeout(initLoader, 1000));
+uploadInput.addEventListener("cancel", removeLoader);
+uploadInput.addEventListener("cancel", emptyUI);
 uploadInput.addEventListener("change", handleFileInput);
 dropBox.addEventListener("dragenter", handleDragEnter);
 dropBox.addEventListener("dragover", handleDragOver);
@@ -27,11 +43,7 @@ totalTime = 0;
 function handleFiles(files) {
     //showing preview thumbnails of files
 if (files?.length) {
-    if (numberOfFiles < 1) {
-        fileList.innerHTML = "";
-        videoPlayerContainer.classList.add("loading");
-    }
-
+    if (numberOfFiles < 1) initLoader()
     // Calculate total size
     for (const file of files) {
       numberOfBytes += file.size;
@@ -94,8 +106,8 @@ if (files?.length) {
         videoPlayer = new tmg.Player({playlist: playlist});
         videoPlayer.attach(video);
         video.addEventListener("tmgload", () => {
-            videoPlayerContainer.classList.remove("loading")
-            video.classList.remove("stall");
+            removeLoader()
+            video.classList.remove("stall")
         })
     } else {
         videoPlayer.playlist = videoPlayer.playlist ? [...videoPlayer.playlist, ...playlist] : playlist;

@@ -21,8 +21,8 @@ async function networkFirst(request) {
         }
         return networkResponse;
     } catch(error) {
-        const caheResponse = await caches.match(request)
-        return caheResponse || Response.error()
+        const cacheResponse = await caches.match(request)
+        return cacheResponse || Response.error()
     }
 }
 
