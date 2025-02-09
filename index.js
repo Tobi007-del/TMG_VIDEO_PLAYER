@@ -15,14 +15,15 @@ dropBox = document.getElementById("drop-box");
 let videoPlayer
 
 function emptyUI() {
-    fileList.innerHTML = `<p id="no-files-text">No videos currently selected!</p>`;
+    if (numberOfFiles < 1) 
+        fileList.innerHTML = `<p id="no-files-text">No videos currently selected!</p>`;
 }
 
 function initLoader() {
     if (numberOfFiles < 1) {
         fileList.innerHTML = "";
         videoPlayerContainer.classList.add("loading");
-    } else return
+    }
 }
 
 function removeLoader() {
