@@ -19,8 +19,10 @@ function emptyUI() {
 }
 
 function initLoader() {
-    fileList.innerHTML = "";
-    videoPlayerContainer.classList.add("loading");
+    if (numberOfFiles < 1) {
+        fileList.innerHTML = "";
+        videoPlayerContainer.classList.add("loading");
+    } else return
 }
 
 function removeLoader() {
@@ -43,7 +45,7 @@ totalTime = 0;
 function handleFiles(files) {
     //showing preview thumbnails of files
 if (files?.length) {
-    if (numberOfFiles < 1) initLoader()
+    initLoader()
     // Calculate total size
     for (const file of files) {
       numberOfBytes += file.size;
