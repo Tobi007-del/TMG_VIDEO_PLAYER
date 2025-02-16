@@ -108,12 +108,12 @@ if (files?.length) {
     if (!videoPlayer) {
         videoPlayer = new tmg.Player({playlist: playlist});
         videoPlayer.attach(video);
-        video.addEventListener("tmgload", () => {
+        video.addEventListener("tmgready", () => {
             removeLoader()
             video.classList.remove("stall")
-        })
+        });
     } else {
-        videoPlayer.playlist = videoPlayer.playlist ? [...videoPlayer.playlist, ...playlist] : playlist;
+        videoPlayer.Player.playlist = videoPlayer.Player.playlist ? [...videoPlayer.Player.playlist, ...playlist] : playlist;
     }
     document.getElementById("total-num").textContent = numberOfFiles;
     document.getElementById("total-size").textContent = output;
