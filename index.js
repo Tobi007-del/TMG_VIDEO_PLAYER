@@ -76,7 +76,7 @@ if (files?.length) {
         });
         const thumbnailContainer = document.createElement("span");
         thumbnailContainer.classList.add("thumbnail-container");
-        thumbnailContainer.onclick = () => videoPlayer.movePlaylistTo(numberOfFiles - (files.length - i))
+        thumbnailContainer.onclick = () => videoPlayer.Player.movePlaylistTo(numberOfFiles - (files.length - i))
         li.appendChild(thumbnailContainer);
         const playbtn = document.createElement("button");
         playbtn.innerHTML = 
