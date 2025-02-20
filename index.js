@@ -106,7 +106,7 @@ if (files?.length) {
         }
     }
     if (!videoPlayer) {
-        videoPlayer = new tmg.Player({playlist: playlist});
+        videoPlayer = new tmg.Player({playlist: playlist, settings: {timelinePosition: "top"}});
         videoPlayer.attach(video);
         video.addEventListener("tmgready", () => {
             removeLoader()
