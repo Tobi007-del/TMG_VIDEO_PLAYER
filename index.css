@@ -313,7 +313,7 @@ label#drop-box.active {
 }
 
 .thumbnail-container button {
-    background-color: var(--T_M_G-brand-color);
+    background-color: rgb(226, 110, 2, .4);
     border: none;
     border-radius: 50%;
     width: 25px;
