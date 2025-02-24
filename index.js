@@ -50,8 +50,7 @@ numberOfFiles = 0,
 totalTime = 0;
 
 function handleFiles(files) {
-    //showing preview thumbnails of files
-if (files?.length) {
+if (files?.length > 0) {
     initUI()
     // Calculate total size
     for (const file of files) {
@@ -124,7 +123,7 @@ if (files?.length) {
     }
     document.getElementById("total-num").textContent = numberOfFiles;
     document.getElementById("total-size").textContent = output;
-}
+} else if (numberOfFiles < 1) emptyUI()
 }
 
 function handleFileCancel() {
