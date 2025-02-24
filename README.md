@@ -1,4 +1,4 @@
-# THE TASTEY RESTAURANT WEBSITE
+# TVP
 
 ### Table of contents
 
@@ -11,7 +11,7 @@
 
 ## Project Developer
 
-- I am Oketade Oluwatobiloba, a Fullstack Developer in training
+- I am Oketade Oluwatobiloba, a Fullstack Developer in training. This is a website that uses the HTML5 Video Player of the Movie Garden to provide the best custom viewing experience out there. 
 
 ## Brief Description
 
