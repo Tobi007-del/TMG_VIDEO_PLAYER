@@ -26,6 +26,8 @@
     --scrollbar-thumb-active-color: #ed8f23;
     --max-turn: 0.235turn;
     --degree: 40deg;
+    --loader-size: 75px;
+    --loader-width: 4px;
 }
 
 @keyframes rotateLight {
@@ -144,11 +146,11 @@ video.stall {
     position: absolute;
     inset: 0;
     margin: auto;
-    height: 75px;
-    aspect-ratio: 1 / 1;
+    height: var(--loader-size);
+    width: var(--loader-size);
     border-radius: 50%;
     border-style: solid;
-    border-width: 4px;
+    border-width: var(--loader-width);
     border-top-color: var(--T_M_G-brand-color);
     border-bottom-color: var(--T_M_G-brand-color);
     border-left-color: var(--T_M_G-brand-color);
@@ -172,17 +174,17 @@ video.stall {
 }
 
 @media(max-width: 780px) {
-    #video-player-container::before {
-        height: 60px;
-        border-width: 3px;
+    :root {
+        --loader-size: 60px;
+        --loader-width: 3px;
     }
 }
 
 @media (max-width: 480px),
 (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
-    #video-player-container::before {
-        height: 40px;
-        border-width: 2px;
+    :root {
+        --loader-size: 40px;
+        --loader-width: 2px;
     }
 }
 
