@@ -27,7 +27,7 @@ The main idea here is for you to test out the custom controls of the video playe
 *Mobile view of the Page*
 
 ![Desktop Preview of the Video Player](./assets/images/player_desktop_preview.png)
-*Desktop view of the Page*
+*Desktop view of the Video Player*
 
 ![Mobile Preview of the Video Player](./assets/images/player_mobile_preview.png)
 *Mobile view of the Video Player*
