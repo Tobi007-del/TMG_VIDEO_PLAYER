@@ -115,7 +115,7 @@ if (files?.length > 0) {
     }
     if (!videoPlayer) {
         video.addEventListener("loadedmetadata", () => video.currentTime = 2, {once: true});
-        video.addEventListener("canplay", cleanUI, {once: true});
+        video.addEventListener("loadeddata", cleanUI, {once: true});
         videoPlayer = new tmg.Player({playlist: playlist});
         videoPlayer.attach(video);
     } else {
