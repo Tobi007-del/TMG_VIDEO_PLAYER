@@ -114,10 +114,13 @@ if (files?.length > 0) {
         }
     }
     if (!videoPlayer) {
-        video.addEventListener("loadedmetadata", () => video.currentTime = 2, {once: true});
-        video.addEventListener("loadeddata", cleanUI, {once: true});
+        video.addEventListener("loadedmetadata", () => 
+        {
+            if (video.paused) video.currentTime = 2
+        }, {once: true});
         videoPlayer = new tmg.Player({playlist: playlist});
         videoPlayer.attach(video);
+        cleanUI()
     } else {
         videoPlayer.Player.playlist = videoPlayer.Player.playlist ? [...videoPlayer.Player.playlist, ...playlist] : playlist;
     }
