@@ -1,10 +1,10 @@
 import Toast from "/T007_TOOLS/T007_toast_library/T007_toast.js";
 
-void async function registerServiceWorker() {
+(async function registerServiceWorker() {
     if ("serviceWorker" in navigator) 
         await navigator.serviceWorker.register('TVP_sw.js').catch(error => console.log('Service Worker Registration failed with ' + error))
     else console.error("Service workers are not supported")
-}()
+})()
 
 const videoPlayerContainer = document.getElementById("video-player-container"),
 uploadInput = document.getElementById("file-input"),
@@ -15,24 +15,30 @@ dropBox = document.getElementById("drop-box");
 let videoPlayer
 
 function emptyUI() {
-    if (numberOfFiles < 1) 
-        fileList.innerHTML = `<p id="no-files-text">No videos currently selected!</p>`;
-}
-
-function initLoader() {
     if (numberOfFiles < 1) {
-        fileList.innerHTML = "";
-        videoPlayerContainer.classList.add("loading");
+        videoPlayerContainer.classList.remove("loading");
+        video.classList.add("stall");
+        document.body.classList.add("light");
+        fileList.innerHTML = `<p id="no-files-text">No videos currently selected!</p>`;
     }
 }
 
-function removeLoader() {
+function initUI() {
+    if (numberOfFiles < 1) {
+        videoPlayerContainer.classList.add("loading");
+        video.classList.add("stall");
+        document.body.classList.remove("light")
+        fileList.innerHTML = "";
+    }
+}
+
+function cleanUI() {
+    video.classList.remove("stall")
     videoPlayerContainer.classList.remove("loading");
 }
 
-uploadInput.addEventListener("click", () => setTimeout(initLoader, 1000));
-uploadInput.addEventListener("cancel", removeLoader);
-uploadInput.addEventListener("cancel", emptyUI);
+uploadInput.addEventListener("click", () => setTimeout(initUI, 1000));
+uploadInput.addEventListener("cancel", handleFileCancel);
 uploadInput.addEventListener("change", handleFileInput);
 dropBox.addEventListener("dragenter", handleDragEnter);
 dropBox.addEventListener("dragover", handleDragOver);
@@ -46,7 +52,7 @@ totalTime = 0;
 function handleFiles(files) {
     //showing preview thumbnails of files
 if (files?.length) {
-    initLoader()
+    initUI()
     // Calculate total size
     for (const file of files) {
       numberOfBytes += file.size;
@@ -68,10 +74,13 @@ if (files?.length) {
         list.appendChild(li);
         const videoSrc = URL.createObjectURL(files[i]);
         playlist.push({
-            src: videoSrc, media: 
-            {
+            src : videoSrc, 
+            media : {
                 title: files[i].name,
                 artist: "TMG Video Player",
+            },
+            settings : {
+                previewImages: true
             }
         });
         const thumbnailContainer = document.createElement("span");
@@ -81,9 +90,9 @@ if (files?.length) {
         const playbtn = document.createElement("button");
         playbtn.innerHTML = 
         `
-                <svg preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25">
-                    <path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" />
-                </svg>            
+            <svg preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25">
+                <path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" />
+            </svg>            
         `
         thumbnailContainer.appendChild(playbtn);
         const video = document.createElement("video");
@@ -107,10 +116,7 @@ if (files?.length) {
     }
     if (!videoPlayer) {
         video.addEventListener("loadedmetadata", () => video.currentTime = 2, {once: true});
-        video.addEventListener("canplay", () => {
-            video.classList.remove("stall")
-            removeLoader()
-        }, {once: true});
+        video.addEventListener("canplay", cleanUI, {once: true});
         videoPlayer = new tmg.Player({playlist: playlist});
         videoPlayer.attach(video);
     } else {
@@ -119,6 +125,10 @@ if (files?.length) {
     document.getElementById("total-num").textContent = numberOfFiles;
     document.getElementById("total-size").textContent = output;
 }
+}
+
+function handleFileCancel() {
+    emptyUI()
 }
 
 function handleFileInput({target}) {

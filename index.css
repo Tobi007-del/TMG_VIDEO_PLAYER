@@ -6,8 +6,14 @@
 
 @property --T_M_G-brand-color {
     syntax: "<color>";
-    inherits: false;
     initial-value: rgb(226, 110, 2);
+    inherits: false;
+}
+
+@property --turn {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
 }
 
 :root {
@@ -18,14 +24,64 @@
     --scrollbar-thumb-color: #f0ad5f;
     --scrollbar-thumb-hover-color: #eb9634;
     --scrollbar-thumb-active-color: #ed8f23;
+    --max-turn: 0.235turn;
+    --degree: 40deg;
+}
+
+@keyframes rotateLight {
+    0%, 50%, 100% {
+        --turn: 0turn;
+    } 25% {
+        --turn: var(--max-turn);
+    } 75% {
+        --turn: calc(var(--max-turn) * -1);
+    }
+}
+
+/* @keyframes rotateLight {
+    from {
+        --turn: 0turn;
+    } to {
+        --turn: 1turn;
+    }
+} */
+
+
+@media(max-width: 600px) {
+    :root {
+        --max-turn: 0.135turn;
+    }
+}
+
+html {
+    background-color: black;
 }
 
 body {
-    background-color: black;
     padding: 0;
     margin: 0;
     font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
     padding-bottom: 30px;
+}
+
+body::before {
+    position: fixed;
+    inset: 0;
+    content: "";
+    width: 100%;
+    height: 100lvh;
+    z-index: -1;
+    background: linear-gradient(#0b1012e8, #0b1012e8), center/cover url("/TMG_VIDEO_PLAYER/assets/images/lone-tree.jpg"), #0b1012;
+}
+
+body.light::before {
+    background: conic-gradient(
+        from var(--turn) at 50% -50%,
+        #0b1012e8 calc((360deg - var(--degree))/2),
+        #F4F75C55,
+        #0B1012ec calc(360deg - (360deg - var(--degree))/2)
+    ), center/cover url("/TMG_VIDEO_PLAYER/assets/images/lone-tree.jpg"), #0b1012;
+    animation: rotateLight 60s linear infinite;
 }
 
 body.offline::before {
@@ -156,8 +212,9 @@ video.stall {
     color: whitesmoke;
 }
 
-#content-header > h3 {
+#content-header > p {
     color: grey;
+    font-weight: bold;
 }
 
 #content-helper-wrapper {
@@ -204,7 +261,7 @@ video.stall {
     bottom: 0%;
     font-size: 85%;
     font-weight: light;
-    opacity: .5;
+    opacity: .4;
     white-space: wrap;
     text-align: center;
     margin: 5px;
@@ -265,13 +322,14 @@ label#drop-box.active {
     display: flex;
     flex-direction: column;
     align-items: center;
-    color: white;
+    color: var(--T_M_G-brand-accent-color);
     padding: 10px;
     gap: 20px;
 }
 
 #no-files-text {
-    margin-block: 50px;
+    margin-block: 30px;
+    color: grey;
 }
 
 #file-list-wrapper h2 {
