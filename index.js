@@ -125,14 +125,14 @@ if (files?.length > 0) {
                     totalTime += target.duration;
                     target.currentTime = 2;
                     document.getElementById("total-time").textContent = window.tmg.formatDuration(totalTime);
-                    thumbnails[n].parentElement.nextElementSibling.innerHTML += `<br> Duration: ${window.tmg.formatDuration(thumbnails[n].duration)}`;
+                    target.parentElement.nextElementSibling.innerHTML += `<br> Duration: ${window.tmg.formatDuration(target.duration)}`;
                 }
             })
             if (!videoPlayer) {
                 video.addEventListener("tmgready", cleanUI, {once:true})
                 video.addEventListener("loadedmetadata", () => 
                 {
-                    if (videoPlayer && videoPlayer.Player?.initialState) video.currentTime = 2 
+                    if (videoPlayer?.Player?.initialState) video.currentTime = 2 
                 }, {once: true});
                 videoPlayer = new tmg.Player({playlist: playlist});
                 videoPlayer.attach(video);                
@@ -198,5 +198,5 @@ window.addEventListener("load", () => {
 })
 
 window.addEventListener('beforeunload', function() {  
-    document.querySelectorAll(".thumbnail").forEach(video => URL.revokeObjectURL(video.src));
+    if (!document.activeElement) document.querySelectorAll(".thumbnail").forEach(video => URL.revokeObjectURL(video.src));
 });  

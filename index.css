@@ -77,14 +77,14 @@ body::before {
 }
 
 body.light::before {
-    background: conic-gradient(from var(--turn) at 50% -20%,
+    background: conic-gradient(from var(--turn) at 50% -10%,
         #0b1012e8 10deg,
         #0b1012e8 calc((360deg - var(--degree))/2),
         #5c80f755,
         #0b1012e8 calc(360deg - (360deg - var(--degree))/2),
         #0b1012e8 350deg
     ), center/cover url("/TMG_VIDEO_PLAYER/assets/images/lone-tree.jpg"), #0b1012;
-    animation: rotateLight 60s linear infinite;
+    animation: rotateLight 30s linear infinite;
 }
 
 body.offline::after {
