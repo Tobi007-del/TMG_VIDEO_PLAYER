@@ -63,6 +63,7 @@ const units = ["B","KiB","MiB","GiB","TiB","PiB","EiB","ZiB","YiB",];
 
 function handleFiles(files) {
 if (files?.length > 0) {
+    initUI() 
     // providing some available metrics to the user 
     for (const file of files) {
         numberOfBytes += file.size;
