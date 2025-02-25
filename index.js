@@ -6,6 +6,9 @@ import Toast from "/T007_TOOLS/T007_toast_library/T007_toast.js";
     else console.error("Service workers are not supported")
 })()
 
+
+const videoWorker = window.Worker ? new Worker('TVP_worker.js') : null;
+
 const videoPlayerContainer = document.getElementById("video-player-container"),
 uploadInput = document.getElementById("file-input"),
 fileList = document.getElementById("file-list"),
@@ -19,7 +22,7 @@ function emptyUI() {
         videoPlayerContainer.classList.remove("loading");
         video.classList.add("stall");
         document.body.classList.add("light");
-        fileList.innerHTML = `<p id="no-files-text">No videos currently selected!</p>`;
+        fileList.innerHTML = `<p id="no-files-text">No thumbnails currently selected!</p>`;
     }
 }
 
@@ -37,6 +40,13 @@ function cleanUI() {
     videoPlayerContainer.classList.remove("loading");
 }
 
+function errorUI() {
+    videoPlayerContainer.classList.remove("loading");
+    video.classList.add("stall");
+    document.body.classList.add("light");
+    fileList.innerHTML = `<p id="no-files-text">Your browser is not compatible!</p>`;
+}
+
 uploadInput.addEventListener("click", () => setTimeout(initUI, 1000));
 uploadInput.addEventListener("cancel", handleFileCancel);
 uploadInput.addEventListener("change", handleFileInput);
@@ -49,39 +59,29 @@ let numberOfBytes = 0,
 numberOfFiles = 0,
 totalTime = 0;
 
+const units = ["B","KiB","MiB","GiB","TiB","PiB","EiB","ZiB","YiB",];
+
 function handleFiles(files) {
 if (files?.length > 0) {
-    initUI()
-    // Calculate total size
+    // providing some available metrics to the user 
     for (const file of files) {
-      numberOfBytes += file.size;
-      numberOfFiles++;
+        numberOfBytes += file.size;
+        numberOfFiles++;
     }
-
-    // Approximate to the closest prefixed unit
-    const units = ["B","KiB","MiB","GiB","TiB","PiB","EiB","ZiB","YiB",];
-    const exponent = Math.min(Math.floor(Math.log(numberOfBytes) / Math.log(1024)),units.length - 1);
+    const exponent = Math.min(Math.floor(Math.log(numberOfBytes) / Math.log(1e3)),units.length - 1);
     const approx = numberOfBytes / 1e3 ** exponent;
     const output = exponent === 0 ? `${numberOfBytes} bytes` : `${approx.toFixed(3)} ${units[exponent]} (${numberOfBytes} bytes)`;
-
+    document.getElementById("total-num").textContent = numberOfFiles;
+    document.getElementById("total-size").textContent = output;
+    //building the media list
     const list = document.getElementById("media-list") || document.createElement("ul");
     list.id = "media-list"
     fileList.appendChild(list);
+    const thumbnails = []
     let playlist = []
     for (let i = 0; i < files.length; i++) {
         const li = document.createElement("li");
         list.appendChild(li);
-        const videoSrc = URL.createObjectURL(files[i]);
-        playlist.push({
-            src : videoSrc, 
-            media : {
-                title: files[i].name,
-                artist: "TMG Video Player",
-            },
-            settings : {
-                previewImages: true
-            }
-        });
         const thumbnailContainer = document.createElement("span");
         thumbnailContainer.classList.add("thumbnail-container");
         thumbnailContainer.onclick = () => videoPlayer.Player.movePlaylistTo(numberOfFiles - (files.length - i))
@@ -94,38 +94,52 @@ if (files?.length > 0) {
             </svg>            
         `
         thumbnailContainer.appendChild(playbtn);
-        const video = document.createElement("video");
-        video.src = videoSrc
-        video.classList.add("thumbnail")
-        thumbnailContainer.appendChild(video)
+        const thumbnail = document.createElement("video");
+        thumbnails.push(thumbnail)
+        thumbnail.classList.add("thumbnail")
+        thumbnailContainer.appendChild(thumbnail)
         const span = document.createElement("span");
         span.classList.add("file-info");
         const size = files[i].size;
-        const exponent = Math.min(Math.floor(Math.log(size) / Math.log(1024), units.length - 1));
+        const exponent = Math.min(Math.floor(Math.log(size) / Math.log(1e3), units.length - 1));
         const approx = size / 1e3 ** exponent;
         span.innerHTML = `${files[i].name} -> (${exponent === 0 ? `${size}bytes` : `${approx.toFixed(3)} ${units[exponent]}`})`;
         li.appendChild(span);
-        URL.revokeObjectURL(files[i]);
-        video.onloadedmetadata = function({target}) {
-            totalTime += target.duration;
-            target.currentTime = 2;
-            document.getElementById("total-time").textContent = tmg.formatDuration(totalTime);
-            span.innerHTML += `<br> Duration: ${tmg.formatDuration(video.duration)}`;
-        }
     }
-    if (!videoPlayer) {
-        video.addEventListener("loadedmetadata", () => 
-        {
-            if (video.paused) video.currentTime = 2
-        }, {once: true});
-        videoPlayer = new tmg.Player({playlist: playlist});
-        videoPlayer.attach(video);
-        cleanUI()
-    } else {
-        videoPlayer.Player.playlist = videoPlayer.Player.playlist ? [...videoPlayer.Player.playlist, ...playlist] : playlist;
-    }
-    document.getElementById("total-num").textContent = numberOfFiles;
-    document.getElementById("total-size").textContent = output;
+    if (window.Worker) {
+        videoWorker.onmessage = function(event) {
+            const objecctURLs = event.data;
+            objecctURLs.forEach((url, n) => {
+                playlist.push({
+                    src : url, 
+                    media : {
+                        title: files[n].name,
+                        artist: "TMG Video Player",
+                    },
+                    settings : {
+                        previewImages: true
+                    }
+                });
+                thumbnails[n].src = url
+                thumbnails[n].onloadedmetadata = function({target}) {
+                    totalTime += target.duration;
+                    target.currentTime = 2;
+                    document.getElementById("total-time").textContent = window.tmg.formatDuration(totalTime);
+                    thumbnails[n].parentElement.nextElementSibling.innerHTML += `<br> Duration: ${window.tmg.formatDuration(thumbnails[n].duration)}`;
+                }
+            })
+            if (!videoPlayer) {
+                video.addEventListener("tmgready", cleanUI, {once:true})
+                video.addEventListener("loadedmetadata", () => 
+                {
+                    if (videoPlayer && videoPlayer.Player?.initialState) video.currentTime = 2 
+                }, {once: true});
+                videoPlayer = new tmg.Player({playlist: playlist});
+                videoPlayer.attach(video);                
+            } else videoPlayer.Player.playlist = videoPlayer.Player.playlist ? [...videoPlayer.Player.playlist, ...playlist] : playlist;           
+        }   
+        videoWorker.postMessage(files)
+    } else errorUI()
 } else if (numberOfFiles < 1) emptyUI()
 }
 
@@ -182,3 +196,7 @@ window.addEventListener("load", () => {
         }
     }
 })
+
+window.addEventListener('beforeunload', function() {  
+    document.querySelectorAll(".thumbnail").forEach(video => URL.revokeObjectURL(video.src));
+});  

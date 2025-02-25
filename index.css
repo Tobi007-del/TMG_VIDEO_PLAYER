@@ -25,12 +25,12 @@
     --scrollbar-thumb-hover-color: #eb9634;
     --scrollbar-thumb-active-color: #ed8f23;
     --max-turn: 0.235turn;
-    --degree: 40deg;
     --loader-size: 75px;
     --loader-width: 4px;
+    --degree: 180deg;
 }
 
-@keyframes rotateLight {
+/* @keyframes rotateLight {
     0%, 50%, 100% {
         --turn: 0turn;
     } 25% {
@@ -38,15 +38,15 @@
     } 75% {
         --turn: calc(var(--max-turn) * -1);
     }
-}
+} */
 
-/* @keyframes rotateLight {
+@keyframes rotateLight {
     from {
         --turn: 0turn;
     } to {
         --turn: 1turn;
     }
-} */
+}
 
 
 @media(max-width: 600px) {
@@ -77,16 +77,17 @@ body::before {
 }
 
 body.light::before {
-    background: conic-gradient(
-        from var(--turn) at 50% -50%,
+    background: conic-gradient(from var(--turn) at 50% -20%,
+        #0b1012e8 10deg,
         #0b1012e8 calc((360deg - var(--degree))/2),
-        #F4F75C55,
-        #0B1012ec calc(360deg - (360deg - var(--degree))/2)
+        #5c80f755,
+        #0b1012e8 calc(360deg - (360deg - var(--degree))/2),
+        #0b1012e8 350deg
     ), center/cover url("/TMG_VIDEO_PLAYER/assets/images/lone-tree.jpg"), #0b1012;
     animation: rotateLight 60s linear infinite;
 }
 
-body.offline::before {
+body.offline::after {
     content: 'OFFLINE MODE';
     font-weight: bolder;
     font-size: 12.5px;
@@ -218,6 +219,7 @@ video.stall {
 #content-header > p {
     color: grey;
     font-weight: bold;
+    text-shadow: .5px .5px 2px #0b1012e8;
 }
 
 #content-helper-wrapper {
@@ -333,6 +335,7 @@ label#drop-box.active {
 #no-files-text {
     margin-block: 30px;
     color: grey;
+    text-shadow: .5px .5px 2px #0b1012e8;
 }
 
 #file-list-wrapper h2 {
@@ -371,6 +374,7 @@ label#drop-box.active {
     color: white;
     border-radius: 5px;
     overflow: hidden;
+    background: black;
 }
 
 .thumbnail-container button {
