@@ -22,7 +22,7 @@ function emptyUI() {
         videoPlayerContainer.classList.remove("loading");
         video.classList.add("stall");
         document.body.classList.add("light");
-        fileList.innerHTML = `<p id="no-files-text">No thumbnails currently selected!</p>`;
+        fileList.innerHTML = `<p id="no-files-text">No videos currently selected!</p>`;
     }
 }
 
