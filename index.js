@@ -132,11 +132,8 @@ if (files?.length > 0) {
             })
             if (!videoPlayer) {
                 video.addEventListener("tmgready", cleanUI, {once:true})
-                video.addEventListener("loadedmetadata", () => 
-                {
-                    if (videoPlayer?.Player?.initialState) video.currentTime = 2 
-                }, {once: true});
                 videoPlayer = new tmg.Player({playlist: playlist});
+                videoPlayer.build.playlist[0].settings.startTime = 2
                 videoPlayer.attach(video);                
             } else videoPlayer.Player.playlist = videoPlayer.Player.playlist ? [...videoPlayer.Player.playlist, ...playlist] : playlist;           
         }   
