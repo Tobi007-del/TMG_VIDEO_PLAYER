@@ -62,6 +62,7 @@ totalTime = 0;
 const units = ["B","KiB","MiB","GiB","TiB","PiB","EiB","ZiB","YiB",];
 
 function handleFiles(files) {
+try {
 if (files?.length > 0) {
     initUI() 
     // providing some available metrics to the user 
@@ -142,6 +143,9 @@ if (files?.length > 0) {
         videoWorker.postMessage(files)
     } else errorUI()
 } else if (numberOfFiles < 1) emptyUI()
+} catch(error) {
+    console.error(error)
+}
 }
 
 function handleFileCancel() {
