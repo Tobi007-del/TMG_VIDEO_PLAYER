@@ -126,8 +126,8 @@ if (files?.length > 0) {
                 thumbnails[n].onloadedmetadata = function({target}) {
                     totalTime += target.duration;
                     target.currentTime = 2;
-                    document.getElementById("total-time").textContent = window.tmg.formatDuration(totalTime);
-                    target.parentElement.nextElementSibling.innerHTML += `<br> Duration: ${window.tmg.formatDuration(target.duration)}`;
+                    document.getElementById("total-time").textContent = window.tmg.formatTime(totalTime);
+                    target.parentElement.nextElementSibling.innerHTML += `<br> Duration: ${window.tmg.formatTime(target.duration)}`;
                 }
             })
             if (!videoPlayer) {
