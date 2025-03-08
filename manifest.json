@@ -4,7 +4,7 @@
     "desciption": "TVP is a simple video player that allows you to play videos from your local device in your web browser.",
     "start_url": "/TMG_VIDEO_PLAYER/index.html",
     "id": "/TMG_VIDEO_PLAYER/index.html",
-    "display": "minimal-ui",
+    "display": "standalone",
     "theme_color": "#fed7b2",
     "background_color": "#e26e02",
     "icons": [{
