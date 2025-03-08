@@ -377,6 +377,16 @@ label#drop-box.active {
     background: black;
 }
 
+.thumbnail-container::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2.5px;
+    width: calc(var(--video-progress-position, 0) * 100%);
+    background: var(--T_M_G-brand-color);
+}
+
 .thumbnail-container button {
     background-color: rgb(226, 110, 2, .4);
     border: none;

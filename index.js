@@ -135,6 +135,10 @@ if (files?.length > 0) {
                 videoPlayer = new tmg.Player({playlist: playlist});
                 videoPlayer.build.playlist[0].settings.startTime = 2
                 videoPlayer.attach(video);                
+                video.addEventListener("timeupdate", () => {
+                    const containers = document.querySelectorAll(".thumbnail-container")
+                    if (video.currentTime > 3) containers[video.tmgPlayer.Player.currentPlaylistIndex]?.style.setProperty("--video-progress-position", video.currentTime/video.duration)
+                })
             } else videoPlayer.Player.playlist = videoPlayer.Player.playlist ? [...videoPlayer.Player.playlist, ...playlist] : playlist;           
         }   
         videoWorker.postMessage(files)
