@@ -36,7 +36,7 @@ function initUI() {
     }
 }
 
-function cleanUI() {
+function readyUI() {
     video.classList.remove("stall")
     videoPlayerContainer.classList.remove("loading");
 }
@@ -49,9 +49,11 @@ function errorUI() {
 }
 
 function clearFiles() {
+    document.querySelectorAll(".thumbnail-container").forEach(container => container.style.setProperty("--video-progress-position", 0))
     numberOfBytes = numberOfFiles = totalTime = 0
     videoPlayer?.detach()
     videoPlayer = null
+    document.querySelectorAll(".thumbnail")?.forEach(video => URL.revokeObjectURL(video.src));
     emptyUI()
 }
 
@@ -140,7 +142,7 @@ if (files?.length > 0) {
                 }
             })
             if (!videoPlayer) {
-                video.addEventListener("tmgready", cleanUI, {once:true})
+                video.addEventListener("tmgready", readyUI, {once:true})
                 videoPlayer = new tmg.Player({playlist: playlist});
                 videoPlayer.build.playlist[0].settings.startTime = 2
                 videoPlayer.attach(video);                
@@ -213,5 +215,5 @@ window.addEventListener("load", () => {
 })
 
 window.addEventListener('beforeunload', function() {  
-    if (!document.activeElement) document.querySelectorAll(".thumbnail").forEach(video => URL.revokeObjectURL(video.src));
+    if (!document.activeElement) document.querySelectorAll(".thumbnail")?.forEach(video => URL.revokeObjectURL(video.src));
 });  
