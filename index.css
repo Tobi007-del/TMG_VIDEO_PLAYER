@@ -30,16 +30,6 @@
     --degree: 180deg;
 }
 
-/* @keyframes rotateLight {
-    0%, 50%, 100% {
-        --turn: 0turn;
-    } 25% {
-        --turn: var(--max-turn);
-    } 75% {
-        --turn: calc(var(--max-turn) * -1);
-    }
-} */
-
 @keyframes rotateLight {
     from {
         --turn: 0turn;
@@ -47,7 +37,6 @@
         --turn: 1turn;
     }
 }
-
 
 @media(max-width: 600px) {
     :root {
@@ -63,6 +52,7 @@ body {
     padding: 0;
     margin: 0;
     font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    --T_M_G-video-font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
     padding-bottom: 30px;
 }
 
@@ -125,6 +115,10 @@ body.offline::after {
     height: fit-content;
     max-width: fit-content;
     flex: 1 1 50%;
+}
+
+body:has(#video.stall) #clear-button {
+    display: none;
 }
 
 video.stall {
@@ -330,6 +324,26 @@ label#drop-box.active {
     color: var(--T_M_G-brand-accent-color);
     padding: 10px;
     gap: 20px;
+}
+
+#clear-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 7.5px;
+    border-radius: 5px;
+    border: none;
+    font-size: 13.5px;
+    background: var(--T_M_G-lighter-brand-color);
+    font-weight: 550;
+    color: grey;
+    transition: 250ms ease;
+}
+
+#clear-button:hover {
+    cursor: pointer;
+    transform: scale(1.05);
+    color: black;
 }
 
 #no-files-text {

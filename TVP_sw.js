@@ -11,7 +11,17 @@ function isCacheable(request) {
     return url.origin === self.location.origin;
 }
 
-//exploitig a network first cache strategy since the app is still in development, might switch to the stale while revalidate strategy 
+async function cacheFirstWithRefresh(request) {
+    const fetchResponsePromise = fetch(request).then(async networkResponse => {
+        if (networkResponse.ok) {
+            const cache = await caches.open(cacheName);
+            cache.put(request, networkResponse.clone());
+        }
+        return networkResponse;
+    });
+    return (await caches.match(request)) || (await fetchResponsePromise)
+}
+
 async function networkFirst(request) {
     try {
         const networkResponse = await fetch(request);

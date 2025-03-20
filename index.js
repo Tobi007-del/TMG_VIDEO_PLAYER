@@ -1,9 +1,9 @@
 import Toast from "/T007_TOOLS/T007_toast_library/T007_toast.js";
 
 (async function registerServiceWorker() {
-    if ("serviceWorker" in navigator) 
+    if ("serviceWorker" in navigator) {
         await navigator.serviceWorker.register('TVP_sw.js').catch(error => console.log('Service Worker Registration failed with ' + error))
-    else console.error("Service workers are not supported")
+    } else console.error("Service workers are not supported")
 })()
 
 
@@ -13,9 +13,10 @@ const videoPlayerContainer = document.getElementById("video-player-container"),
 uploadInput = document.getElementById("file-input"),
 fileList = document.getElementById("file-list"),
 video = document.getElementById("video"),
-dropBox = document.getElementById("drop-box");
+dropBox = document.getElementById("drop-box"),
+clearBtn = document.getElementById("clear-button");
 
-let videoPlayer
+let videoPlayer = null
 
 function emptyUI() {
     if (numberOfFiles < 1) {
@@ -47,6 +48,13 @@ function errorUI() {
     fileList.innerHTML = `<p id="no-files-text">Your browser is not compatible!</p>`;
 }
 
+function clearFiles() {
+    numberOfBytes = numberOfFiles = totalTime = 0
+    videoPlayer?.detach()
+    videoPlayer = null
+    emptyUI()
+}
+
 uploadInput.addEventListener("click", () => setTimeout(initUI, 1000));
 uploadInput.addEventListener("cancel", handleFileCancel);
 uploadInput.addEventListener("change", handleFileInput);
@@ -54,6 +62,7 @@ dropBox.addEventListener("dragenter", handleDragEnter);
 dropBox.addEventListener("dragover", handleDragOver);
 dropBox.addEventListener("dragleave", handleDragLeave);
 dropBox.addEventListener("drop", handleDrop);
+clearBtn.addEventListener("click", clearFiles);
 
 let numberOfBytes = 0,
 numberOfFiles = 0,
@@ -135,10 +144,10 @@ if (files?.length > 0) {
                 videoPlayer = new tmg.Player({playlist: playlist});
                 videoPlayer.build.playlist[0].settings.startTime = 2
                 videoPlayer.attach(video);                
-                video.addEventListener("timeupdate", () => {
+                video.ontimeupdate = () => {
                     const containers = document.querySelectorAll(".thumbnail-container")
-                    if (video.currentTime > 3) containers[video.tmgPlayer.Player.currentPlaylistIndex]?.style.setProperty("--video-progress-position", video.currentTime/video.duration)
-                })
+                    if (video.currentTime > 3) containers[video.tmgPlayer.Player?.currentPlaylistIndex]?.style.setProperty("--video-progress-position", video.currentTime/video.duration)
+                }
             } else videoPlayer.Player.playlist = videoPlayer.Player.playlist ? [...videoPlayer.Player.playlist, ...playlist] : playlist;           
         }   
         videoWorker.postMessage(files)
