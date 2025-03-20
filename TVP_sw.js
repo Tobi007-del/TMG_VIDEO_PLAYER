@@ -42,6 +42,6 @@ addEventListener("install", precache());
 
 addEventListener("fetch", event => {
     if (isCacheable(event.request)) {
-        event.respondWith(networkFirst(event.request)); 
+        event.respondWith(cacheFirstWithRefresh(event.request)); 
     }
 });

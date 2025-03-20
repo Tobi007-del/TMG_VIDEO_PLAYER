@@ -49,6 +49,8 @@ function errorUI() {
 }
 
 function clearFiles() {
+    window.location.reload()
+    return
     document.querySelectorAll(".thumbnail-container").forEach(container => container.style.setProperty("--video-progress-position", 0))
     numberOfBytes = numberOfFiles = totalTime = 0
     videoPlayer?.detach()
