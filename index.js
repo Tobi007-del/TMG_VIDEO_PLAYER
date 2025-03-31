@@ -167,7 +167,7 @@ function handleFileCancel() {
 }
 
 function handleFileInput({target}) {
-    if ([...target.files].some(file => !file.type.includes("video"))) new Toast({text: "Only video files are supported"})
+    if ([...target.files].some(file => !file.type.includes("video"))) new Toast({ data: { type:"warning", body: "Only video files are supported" } })
     const files = [...target.files]?.filter(file => file.type.includes("video"))
     handleFiles(files)
 }
@@ -193,7 +193,7 @@ function handleDrop(e) {
     e.stopPropagation();
     e.preventDefault(); 
     const dt = e.dataTransfer;
-    if ([...dt.files].some(file => !file.type.includes("video"))) new Toast({text: "You can only drop video files!"})
+    if ([...dt.files].some(file => !file.type.includes("video"))) Toast({ data: { type:"warning", body: "You can only drop video files!" } })
     const files = [...dt.files]?.filter(file => file.type.includes("video"))
     handleFiles(files);
     dropBox.classList.remove("active");
