@@ -210,7 +210,7 @@ window.addEventListener("load", () => {
                 method: "HEAD", 
                 cache: "no-cache"
             })
-            .then(response => document.body.classList.toggle("offline",!response.ok))
+            .then(response => document.body.classList.toggle("offline", !response.ok))
             .catch(error => document.body.classList.add("offline"))
         }
     }
