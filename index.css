@@ -111,6 +111,10 @@ body.offline::after {
     padding-inline: 10vw;
 }
 
+video {
+    min-height: 210px;
+}
+
 #video-player-container {
     height: fit-content;
     max-width: fit-content;
