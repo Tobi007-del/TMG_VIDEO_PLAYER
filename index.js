@@ -71,7 +71,7 @@ let numberOfBytes = 0,
 numberOfFiles = 0,
 totalTime = 0
 
-const units = ["B","KiB","MiB","GiB","TiB","PiB","EiB","ZiB","YiB",]
+const units = ["B","KB","MB","GB","TB","PB","EB","ZB","YB",]
 
 function handleFiles(files) {
 try {
@@ -84,7 +84,7 @@ if (files?.length > 0) {
     }
     const exponent = Math.min(Math.floor(Math.log(numberOfBytes) / Math.log(1e3)),units.length - 1)
     const approx = numberOfBytes / 1e3 ** exponent
-    const output = exponent === 0 ? `${numberOfBytes} bytes` : `${approx.toFixed(3)} ${units[exponent]} (${numberOfBytes} bytes)`
+    const output = exponent === 0 ? `${numberOfBytes} bytes` : `${approx.toFixed(3)} ${units[exponent]}`
     document.getElementById("total-num").textContent = numberOfFiles
     document.getElementById("total-size").textContent = output
     //building the media list
