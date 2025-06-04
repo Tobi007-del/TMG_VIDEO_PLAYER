@@ -7,12 +7,10 @@ import Toast from "/T007_TOOLS/T007_toast_library/T007_toast.js"
 })()
 
 
-const videoWorker = window.Worker ? new Worker('TVP_worker.js') : null
-
-const videoPlayerContainer = document.getElementById("video-player-container"),
+const videoWorker = window.Worker ? new Worker('TVP_worker.js') : null,
+videoPlayerContainer = document.getElementById("video-player-container"),
 uploadInput = document.getElementById("file-input"),
 fileList = document.getElementById("file-list"),
-video = document.getElementById("video"),
 dropBox = document.getElementById("drop-box"),
 clearBtn = document.getElementById("clear-button"),
 mediaList = document.getElementById("file-list"),
@@ -46,33 +44,14 @@ readyLines = {
     "📽️ The Reel is Spinning...",
     "🎥 Scene One, Take One — Playback Engaged.",
     "🍿 Popcorn Ready? Your Movie Is.",
-    "📡 Signal Locked. Streaming Begins.",
-    "🚀 Liftoff Achieved — Streaming now",
     "🎭 Curtains Up. Prepare to Be Amazed.",
   ]
-};
+},
+SCROLL_MARGIN = 40, // px from top/bottom to trigger scroll
+SCROLL_SPEED = 40; // px per frame
 
-function dispatchPlayerReadyToast() {
-  const hour = new Date().getHours();
-
-  // Determine time bucket
-  let timeKey = "default";
-  if (hour >= 5 && hour < 12) timeKey = "morning";
-  else if (hour >= 12 && hour < 17) timeKey = "afternoon";
-  else if (hour >= 17 && hour < 21) timeKey = "evening";
-  else timeKey = "night";
-
-  const themedLines = readyLines.default;
-  const timeLines = readyLines[timeKey] || [];
-
-  // Combine both and select a random line
-  const combined = [...timeLines, ...themedLines];
-  const message = combined[Math.floor(Math.random() * combined.length)];
-
-  Toast({ data: { body: message }, vibrate: true });
-}
-
-let videoPlayer = null,
+let video = document.getElementById("video"),
+videoPlayer = null,
 numberOfBytes = 0,
 numberOfFiles = 0,
 totalTime = 0,
@@ -121,11 +100,12 @@ function updateUI() {
 }
 
 function clearFiles() {
-  // return window.location.reload()
   document.querySelectorAll(".thumbnail-container").forEach(container => container.style.setProperty("--video-progress-position", 0))
   numberOfBytes = numberOfFiles = totalTime = 0
+  video.onplay = video.onpause = video.ontimeupdate = null
   videoPlayer?.detach()
   videoPlayer = null
+  video = document.getElementById("video")
   document.querySelectorAll(".thumbnail")?.forEach(video => URL.revokeObjectURL(video.src))
   emptyUI()
 }
@@ -195,11 +175,8 @@ if (files?.length > 0) {
     dragHandle.className = "drag-handle";
     dragHandle.innerHTML = 
     `
-    <svg fill="#000000" height="20px" width="20px" version="1.1" id="XMLID_308_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
-	 viewBox="0 0 24 24" xml:space="preserve">
-      <g id="drag">
-        <path d="M10,6H6V2h4V6z M18,2h-4v4h4V2z M10,10H6v4h4V10z M18,10h-4v4h4V10z M10,18H6v4h4V18z M18,18h-4v4h4V18z"/>
-      </g>
+    <svg fill="#000000" height="20px" width="20px" version="1.1" id="XMLID_308_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" xml:space="preserve">
+      <path d="M10,6H6V2h4V6z M18,2h-4v4h4V2z M10,10H6v4h4V10z M18,10h-4v4h4V10z M10,18H6v4h4V18z M18,18h-4v4h4V18z"/>
     </svg>
     `;
     dragHandle.title = "Drag to reorder";
@@ -260,7 +237,9 @@ if (files?.length > 0) {
     deleteBtn.className = "delete-btn";
     deleteBtn.innerHTML = 
     `
-    <svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="#0D0D0D"/></svg>
+    <svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="#0D0D0D"/>
+    </svg>
     `;
     deleteBtn.title = "Remove video";
     li.appendChild(deleteBtn);
@@ -412,9 +391,6 @@ function moveDragItem() {
   dragItem.style.top = `${dragPosY}px`;
 }
 
-const SCROLL_MARGIN = 40; // px from top/bottom to trigger scroll
-const SCROLL_SPEED = 10; // px per frame
-
 function autoScroll(e) {
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
   const scrollBottom = scrollTop + window.innerHeight;
@@ -428,6 +404,26 @@ function autoScroll(e) {
   else if (e.clientY > window.innerHeight - SCROLL_MARGIN && scrollBottom < docHeight) {
     window.scrollBy(0, SCROLL_SPEED);
   }
+}
+
+function dispatchPlayerReadyToast() {
+  const hour = new Date().getHours();
+
+  // Determine time bucket
+  let timeKey = "default";
+  if (hour >= 5 && hour < 12) timeKey = "morning";
+  else if (hour >= 12 && hour < 17) timeKey = "afternoon";
+  else if (hour >= 17 && hour < 21) timeKey = "evening";
+  else timeKey = "night";
+
+  const themedLines = readyLines.default;
+  const timeLines = readyLines[timeKey] || [];
+
+  // Combine both and select a random line
+  const combined = [...timeLines, ...timeLines, ...themedLines];
+  const message = combined[Math.floor(Math.random() * combined.length)];
+
+  Toast({ data: { body: message }, vibrate: true });
 }
 
 window.addEventListener('online', () => document.body.classList.remove("offline"))
