@@ -182,7 +182,7 @@ if (files?.length > 0) {
     dragHandle.title = "Drag to reorder";
     li.appendChild(dragHandle);
     dragHandle.addEventListener('pointerdown', e => {
-      navigator.vibrate?.(10); // Buzz for 10ms
+      navigator.vibrate?.([50]); // Buzz
       dragItem = li;
       const rect = li.getBoundingClientRect();
       // Calculate the pointer offset
