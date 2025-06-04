@@ -1,450 +1,624 @@
-*,*::after, *::before {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+*,
+*::after,
+*::before {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 @property --T_M_G-brand-color {
-    syntax: "<color>";
-    initial-value: rgb(226, 110, 2);
-    inherits: false;
+  syntax: "<color>";
+  initial-value: rgb(226, 110, 2);
+  inherits: false;
 }
 
 @property --turn {
-    syntax: "<angle>";
-    initial-value: 0deg;
-    inherits: false;
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
 }
 
 :root {
-    --T_M_G-brand-color: rgb(226, 110, 2);
-    --T_M_G-lighter-brand-color: hsl(from var(--T_M_G-brand-color) h s calc(l + 40));
-    --T_M_G-brand-accent-color: rgb(244, 143, 177);
-    --scrollbar-track-color: rgb(20,20,20);
-    --scrollbar-thumb-color: #f0ad5f;
-    --scrollbar-thumb-hover-color: #eb9634;
-    --scrollbar-thumb-active-color: #ed8f23;
-    --max-turn: 0.235turn;
-    --loader-size: 75px;
-    --loader-width: 4px;
-    --degree: 180deg;
+  --t007-toast-type-color: var(--T_M_G-brand-color);
+  --t007-toast-progress-background: linear-gradient(
+    to left,
+    var(--T_M_G-brand-color),
+    var(--T_M_G-brand-accent-color),
+    var(--T_M_G-lighter-brand-color)
+  );
+  --t007-toast-height: 4.25rem;
+  --T_M_G-brand-color: rgb(226, 110, 2);
+  --T_M_G-lighter-brand-color: hsl(
+    from var(--T_M_G-brand-color) h s calc(l + 40)
+  );
+  --T_M_G-brand-accent-color: rgb(244, 143, 177);
+  --scrollbar-track-color: rgb(20, 20, 20);
+  --scrollbar-thumb-color: #f0ad5f;
+  --scrollbar-thumb-hover-color: #eb9634;
+  --scrollbar-thumb-active-color: #ed8f23;
+  --max-turn: 0.235turn;
+  --loader-size: 75px;
+  --loader-width: 4px;
+  --degree: 180deg;
 }
 
 @keyframes rotateLight {
-    from {
-        --turn: 0turn;
-    } to {
-        --turn: 1turn;
-    }
-}
-
-@media(max-width: 600px) {
-    :root {
-        --max-turn: 0.135turn;
-    }
-}
-
-html {
-    background-color: #0b1012;
-}
-
-body {
-    padding: 0;
-    margin: 0;
-    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
-    --T_M_G-video-font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
-    padding-bottom: 30px;
-}
-
-body::before {
-    position: fixed;
-    inset: 0;
-    content: "";
-    width: 100%;
-    height: 100lvh;
-    z-index: -1;
-    background: linear-gradient(#0b1012e8, #0b1012e8), center/cover url("/TMG_VIDEO_PLAYER/assets/images/lone-tree.jpg"), #0b1012;
-}
-
-body.light::before {
-    background: conic-gradient(from var(--turn) at 50% -10%,
-        #0b1012e8 10deg,
-        #0b1012e8 calc((360deg - var(--degree))/2),
-        #5c80f755,
-        #0b1012e8 calc(360deg - (360deg - var(--degree))/2),
-        #0b1012e8 350deg
-    ), center/cover url("/TMG_VIDEO_PLAYER/assets/images/lone-tree.jpg"), #0b1012;
-    animation: rotateLight 30s linear infinite;
-}
-
-body.offline::after {
-    content: 'OFFLINE MODE';
-    font-weight: bolder;
-    font-size: 12.5px;
-    text-align: center;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    max-height: fit-content;
-    padding: 2px;
-    background: linear-gradient(to right, var(--T_M_G-brand-color), rgb(244, 143, 177), var(--T_M_G-lighter-brand-color), var(--T_M_G-brand-color));
-    z-index: 10000;
-}
-
-.attribution {
-    text-align: center;
-}
-
-.attribution summary {
-    font-size: 11.5px;
-    color: rgb(244, 143, 177);
-}
-
-.attribution a {
-    color: var(--T_M_G-lighter-brand-color);
-}
-
-.attribution {
-    font-size: 12.5px;
-    color: lightgrey;
-    padding-inline: 10vw;
-}
-
-video {
-    min-height: 210px;
-}
-
-#video-player-container {
-    height: fit-content;
-    max-width: fit-content;
-    flex: 1 1 50%;
-}
-
-body:has(#video.stall) #clear-button {
-    display: none;
-}
-
-video.stall {
-    display: none;
-}
-
-#video-player-container.loading:has(video.stall) {
-    position: relative;
-    max-width: 700px;
-    width: 90dvw;
-    aspect-ratio: 16 / 9;
-}
-
-#video-player-container.loading::before {
-    display: block;
-}
-
-#video-player-container::before {
-    display: none;
-    content: '';
-    position: absolute;
-    inset: 0;
-    margin: auto;
-    height: var(--loader-size);
-    width: var(--loader-size);
-    border-radius: 50%;
-    border-style: solid;
-    border-width: var(--loader-width);
-    border-top-color: var(--T_M_G-brand-color);
-    border-bottom-color: var(--T_M_G-brand-color);
-    border-left-color: var(--T_M_G-brand-color);
-    border-right-color: grey;
-    rotate: 0;
-    animation: spin 800ms linear infinite, switch 800ms infinite ease forwards;
+  from {
+    --turn: 0turn;
+  }
+  to {
+    --turn: 1turn;
+  }
 }
 
 @keyframes switch {
-    to {
-        --T_M_G-brand-color: var(--T_M_G-brand-accent-color);
-    }
+  to {
+    --T_M_G-brand-color: var(--T_M_G-brand-accent-color);
+  }
 }
 
 @keyframes spin {
-    from {
-        rotate: 0;
-    } to {
-        rotate: 360deg;
-    }
-}
-
-@media(max-width: 780px) {
-    :root {
-        --loader-size: 60px;
-        --loader-width: 3px;
-    }
-}
-
-@media (max-width: 480px),
-(max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
-    :root {
-        --loader-size: 40px;
-        --loader-width: 2px;
-    }
-}
-
-#content-wrapper {
-    display: flex;
-    flex-direction: row-reverse;
-    justify-content: center;
-    flex-wrap: wrap;
-    column-gap: 15px;
-}
-
-#content-header {
-    flex: 0 0 100%;
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-}
-
-#content-header > * {
-    max-width: 500px;
-    text-align: center;
-}
-
-#content-header > h1 {
-    color: whitesmoke;
-}
-
-#content-header > p {
-    color: grey;
-    font-weight: bold;
-    text-shadow: .5px .5px 2px #0b1012e8;
-}
-
-#content-helper-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-    max-width: 500px;
-    flex: 1 1 50%;
-    gap: 30px;
-}
-
-#file-picker {
-    background: linear-gradient(to left, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-lighter-brand-color));
-    border-radius: 20px;
-    height: fit-content;
-    width: 100%;
-    padding: 15px;
-}
-
-#drop-box {
-    background: linear-gradient(to right, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-lighter-brand-color));
-    border-radius: 10px;
-    flex: 0 0 100%;
-    height: 110px;
-    position: relative;
-    inset: 0;
-    margin: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: black;
-    cursor: pointer;
-    transition: 200ms ease;
-    border: 2px solid grey;
-    font-size: 18px;
-    font-weight: bolder;
-}
-
-#drop-box::after {
-    content: "Click to select videos or just drag and drop";
-    color: black;
-    position: absolute;
-    bottom: 0%;
-    font-size: 85%;
-    font-weight: light;
-    opacity: .4;
-    white-space: wrap;
-    text-align: center;
-    margin: 5px;
-}
-
-#drop-box:hover {
-    background: linear-gradient(to right, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-lighter-brand-color), var(--T_M_G-brand-color));
-    background-size: 200%;
-    animation: background-pan 600ms ease;    
-}
-
-label#drop-box.active {
-    background: linear-gradient(to right, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-lighter-brand-color), var(--T_M_G-brand-color));
-    background-size: 200%;
-    animation: background-pan 600ms infinite ease;
+  from {
+    rotate: 0;
+  }
+  to {
+    rotate: 360deg;
+  }
 }
 
 @keyframes background-pan {
-    from{
-        background-position: 0% center;
-    } to {
-        background-position: -200% center;
-    }
+  from {
+    background-position: 0% center;
+  }
+  to {
+    background-position: -200% center;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --max-turn: 0.135turn;
+  }
+}
+
+html {
+  background-color: #0b1012;
+  scroll-behavior: smooth;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  padding-bottom: 30px;
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  content: "";
+  width: 100%;
+  height: 100lvh;
+  z-index: -1;
+  background: linear-gradient(#0b1012e8, #0b1012e8),
+    center/cover url("/TMG_VIDEO_PLAYER/assets/images/lone-tree.jpg"), #0b1012;
+  filter: brightness(0.95);
+}
+
+body.light::before {
+  background: conic-gradient(
+      from var(--turn) at 50% -10%,
+      #0b1012e8 10deg,
+      #0b1012e8 calc((360deg - var(--degree)) / 2),
+      #5c80f755,
+      #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2),
+      #0b1012e8 350deg
+    ),
+    center/cover url("/TMG_VIDEO_PLAYER/assets/images/lone-tree.jpg"), #0b1012;
+  animation: rotateLight 30s linear infinite;
+}
+
+body.offline::after {
+  content: "OFFLINE MODE";
+  font-weight: bolder;
+  font-size: 12px;
+  text-align: center;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-height: fit-content;
+  padding: 2px;
+  background: linear-gradient(
+    to right,
+    var(--T_M_G-brand-color),
+    rgb(244, 143, 177),
+    var(--T_M_G-lighter-brand-color),
+    var(--T_M_G-brand-color)
+  );
+  z-index: 10000;
+}
+
+body:has(li.dragging) {
+  cursor: grabbing;
+}
+
+.attribution {
+  text-align: center;
+}
+
+.attribution summary {
+  font-size: 11.5px;
+  color: rgb(244, 143, 177);
+}
+
+.attribution a {
+  color: var(--T_M_G-lighter-brand-color);
+}
+
+.attribution {
+  font-size: 12.5px;
+  color: lightgrey;
+  padding-inline: 10vw;
+}
+
+video {
+  min-height: 210px;
+}
+
+#video-player-container {
+  height: fit-content;
+  max-width: fit-content;
+  flex: 1 1 50%;
+}
+
+body:has(#video.stall) #clear-button {
+  display: none;
+}
+
+video.stall {
+  display: none;
+}
+
+#video-player-container.loading:has(video.stall) {
+  position: relative;
+  max-width: 700px;
+  width: 90dvw;
+  aspect-ratio: 16 / 9;
+}
+
+#video-player-container.loading::before {
+  display: block;
+}
+
+#video-player-container::before {
+  display: none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  height: var(--loader-size);
+  width: var(--loader-size);
+  border-radius: 50%;
+  border-style: solid;
+  border-width: var(--loader-width);
+  border-top-color: var(--T_M_G-brand-color);
+  border-bottom-color: var(--T_M_G-brand-color);
+  border-left-color: var(--T_M_G-brand-color);
+  border-right-color: grey;
+  rotate: 0;
+  animation: spin 800ms linear infinite, switch 800ms infinite ease forwards;
+}
+
+@media (max-width: 780px) {
+  :root {
+    --loader-size: 60px;
+    --loader-width: 3px;
+  }
+}
+
+@media (max-width: 480px),
+  (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+  :root {
+    --loader-size: 40px;
+    --loader-width: 2px;
+  }
+}
+
+#content-wrapper {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: center;
+  flex-wrap: wrap;
+  column-gap: 15px;
+}
+
+#content-header {
+  flex: 0 0 100%;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+#content-header > * {
+  max-width: 500px;
+  text-align: center;
+}
+
+#content-header > h1 {
+  color: whitesmoke;
+}
+
+#content-header > p {
+  color: grey;
+  font-weight: bold;
+  text-shadow: 0.5px 0.5px 2px #0b1012e8;
+}
+
+#content-helper-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  max-width: 500px;
+  flex: 1 1 50%;
+  gap: 30px;
+}
+
+#file-picker {
+  background: linear-gradient(
+    to left,
+    var(--T_M_G-brand-color),
+    var(--T_M_G-brand-accent-color),
+    var(--T_M_G-lighter-brand-color)
+  );
+  border-radius: 20px;
+  height: fit-content;
+  width: 100%;
+  padding: 15px;
+  transition: all 250ms ease;
+}
+
+#file-picker:hover,
+#file-picker:has(#drop-box.active) {
+  box-shadow: 0 4px 10px rgba(244, 143, 177, 0.4); /* 🧪 glow */
+}
+
+#drop-box {
+  background: linear-gradient(
+    to right,
+    var(--T_M_G-brand-color),
+    var(--T_M_G-brand-accent-color),
+    var(--T_M_G-lighter-brand-color)
+  );
+  border-radius: 10px;
+  flex: 0 0 100%;
+  height: 110px;
+  position: relative;
+  inset: 0;
+  margin: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: black;
+  cursor: pointer;
+  transition: 200ms ease;
+  border: 2px solid grey;
+  font-size: 18px;
+  font-weight: bolder;
+}
+
+#drop-box::after {
+  content: "Click to select more or just drag and drop";
+  color: black;
+  position: absolute;
+  bottom: 0%;
+  font-size: 77.5%;
+  font-weight: light;
+  opacity: 0.4;
+  white-space: wrap;
+  text-align: center;
+  margin: 5px;
+}
+
+#drop-box:hover,
+#drop-box.active {
+  background: linear-gradient(
+    to right,
+    var(--T_M_G-brand-color),
+    var(--T_M_G-brand-accent-color),
+    var(--T_M_G-lighter-brand-color),
+    var(--T_M_G-brand-color)
+  );
+  background-size: 200%;
+  animation: background-pan 600ms ease;
+}
+
+#drop-box.active {
+  animation-iteration-count: infinite;
 }
 
 #file-picker input[type="file"] {
-    clip: (0, 0, 0, 0);
-    clip-path: inset(50%);
-    height: 1px;
-    width: 1px;
-    overflow: hidden;
-    position: absolute;
-    white-space: nowrap;
+  clip: (0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
 }
 
 #file-picker > form > div {
-    display: flex;
-    flex-direction: column;
-    gap: 12.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 12.5px;
+  font-size: 14.5px;
+  font-weight: 450;
 }
 
 #file-picker > form > div > span {
-    flex: 100%;
-    display: flex;
-    justify-content: space-between;
+  flex: 100%;
+  display: flex;
+  justify-content: space-between;
 }
 
 #file-picker > form > div > span > label:not(#drop-box) {
-    color: grey;
+  color: grey;
 }
 
 #file-picker > form > div > span > output {
-    color: lightgrey;
-    text-align: end;
+  color: lightgrey;
+  text-align: end;
 }
 
 #file-list-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: var(--T_M_G-brand-accent-color);
-    padding: 10px;
-    gap: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--T_M_G-brand-accent-color);
+  padding: 10px;
+  gap: 20px;
 }
 
 #clear-button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 7.5px;
-    border-radius: 5px;
-    border: none;
-    font-size: 13.5px;
-    background: var(--T_M_G-lighter-brand-color);
-    font-weight: 550;
-    color: grey;
-    transition: 250ms ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 7.5px;
+  border-radius: 5px;
+  border: none;
+  font-size: 13.5px;
+  background: var(--T_M_G-lighter-brand-color);
+  font-weight: 550;
+  color: grey;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25); /* 🧪 subtle lift */
+  transition: all 250ms ease;
 }
 
 #clear-button:hover {
-    cursor: pointer;
-    transform: scale(1.05);
-    color: black;
+  cursor: pointer;
+  transform: scale(1.05);
+  color: black;
+  box-shadow: 0 4px 10px rgba(244, 143, 177, 0.4); /* 🧪 glow */
 }
 
 #no-files-text {
-    margin-block: 30px;
-    color: grey;
-    text-shadow: .5px .5px 2px #0b1012e8;
+  margin-block: 30px;
+  color: grey;
+  text-shadow: 0.5px 0.5px 2px #0b1012e8;
 }
 
 #file-list-wrapper h2 {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 #file-list ul {
-    display: flex;
-    flex-direction: column;
-    flex: 0 1 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 100%;
 }
 
-#file-list li {
-    height: fit-content;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 5px;
-    font-size: 15px;
-    gap: 10px;
-    border-bottom: 1px solid grey;
+#file-list:has(.content-line.dragging.playing) .drag-placeholder {
+  background: rgb(from var(--T_M_G-brand-color) r g b/.05);
 }
 
-#file-list li:last-child {
-    border-bottom: none;
+.content-line.dragging {
+  border-top: 1px solid grey;
+  border-bottom: 1px solid grey;
 }
 
-#file-list .thumbnail-container {
-    flex: 0 0 25%;
-    height: 60px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    color: white;
-    border-radius: 5px;
-    overflow: hidden;
-    background: black;
+.content-line {
+  height: fit-content;
+  min-height: 80px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px;
+  font-size: 13px;
+  gap: 10px;
+}
+
+.content-line:not(:last-child),
+.drag-placeholder:not(:last-child) {
+  border-bottom: 1px solid grey;
+}
+
+.file-info-wrapper {
+  flex: 1 1 75%;
+  color: lightgrey;
+  word-break: break-all;
+}
+
+.content-line p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  overflow: hidden;
+}
+
+.content-line p span:first-child {
+  color: gray;
+}
+
+.content-line.playing {
+  background-color: rgb(from var(--T_M_G-brand-color) r g b/.05);
+  border-left: 4px solid var(--T_M_G-brand-color);
+}
+
+.content-line.playing p {
+  color: var(--T_M_G-brand-color);
+}
+
+.content-line.playing p span:last-child {
+  font-weight: 500;
+}
+
+.content-line.playing .thumbnail-container button {
+  background-color: transparent;
+}
+
+.thumbnail-container {
+  position: relative;
+  flex: 0 0 20%;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  color: white;
+  border-radius: 5px;
+  overflow: hidden;
+  background: black;
+}
+
+.thumbnail-container:hover {
+  transform: scale(1.015); /* 🧪 micro interaction */
 }
 
 .thumbnail-container::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    height: 2.5px;
-    width: calc(var(--video-progress-position, 0) * 100%);
-    background: var(--T_M_G-brand-color);
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2.5px;
+  width: calc(var(--video-progress-position, 0) * 100%);
+  background: var(--T_M_G-brand-color);
 }
 
 .thumbnail-container button {
-    background-color: rgb(226, 110, 2, .4);
-    border: none;
-    border-radius: 50%;
-    width: 25px;
-    height: 25px;
-    color: white;
-    padding-inline: 5px;
-    cursor: pointer;
-    transition: 200ms ease;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: absolute;
-    z-index: 1;
-    transition: transform 200ms ease;
+  background-color: rgb(226, 110, 2, 0.4);
+  border: none;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  color: white;
+  padding-inline: 5px;
+  cursor: pointer;
+  transition: 200ms ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  z-index: 1;
+  transition: transform 200ms ease;
 }
 
 .thumbnail-container button:hover {
-    transform: scale(1.1);
+  transform: scale(1.1);
 }
 
 .thumbnail-container svg {
-    width: 26px;
-    height: 26px;
+  width: 26px;
+  height: 26px;
+}
+
+.content-line.playing .thumbnail-container button .play-icon {
+  display: none;
+}
+
+.playing-icon rect {
+  animation: pulse 1s infinite ease-in-out;
+}
+
+.playing-icon rect:nth-child(1) {
+  animation-delay: 0s;
+}
+.playing-icon rect:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.playing-icon rect:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    height: 4px;
+    y: 20;
+  } 50% {
+    height: 20px;
+    y: 4;
+  }
+}
+
+/* 👇 To pause animation */
+.paused rect {
+  animation-play-state: paused;
+}
+
+.content-line:not(.playing) .thumbnail-container button .playing-icon {
+  display: none;
 }
 
 .thumbnail {
-    width: 100%;
-    height: 100%;
+  width: 100%;
+  height: 100%;
 }
 
-#file-list .file-info {
-    flex: 0 0 75%;
-    color: lightgrey;
-    word-break: break-all;
+.drag-handle {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  margin-left: 10px;
+  margin-top: 5px;
 }
 
-@media (max-width: 480px), (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
-    #video-player-container {
-        max-width: unset;
-    }    
+.drag-handle svg {
+  fill: white;
+  width: 19px;
+  height: 19px;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.delete-btn svg {
+  width: 22.5px;
+  height: 22.5px;
+}
+
+.delete-btn svg path {
+  fill: rgb(247, 56, 57, 0.8);
+}
+
+@media (max-width: 480px),
+  (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+  #video-player-container {
+    max-width: unset;
+  }
 }
