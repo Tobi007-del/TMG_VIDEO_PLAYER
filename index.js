@@ -16,35 +16,35 @@ clearBtn = document.getElementById("clear-button"),
 mediaList = document.getElementById("file-list"),
 readyLines = {
   morning: [
-    "🌅 A new day, a new story begins.",
-    "☕ Morning loaded. Your video is hot and fresh.",
-    "🌤️ Rise and stream!"
+    "🌅  A new day, a new story begins.",
+    "☕  Morning loaded. Your video is hot and fresh.",
+    "🌤️  Rise and stream!"
   ],
   afternoon: [
-    "🌞 Midday grind meets epic rewind.",
-    "🥪 Lunch break? Cue the film.",
-    "🕶️ Cool visuals for the warm sun."
+    "🌞  Midday grind meets epic rewind.",
+    "🥪  Lunch break? Cue the film.",
+    "🕶️  Cool visuals for the warm sun."
   ],
   evening: [
-    "🌇 Golden hour, golden content.",
-    "📺 Relax mode: ON.",
-    "🍝 Dinner and a digital show?"
+    "🌇  Golden hour, golden content.",
+    "📺  Relax mode: ON.",
+    "🍝  Dinner and a digital show?"
   ],
   night: [
-    "🌙 Midnight premiere loaded.",
-    "🛌 Last one before bed... maybe.",
-    "💤 Sweet streams are made of this."
+    "🌙  Midnight premiere loaded.",
+    "🛌  Last one before bed... maybe.",
+    "💤  Sweet streams are made of this."
   ],
   default: [
-    "🎬 Lights, Camera, Action!",
-    "✅ Scene Loaded — Ready to Play.",
-    "✨ Showtime Unlocked.",
-    "🎉 Player Ready – Let the Magic Begin!",
-    "🎬 Lights, Camera, Action!",
-    "📽️ The Reel is Spinning...",
-    "🎥 Scene One, Take One — Playback Engaged.",
-    "🍿 Popcorn Ready? Your Movie Is.",
-    "🎭 Curtains Up. Prepare to Be Amazed.",
+    "🎬  Lights, Camera, Action!",
+    "✅  Scene Loaded — Ready to Play.",
+    "✨  Showtime Unlocked.",
+    "🎉  Player Ready – Let the Magic Begin!",
+    "🎬  Lights, Camera, Action!",
+    "📽️  The Reel is Spinning...",
+    "🎥  Scene One, Take One — Playback Engaged.",
+    "🍿  Popcorn Ready? Your Movie Is.",
+    "🎭  Curtains Up. Prepare to Be Amazed.",
   ]
 },
 SCROLL_MARGIN = 40, // px from top/bottom to trigger scroll
@@ -254,6 +254,7 @@ if (files?.length > 0) {
       numberOfFiles--;
       totalTime -= li.querySelector("video").duration
       numberOfBytes -= size
+      if (numberOfFiles < 1) numberOfBytes = numberOfFiles = totalTime = 0
       updateUI()
       // If no files left, update UI accordingly
       if (numberOfFiles < 1) {
@@ -420,7 +421,7 @@ function dispatchPlayerReadyToast() {
   const timeLines = readyLines[timeKey] || [];
 
   // Combine both and select a random line
-  const combined = [...timeLines, ...timeLines, ...themedLines];
+  const combined = [...timeLines, ...themedLines, ...timeLines];
   const message = combined[Math.floor(Math.random() * combined.length)];
 
   Toast({ data: { body: message }, vibrate: true });
