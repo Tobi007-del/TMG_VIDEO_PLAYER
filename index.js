@@ -193,16 +193,15 @@ if (files?.length > 0) {
       placeholderItem.className = 'drag-placeholder';
       placeholderItem.style.height = `${rect.height}px`;
       placeholderItem.style.width = `${rect.width}px`;
-      placeholderItem.style.pointerEvents = 'none';
       li.parentNode.insertBefore(placeholderItem, li.nextSibling);
       // Style dragged line
       li.classList.add('dragging');
       li.style.position = 'absolute';
       li.style.top = `${startY}px`;
       li.style.zIndex = '999';
-      li.style.pointerEvents = 'none';
+      li.style.touchAction = 'none';
       document.addEventListener('pointermove', onPointerMove);
-      document.addEventListener('pointerup', onPointerUp, {once: true});
+      document.addEventListener('pointerup', onPointerUp);
     });
     function onPointerMove(e) {
       offsetY = list.getBoundingClientRect().top;
@@ -225,6 +224,7 @@ if (files?.length > 0) {
     }
     function onPointerUp() {
       document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp)
       placeholderItem.parentNode.insertBefore(dragItem, placeholderItem);
       dragItem.classList.remove('dragging');
       dragItem.style = ''; // remove inline styles
