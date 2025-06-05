@@ -422,12 +422,17 @@ video.stall {
 }
 
 #file-list:has(.content-line.dragging.playing) .drag-placeholder {
-  background: rgb(from var(--T_M_G-brand-color) r g b/.05);
+  background-color: rgb(from var(--T_M_G-brand-color) r g b/.05);
 }
 
 .content-line.dragging {
   border-top: 1px solid grey;
   border-bottom: 1px solid grey;
+  backdrop-filter: blur(1px);
+}
+
+.drag-placeholder {
+  background-color: rgba(255, 255, 255, 0.005);
 }
 
 .content-line {
@@ -438,8 +443,10 @@ video.stall {
   align-items: center;
   justify-content: space-between;
   padding: 5px;
+  padding-inline: 10px;
   font-size: 13px;
   gap: 10px;
+  background-color: rgba(255, 255, 255, 0.005);
 }
 
 .content-line:not(:last-child),
