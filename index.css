@@ -83,7 +83,6 @@
 
 html {
   background-color: #0b1012;
-  scroll-behavior: smooth;
 }
 
 body {
@@ -139,8 +138,8 @@ body.offline::after {
   z-index: 10000;
 }
 
-body:has(li.dragging) {
-  cursor: grabbing;
+body:has(.dragging) {
+  cursor: grabbing!important;
 }
 
 .attribution {
@@ -548,6 +547,10 @@ video.stall {
   display: none;
 }
 
+.playing-icon {
+  transform: scaleY(-1);
+}
+
 .playing-icon rect {
   animation: pulse 1s infinite ease-in-out;
 }
@@ -565,10 +568,8 @@ video.stall {
 @keyframes pulse {
   0%, 100% {
     height: 4px;
-    y: 20;
   } 50% {
     height: 20px;
-    y: 4;
   }
 }
 

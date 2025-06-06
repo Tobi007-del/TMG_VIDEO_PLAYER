@@ -16,39 +16,39 @@ clearBtn = document.getElementById("clear-button"),
 mediaList = document.getElementById("file-list"),
 readyLines = {
   morning: [
-    "🌅  A new day, a new story begins.",
-    "☕  Morning loaded. Your video is hot and fresh.",
-    "🌤️  Rise and stream!"
+    `🌅&nbsp;&nbsp;A new day, a new story begins.`,
+    `☕&nbsp;&nbsp;Morning loaded. Your video is hot and fresh.`,
+    `🌤️&nbsp;&nbsp;Rise and stream`,
   ],
   afternoon: [
-    "🌞  Midday grind meets epic rewind.",
-    "🥪  Lunch break? Cue the film.",
-    "🕶️  Cool visuals for the warm sun."
+    `🌞&nbsp;&nbsp;Midday grind meets epic rewind.`,
+    `🥪&nbsp;&nbsp;Lunch break? Cue the film.`,
+    `🕶️&nbsp;&nbsp;Cool visuals for the warm sun`,
   ],
   evening: [
-    "🌇  Golden hour, golden content.",
-    "📺  Relax mode: ON.",
-    "🍝  Dinner and a digital show?"
+    `🌇&nbsp;&nbsp;Golden hour, golden content.`,
+    `📺&nbsp;&nbsp;Relax mode: ON.`,
+    `🍝&nbsp;&nbsp;Dinner and a digital show`,
   ],
   night: [
-    "🌙  Midnight premiere loaded.",
-    "🛌  Last one before bed... maybe.",
-    "💤  Sweet streams are made of this."
+    `🌙&nbsp;&nbsp;Midnight premiere loaded.`,
+    `🛌&nbsp;&nbsp;Last one before bed... maybe.`,
+    `💤&nbsp;&nbsp;Sweet streams are made of this`,
   ],
   default: [
-    "🎬  Lights, Camera, Action!",
-    "✅  Scene Loaded — Ready to Play.",
-    "✨  Showtime Unlocked.",
-    "🎉  Player Ready – Let the Magic Begin!",
-    "🎬  Lights, Camera, Action!",
-    "📽️  The Reel is Spinning...",
-    "🎥  Scene One, Take One — Playback Engaged.",
-    "🍿  Popcorn Ready? Your Movie Is.",
-    "🎭  Curtains Up. Prepare to Be Amazed.",
+    `🎬&nbsp;&nbsp;Lights, Camera, Action!`,
+    `✅&nbsp;&nbsp;Scene Loaded — Ready to Play.`,
+    `✨&nbsp;&nbsp;Showtime Unlocked.`,
+    `🎉&nbsp;&nbsp;Player Ready – Let the Magic Begin!`,
+    `🎬&nbsp;&nbsp;Lights, Camera, Action!`,
+    `📽️&nbsp;&nbsp;The Reel is Spinning...`,
+    `🎥&nbsp;&nbsp;Scene One, Take One — Playback Engaged.`,
+    `🍿&nbsp;&nbsp;Popcorn Ready? Your Movie Is.`,
+    `🎭&nbsp;&nbsp;Curtains Up. Prepare to Be Amazed.`,
   ]
 },
-SCROLL_MARGIN = 40, // px from top/bottom to trigger scroll
-SCROLL_SPEED = 40; // px per frame
+PX_PER_SEC = 240,
+SCROLL_MARGIN = 80 // px from top/bottom to trigger scroll
 
 let video = document.getElementById("video"),
 videoPlayer = null,
@@ -58,10 +58,11 @@ totalTime = 0,
 dragItem = null,
 dragPosY = 0,
 placeholderItem = null,
-dragThrottleId = null,
-dragThrottleTimeout = 50,
 startY = 0,
-offsetY = 0;
+offsetY = 0,
+autoScrollId = null,
+SCROLL_SPEED = 0; // px per frame
+
 
 function emptyUI() {
   if (numberOfFiles < 1) {
@@ -102,6 +103,7 @@ function updateUI() {
 function clearFiles() {
   document.querySelectorAll(".thumbnail-container").forEach(container => container.style.setProperty("--video-progress-position", 0))
   numberOfBytes = numberOfFiles = totalTime = 0
+  video.removeAttribute("src")
   video.onplay = video.onpause = video.ontimeupdate = null
   videoPlayer?.detach()
   videoPlayer = null
@@ -181,6 +183,10 @@ if (files?.length > 0) {
     `;
     dragHandle.title = "Drag to reorder";
     li.appendChild(dragHandle);
+    let clientY = 0,
+    initialScrollY = 0,
+    maxOffset = 0,
+    lastTime = performance.now()
     dragHandle.addEventListener('pointerdown', e => {
       navigator.vibrate?.([50]); // Buzz
       dragItem = li;
@@ -202,20 +208,36 @@ if (files?.length > 0) {
       li.style.touchAction = 'none';
       document.addEventListener('pointermove', onPointerMove);
       document.addEventListener('pointerup', onPointerUp);
+      const listRect = list.getBoundingClientRect()
+      offsetY = listRect.top;
+      maxOffset = listRect.height;
+      initialScrollY = window.scrollY
+      startDragLoop()
     });
+    function startDragLoop() {
+      function update() {
+        const now = performance.now(),
+        delta = now - lastTime
+        lastTime = now
+        SCROLL_SPEED = (PX_PER_SEC * delta) / 1000
+        if (!dragItem) return
+        const scrollY = window.scrollY - initialScrollY
+        dragPosY = window.tmg.clamp(0, scrollY + clientY - offsetY - dragItem.offsetHeight/2, maxOffset - dragItem.offsetHeight)
+        dragItem.style.top = `${dragPosY}px`;
+        if (dragPosY > 0 && dragPosY < (maxOffset - dragItem.offsetHeight)) autoScroll(clientY);
+        recomputeList()
+        requestAnimationFrame(update)
+      }
+      requestAnimationFrame(update)
+    }
     function onPointerMove(e) {
-      offsetY = list.getBoundingClientRect().top;
-      dragPosY = e.clientY - offsetY - dragItem.offsetHeight / 2
-      moveDragItem();
-      autoScroll(e);
-
-      if (dragThrottleId !== null) return
-      dragThrottleId = setTimeout(() => dragThrottleId = null, dragThrottleTimeout)
-
+      clientY = e.clientY
+    }
+    function recomputeList() {
       const children = Array.from(list.querySelectorAll('.content-line:not(.dragging)'))
       const afterLine = children.reduce((closest, child) => {
         const box = child.getBoundingClientRect()
-        const offset = e.clientY - box.top - (box.height/2)
+        const offset = clientY - box.top - (box.height/2)
         if (offset < 0 && offset > closest.offset) return {offset: offset, element: child}
         else return closest
       }, {offset: Number.NEGATIVE_INFINITY}).element
@@ -223,6 +245,8 @@ if (files?.length > 0) {
       else list.appendChild(placeholderItem)
     }
     function onPointerUp() {
+      clearInterval(autoScrollId)
+      autoScrollId = null
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp)
       placeholderItem.parentNode.insertBefore(dragItem, placeholderItem);
@@ -250,18 +274,17 @@ if (files?.length > 0) {
         URL.revokeObjectURL(thumbnailVideo.src);
       }
       li.remove();
-      // Update counts
-      numberOfFiles--;
-      totalTime -= li.querySelector("video").duration
-      numberOfBytes -= size
-      if (numberOfFiles < 1) numberOfBytes = numberOfFiles = totalTime = 0
-      updateUI()
       // If no files left, update UI accordingly
       if (numberOfFiles < 1) {
-        clearFiles();
+        return clearFiles();
       } else {
         rebuildPlaylistFromUI();
       }
+      // Update counts
+      numberOfFiles--;
+      numberOfBytes -= size
+      totalTime = getTotalTimeFromUI();
+      updateUI()
     });        
   }
   const deployVideos = objectURLs => {
@@ -365,12 +388,17 @@ function highlightCurrentPlaying(index) {
   });
 }
 
+function getTotalTimeFromUI() {
+  let total = 0;
+  mediaList.querySelectorAll(".content-line").forEach(li => total += li.querySelector("video")?.duration);
+  return total;
+}
+
 function rebuildPlaylistFromUI() {
   // Rebuild playlist array from current UI order
   const newPlaylist = [];
-  const lis = mediaList.querySelectorAll(".content-line");
-  lis.forEach(li => {
-    const src = li.querySelector("video").src
+  mediaList.querySelectorAll(".content-line").forEach(li => {
+    const src = li.querySelector("video")?.src
     newPlaylist.push(videoPlayer.Player.playlist.find(vid => vid.src === src))
   });
   
@@ -388,21 +416,13 @@ function formatBytes(bytes) {
   return `${(bytes / Math.pow(k, i)).toFixed(dm)} ${sizes[i]}`;
 }
 
-function moveDragItem() {
-  dragItem.style.top = `${dragPosY}px`;
-}
-
-function autoScroll(e) {
-  const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  const scrollBottom = scrollTop + window.innerHeight;
-  const docHeight = document.documentElement.scrollHeight;
-
+function autoScroll(clientY) {
   // Scroll upward
-  if (e.clientY < SCROLL_MARGIN && scrollTop > 0) {
+  if (clientY < SCROLL_MARGIN) {
     window.scrollBy(0, -SCROLL_SPEED);
   }
   // Scroll downward
-  else if (e.clientY > window.innerHeight - SCROLL_MARGIN && scrollBottom < docHeight) {
+  else if (clientY > window.innerHeight - SCROLL_MARGIN) {
     window.scrollBy(0, SCROLL_SPEED);
   }
 }
