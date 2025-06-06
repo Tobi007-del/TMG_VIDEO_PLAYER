@@ -89,6 +89,7 @@ body {
   padding: 0;
   margin: 0;
   font-family: "Segoe UI", system-ui, sans-serif;
+  --T_M_G-video-font-family: "Segoe UI", system-ui, sans-serif;
   padding-bottom: 30px;
 }
 

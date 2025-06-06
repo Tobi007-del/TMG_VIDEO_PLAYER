@@ -11,7 +11,6 @@ const installButton = document.querySelector("#install");
 installButton.style.display = "none";
 
 window.addEventListener("beforeinstallprompt", (event) => {
-  event.preventDefault();
   installPrompt = event;
   installButton.style.display = "flex"
 });
