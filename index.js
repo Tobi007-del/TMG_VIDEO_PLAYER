@@ -6,6 +6,24 @@ import Toast from "/T007_TOOLS/T007_toast_library/T007_toast.js"
   } else console.error("Service workers are not supported")
 })()
 
+let installPrompt = null;
+const installButton = document.querySelector("#install");
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  installButton.removeAttribute("hidden");
+});
+
+installButton.addEventListener("click", async () => {
+  if (!installPrompt) {
+    return;
+  }
+  const result = await installPrompt.prompt();
+  console.log(`Install prompt was: ${result.outcome}`);
+  installPrompt = null;
+  installButton.setAttribute("hidden", "");
+});
 
 const videoWorker = window.Worker ? new Worker('TVP_worker.js') : null,
 videoPlayerContainer = document.getElementById("video-player-container"),

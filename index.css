@@ -381,14 +381,16 @@ video.stall {
   gap: 20px;
 }
 
+#install,
 #clear-button {
+  justify-self: center;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 7.5px;
+  padding: 7px;
   border-radius: 5px;
   border: none;
-  font-size: 13.5px;
+  font-size: 13px;
   background: var(--T_M_G-lighter-brand-color);
   font-weight: 550;
   color: grey;
@@ -396,6 +398,7 @@ video.stall {
   transition: all 250ms ease;
 }
 
+#install:hover,
 #clear-button:hover {
   cursor: pointer;
   transform: scale(1.05);
