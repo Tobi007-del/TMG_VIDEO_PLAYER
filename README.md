@@ -15,7 +15,7 @@
 
 ## Brief Description
 
-The main idea here is for you to test out the custom controls of the video player while enjoying a movie or two. The actual TVP is in development and it will have a wide range of features like media libraries that you can build and edit, offline capabilities, picking back where you left off, a seamless user experience and a lot more. This is actually just an early prototype cooked up in bout 2 days but the video controls here has been in development for a while but just needs some field testing and they will be used in the real offline player so do well to give feedback, report bugs, request features or just criticize by sending me a mail. It is currently a single page website with a HTML5 custom  
+The main idea here is for you to test out the custom controls of the video player while enjoying a movie or two. The actual TVP is in development and it will have a wide range of features like media libraries that you can build and edit, offline capabilities, picking back where you left off, a seamless user experience and a lot more. This is actually just an early prototype cooked up in bout 2 days but the video controls here has been in development for a while but just needs some field testing and they will be used in the real offline player so do well to give feedback, report bugs, request features or just criticize by sending me a mail. It is currently a single page website with a HTML5 custom video player. 
 
 ### Visusal Previews
 
