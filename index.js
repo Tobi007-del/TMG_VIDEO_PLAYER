@@ -251,14 +251,15 @@ if (files?.length > 0) {
         dragPosY = window.tmg.clamp(0, scrollY + clientY - offsetY - dragItem.offsetHeight/2, maxOffset - dragItem.offsetHeight)
         dragItem.style.top = `${dragPosY}px`;
         if (dragPosY > 0 && dragPosY < (maxOffset - dragItem.offsetHeight)) {
-          if (autoScrollAccId === null) autoScrollAccId = setTimeout(() => LINES_PER_SEC += 1, 3000)
-          else if(LINES_PER_SEC > 3) LINES_PER_SEC = Math.max(++LINES_PER_SEC, 6)
+          // if (autoScrollAccId === null) autoScrollAccId = setTimeout(() => LINES_PER_SEC += 1, 3000)
+          // else if(LINES_PER_SEC > 3) LINES_PER_SEC = Math.max(++LINES_PER_SEC, 6)
           autoScroll(clientY);
-        } else {
-          clearTimeout(autoScrollAccId)
-          autoScrollAccId = null
-          LINES_PER_SEC = 3
-        }
+        } 
+        // else {
+        //   clearTimeout(autoScrollAccId)
+        //   autoScrollAccId = null
+        //   LINES_PER_SEC = 3
+        // }
         recomputeList()
         autoScrollId = requestAnimationFrame(update)
       }
