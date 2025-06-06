@@ -47,7 +47,7 @@ readyLines = {
     `🎭&nbsp;&nbsp;Curtains Up. Prepare to Be Amazed.`,
   ]
 },
-PX_PER_SEC = 240,
+LINE_HEIGHT = 80,
 SCROLL_MARGIN = 80 // px from top/bottom to trigger scroll
 
 let video = document.getElementById("video"),
@@ -61,6 +61,8 @@ placeholderItem = null,
 startY = 0,
 offsetY = 0,
 autoScrollId = null,
+autoScrollAccId = null,
+LINES_PER_SEC = 3,
 SCROLL_SPEED = 0; // px per frame
 
 
@@ -188,7 +190,7 @@ if (files?.length > 0) {
     maxOffset = 0,
     lastTime = performance.now()
     dragHandle.addEventListener('pointerdown', e => {
-      navigator.vibrate?.([50]); // Buzz
+      navigator.vibrate?.([50]);
       dragItem = li;
       const rect = li.getBoundingClientRect();
       // Calculate the pointer offset
@@ -219,16 +221,24 @@ if (files?.length > 0) {
         const now = performance.now(),
         delta = now - lastTime
         lastTime = now
-        SCROLL_SPEED = (PX_PER_SEC * delta) / 1000
+        SCROLL_SPEED = ((LINES_PER_SEC * LINE_HEIGHT) * delta) / 1000
         if (!dragItem) return
         const scrollY = window.scrollY - initialScrollY
         dragPosY = window.tmg.clamp(0, scrollY + clientY - offsetY - dragItem.offsetHeight/2, maxOffset - dragItem.offsetHeight)
         dragItem.style.top = `${dragPosY}px`;
-        if (dragPosY > 0 && dragPosY < (maxOffset - dragItem.offsetHeight)) autoScroll(clientY);
+        if (dragPosY > 0 && dragPosY < (maxOffset - dragItem.offsetHeight)) {
+          if (autoScrollAccId === null) autoScrollAccId = setTimeout(() => LINES_PER_SEC += 1, 3000)
+          else if(LINES_PER_SEC > 3) LINES_PER_SEC = Math.max(++LINES_PER_SEC, 6)
+          autoScroll(clientY);
+        } else {
+          clearTimeout(autoScrollAccId)
+          autoScrollAccId = null
+          LINES_PER_SEC = 3
+        }
         recomputeList()
-        requestAnimationFrame(update)
+        autoScrollId = requestAnimationFrame(update)
       }
-      requestAnimationFrame(update)
+      autoScrollId = requestAnimationFrame(update)
     }
     function onPointerMove(e) {
       clientY = e.clientY
@@ -245,8 +255,8 @@ if (files?.length > 0) {
       else list.appendChild(placeholderItem)
     }
     function onPointerUp() {
-      clearInterval(autoScrollId)
-      autoScrollId = null
+      navigator.vibrate?.([50]);
+      autoScrollId && cancelAnimationFrame(autoScrollId);
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp)
       placeholderItem.parentNode.insertBefore(dragItem, placeholderItem);
