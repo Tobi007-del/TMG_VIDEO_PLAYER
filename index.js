@@ -8,11 +8,12 @@ import Toast from "/T007_TOOLS/T007_toast_library/T007_toast.js"
 
 let installPrompt = null;
 const installButton = document.querySelector("#install");
+installButton.style.display = "none";
 
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
   installPrompt = event;
-  installButton.removeAttribute("hidden");
+  installButton.style.display = "flex"
 });
 
 installButton.addEventListener("click", async () => {
@@ -21,8 +22,13 @@ installButton.addEventListener("click", async () => {
   }
   const result = await installPrompt.prompt();
   console.log(`Install prompt was: ${result.outcome}`);
+  if (result.outcome === "accepted") installButton.style.display = "none"
   installPrompt = null;
-  installButton.setAttribute("hidden", "");
+});
+
+window.addEventListener("appinstalled", () => {
+  console.log("TVP installed!");
+  installButton.style.display = "none";
 });
 
 const videoWorker = window.Worker ? new Worker('TVP_worker.js') : null,

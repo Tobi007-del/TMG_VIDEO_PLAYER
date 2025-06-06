@@ -11,17 +11,19 @@
     content="The Video Player that brings the power to VLC to your web browser with tons of incredible features just waiting to make your next movie a blast." />
   <meta property="og:image" content="https://tobi007-del.github.io/TMG_VIDEO_PLAYER/assets/images/hero_image.png" />
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:domain" value="tobi007.del.github.io/TMG_VIDEO_PLAYER" />
-  <meta name="twitter:title" value="TVP" />
+  <meta name="twitter:domain" content="tobi007.del.github.io/TMG_VIDEO_PLAYER" />
+  <meta name="twitter:title" content="TVP" />
   <meta name="twitter:description"
-    value="The Video Player that brings the power to VLC to your web browser with tons of incredible features just waiting to make your next movie a blast." />
+    content="The Video Player that brings the power to VLC to your web browser with tons of incredible features just waiting to make your next movie a blast." />
   <meta name="twitter:image" content="https://tobi007-del.github.io/TMG_VIDEO_PLAYER/assets/images/hero_image.png" />
-  <meta name="twitter:url" value="https://www.tobi007-del.github.io/TMG_VIDEO_PLAYER/" />
-  <meta name="twitter:label1" value="Try it live" />
-  <meta name="twitter:data1" value="Click the link" />
-  <meta name="twitter:label2" value="Or install it" />
-  <meta name="twitter:data2" value="at the website" />
+  <meta name="twitter:url" content="https://www.tobi007-del.github.io/TMG_VIDEO_PLAYER/" />
+  <meta name="twitter:label1" content="Try it live" />
+  <meta name="twitter:data1" content="Click the link" />
+  <meta name="twitter:label2" content="Or install it" />
+  <meta name="twitter:data2" content="at the website" />
   <meta name="theme-color" content="#fed7b2">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="32x32" href="/TMG_VIDEO_PLAYER/assets/icons/tmg-icon.png">
   <link rel="apple-touch-icon" sizes="32x32" href="/TMG_VIDEO_PLAYER/assets/icons/tmg-icon.png">
@@ -45,6 +47,7 @@
     position: absolute;
     top: var(--star-top);
     animation: scale 700ms ease forwards;
+    will-change: transform;
   }
   @keyframes scale {
     from,to {
@@ -140,7 +143,7 @@
             </span>
           </div>
         </form>
-        <button hidden type="button" title="Install TVP" id="install">INSTALL</button>
+        <button style="display: none;" type="button" title="Install TVP" id="install">Install App</button>
       </div>
       <div id="file-list-wrapper">
         <button type="button" title="Clear Files!" id="clear-button">Clear Files</button>
