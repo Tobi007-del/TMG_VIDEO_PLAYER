@@ -309,7 +309,7 @@ if (files?.length > 0) {
       }
       li.remove();
       // If no files left, update UI accordingly
-      if (numberOfFiles < 1) {
+      if (numberOfFiles <= 1) {
         return clearFiles();
       } else {
         rebuildPlaylistFromUI();
