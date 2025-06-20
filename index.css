@@ -86,11 +86,14 @@ html {
 }
 
 body {
+  display: flex;
+  flex-direction: column;
+  height: 100lvh;
   padding: 0;
   margin: 0;
+  overflow: hidden;
   font-family: "Segoe UI", system-ui, sans-serif;
   --T_M_G-video-font-family: "Segoe UI", system-ui, sans-serif;
-  padding-bottom: 30px;
 }
 
 body::before {
@@ -118,14 +121,21 @@ body.light::before {
   animation: rotateLight 30s linear infinite;
 }
 
-body.offline::after {
-  content: "OFFLINE MODE";
+.content-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 30px;
+}
+
+body.offline .offline-notice {
+  display: block;
   font-weight: bolder;
   font-size: 12px;
   text-align: center;
-  position: fixed;
-  bottom: 0;
-  left: 0;
+  color: rgba(0, 0, 0, 0.85);
   width: 100%;
   max-height: fit-content;
   padding: 2px;
@@ -137,6 +147,10 @@ body.offline::after {
     var(--T_M_G-brand-color)
   );
   z-index: 10000;
+}
+
+.offline-notice {
+  display: none;
 }
 
 body:has(.dragging) {
@@ -162,7 +176,7 @@ body:has(.dragging) {
   padding-inline: 10vw;
 }
 
-video {
+#video {
   min-height: 210px;
 }
 
@@ -176,11 +190,11 @@ body:has(#video.stall) #clear-button {
   display: none;
 }
 
-video.stall {
+#video.stall {
   display: none;
 }
 
-#video-player-container.loading:has(video.stall) {
+#video-player-container.loading:has(#video.stall) {
   position: relative;
   max-width: 700px;
   width: 90dvw;
