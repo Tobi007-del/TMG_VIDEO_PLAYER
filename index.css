@@ -86,12 +86,10 @@ html {
 }
 
 body {
-  display: flex;
-  flex-direction: column;
-  height: 100lvh;
-  padding: 0;
   margin: 0;
-  overflow: hidden;
+  padding: 0;
+
+  padding-bottom: 30px;
   font-family: "Segoe UI", system-ui, sans-serif;
   --T_M_G-video-font-family: "Segoe UI", system-ui, sans-serif;
 }
@@ -121,16 +119,9 @@ body.light::before {
   animation: rotateLight 30s linear infinite;
 }
 
-.content-container {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding-bottom: 30px;
-}
-
 body.offline .offline-notice {
+  position: fixed;
+  bottom: 0;
   display: block;
   font-weight: bolder;
   font-size: 12px;
