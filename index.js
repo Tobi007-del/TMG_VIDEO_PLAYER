@@ -39,36 +39,36 @@ clearBtn = document.getElementById("clear-button"),
 mediaList = document.getElementById("file-list"),
 readyLines = {
   morning: [
-    `🌅&nbsp;&nbsp;A new day, a new story begins.`,
-    `☕&nbsp;&nbsp;Morning loaded. Your video is hot and fresh.`,
-    `🌤️&nbsp;&nbsp;Rise and stream`,
+    { icon: "🌅", body: "A new day, a new story begins." },
+    { icon: "☕", body: "Morning loaded. Your video is hot and fresh." },
+    { icon: "🌤️", body: "Rise and stream" },
   ],
   afternoon: [
-    `🌞&nbsp;&nbsp;Midday grind meets epic rewind.`,
-    `🥪&nbsp;&nbsp;Lunch break? Cue the film.`,
-    `🕶️&nbsp;&nbsp;Cool visuals for the warm sun`,
+    { icon: "🌞", body: "Midday grind meets epic rewind." },
+    { icon: "🥪", body: "Lunch break? Cue the film." },
+    { icon: "🕶️", body: "Cool visuals for the warm sun" },
   ],
   evening: [
-    `🌇&nbsp;&nbsp;Golden hour, golden content.`,
-    `📺&nbsp;&nbsp;Relax mode: ON.`,
-    `🍝&nbsp;&nbsp;Dinner and a digital show`,
+    { icon: "🌇", body: "Golden hour, golden content." },
+    { icon: "📺", body: "Relax mode: ON." },
+    { icon: "🍝", body: "Dinner and a digital show" },
   ],
   night: [
-    `🌙&nbsp;&nbsp;Midnight premiere loaded.`,
-    `🛌&nbsp;&nbsp;Last one before bed... maybe.`,
-    `💤&nbsp;&nbsp;Sweet streams are made of this`,
+    { icon: "🌙", body: "Midnight premiere loaded." },
+    { icon: "🛌", body: "Last one before bed... maybe." },
+    { icon: "💤", body: "Sweet streams are made of this" },
   ],
   default: [
-    `🎬&nbsp;&nbsp;Lights, Camera, Action!`,
-    `✅&nbsp;&nbsp;Scene Loaded — Ready to Play.`,
-    `✨&nbsp;&nbsp;Showtime Unlocked.`,
-    `🎉&nbsp;&nbsp;Player Ready – Let the Magic Begin!`,
-    `🎬&nbsp;&nbsp;Lights, Camera, Action!`,
-    `📽️&nbsp;&nbsp;The Reel is Spinning...`,
-    `🎥&nbsp;&nbsp;Scene One, Take One — Playback Engaged.`,
-    `🍿&nbsp;&nbsp;Popcorn Ready? Your Movie Is.`,
-    `🎭&nbsp;&nbsp;Curtains Up. Prepare to Be Amazed.`,
-  ]
+    { icon: "🎬", body: "Lights, Camera, Action!" },
+    { icon: "✅", body: "Scene Loaded — Ready to Play." },
+    { icon: "✨", body: "Showtime Unlocked." },
+    { icon: "🎉", body: "Player Ready – Let the Magic Begin!" },
+    { icon: "🎬", body: "Lights, Camera, Action!" },
+    { icon: "📽️", body: "The Reel is Spinning..." },
+    { icon: "🎥", body: "Scene One, Take One — Playback Engaged." },
+    { icon: "🍿", body: "Popcorn Ready? Your Movie Is." },
+    { icon: "🎭", body: "Curtains Up. Prepare to Be Amazed." },
+  ],
 },
 LINE_HEIGHT = 80,
 SCROLL_MARGIN = 80 // px from top/bottom to trigger scroll
@@ -379,7 +379,7 @@ function handleFileCancel() {
 }
 
 function handleFileInput({target}) {
-  if ([...target.files].some(file => !file.type.includes("video"))) Toast({ data: { type:"warning", body: "Only video files are supported" } })
+  if ([...target.files].some(file => !file.type.includes("video"))) Toast.warn("Only video files are supported")
   const files = [...target.files]?.filter(file => file.type.includes("video"))
   handleFiles(files)
 }
@@ -405,7 +405,7 @@ function handleDrop(e) {
   e.stopPropagation()
   e.preventDefault() 
   const dt = e.dataTransfer
-  if ([...dt.files].some(file => !file.type.includes("video"))) Toast({ data: { type:"warning", body: "You can only drop video files!" } })
+  if ([...dt.files].some(file => !file.type.includes("video"))) Toast.warn("You can only drop video files!")
   const files = [...dt.files]?.filter(file => file.type.includes("video"))
   handleFiles(files)
   dropBox.classList.remove("active")
@@ -478,7 +478,7 @@ function dispatchPlayerReadyToast() {
   const combined = [...timeLines, ...themedLines, ...timeLines];
   const message = combined[Math.floor(Math.random() * combined.length)];
 
-  Toast({ data: { body: message }, vibrate: true });
+  Toast(message.body, { vibrate: true, icon: message.icon });
 }
 
 window.addEventListener('online', () => document.body.classList.remove("offline"))

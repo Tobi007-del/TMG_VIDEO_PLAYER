@@ -26,7 +26,6 @@
     var(--T_M_G-brand-accent-color),
     var(--T_M_G-lighter-brand-color)
   );
-  --t007-toast-height: 4.25rem;
   --T_M_G-brand-color: rgb(226, 110, 2);
   --T_M_G-lighter-brand-color: hsl(
     from var(--T_M_G-brand-color) h s calc(l + 40)
@@ -88,7 +87,6 @@ html {
 body {
   margin: 0;
   padding: 0;
-
   padding-bottom: 30px;
   font-family: "Segoe UI", system-ui, sans-serif;
   --T_M_G-video-font-family: "Segoe UI", system-ui, sans-serif;
