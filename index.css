@@ -19,13 +19,6 @@
 }
 
 :root {
-  --t007-toast-type-color: var(--T_M_G-brand-color);
-  --t007-toast-progress-background: linear-gradient(
-    to left,
-    var(--T_M_G-brand-color),
-    var(--T_M_G-brand-accent-color),
-    var(--T_M_G-lighter-brand-color)
-  );
   --T_M_G-brand-color: rgb(226, 110, 2);
   --T_M_G-lighter-brand-color: hsl(
     from var(--T_M_G-brand-color) h s calc(l + 40)
@@ -39,6 +32,15 @@
   --loader-size: 75px;
   --loader-width: 4px;
   --degree: 180deg;
+  /* lib variables */
+  --T_M_G-video-font-family: "Segoe UI", system-ui, sans-serif;
+  --t007-toast-type-color: var(--T_M_G-brand-color);
+  --t007-toast-progress-background: linear-gradient(
+    to left,
+    var(--T_M_G-brand-color),
+    var(--T_M_G-brand-accent-color),
+    var(--T_M_G-lighter-brand-color)
+  );
 }
 
 @keyframes rotateLight {
@@ -89,7 +91,6 @@ body {
   padding: 0;
   padding-bottom: 30px;
   font-family: "Segoe UI", system-ui, sans-serif;
-  --T_M_G-video-font-family: "Segoe UI", system-ui, sans-serif;
 }
 
 body::before {
