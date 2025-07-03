@@ -33,7 +33,7 @@
   --loader-width: 4px;
   --degree: 180deg;
   /* lib variables */
-  --T_M_G-video-font-family: "Segoe UI", system-ui, sans-serif;
+  --T_M_G-video-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --t007-toast-type-color: var(--T_M_G-brand-color);
   --t007-toast-progress-background: linear-gradient(
     to left,
@@ -114,7 +114,7 @@ body.light::before {
       #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2),
       #0b1012e8 350deg
     ),
-    center/cover url("/TMG_VIDEO_PLAYER/assets/images/lone-tree.jpg"), #0b1012;
+    center/cover url("./assets/images/lone-tree.jpg"), #0b1012;
   animation: rotateLight 30s linear infinite;
 }
 
@@ -131,11 +131,12 @@ body.offline .offline-notice {
   padding: 2px;
   background: linear-gradient(
     to right,
-    var(--T_M_G-brand-color),
-    rgb(244, 143, 177),
-    var(--T_M_G-lighter-brand-color),
-    var(--T_M_G-brand-color)
+    rgb(from var(--T_M_G-brand-color) r g b/.6),
+    rgb(from var(--T_M_G-brand-accent-color) r g b/.6),
+    rgb(from var(--T_M_G-lighter-brand-color) r g b/.6),
+    rgb(from var(--T_M_G-brand-color) r g b/.6)
   );
+  backdrop-filter: blur(5px);
   z-index: 10000;
 }
 
@@ -239,7 +240,7 @@ body:has(#video.stall) #clear-button {
 
 #content-header {
   flex: 0 0 100%;
-  padding: 30px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -247,7 +248,7 @@ body:has(#video.stall) #clear-button {
 }
 
 #content-header > * {
-  max-width: 500px;
+  max-width: 600px;
   text-align: center;
 }
 
@@ -274,14 +275,16 @@ body:has(#video.stall) #clear-button {
 #file-picker {
   background: linear-gradient(
     to left,
-    var(--T_M_G-brand-color),
-    var(--T_M_G-brand-accent-color),
-    var(--T_M_G-lighter-brand-color)
+    rgb(from var(--T_M_G-brand-color) r g b/.6),
+    rgb(from var(--T_M_G-brand-accent-color) r g b/.6),
+    rgb(from var(--T_M_G-lighter-brand-color) r g b/.6)
   );
-  border-radius: 20px;
+  backdrop-filter: blur(5px);
+  border-radius: 16px;
   height: fit-content;
   width: 100%;
-  padding: 15px;
+  padding: 10px;
+  border: 1.35px solid darkgrey;
   transition: all 250ms ease;
 }
 
@@ -303,17 +306,18 @@ body:has(#video.stall) #clear-button {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .drop-box {
   background: linear-gradient(
     to right,
-    var(--T_M_G-brand-color),
-    var(--T_M_G-brand-accent-color),
-    var(--T_M_G-lighter-brand-color)
+    rgb(from var(--T_M_G-brand-color) r g b/.6),
+    rgb(from var(--T_M_G-brand-accent-color) r g b/.6),
+    rgb(from var(--T_M_G-lighter-brand-color) r g b/.6)
   );
-  border-radius: 10px;
+  backdrop-filter: blur(5px);
+  border-radius: 11px;
   flex: 1 1;
   min-width: max-content;
   height: 110px;
@@ -323,26 +327,26 @@ body:has(#video.stall) #clear-button {
   display: flex;
   justify-content: center;
   align-items: center;
-  color: rgba(0, 0, 0, 0.85);
+  color: rgba(0, 0, 0, 0.75);
   cursor: pointer;
   transition: 200ms ease;
-  border: 2px solid grey;
-  font-size: 18px;
+  border: 1.35px solid darkgrey;
+  font-size: 16.5px;
   font-weight: bolder;
   padding: 10px;
 }
 
 .drop-box::after {
   content: attr(aria-label);
-  color: rgba(0, 0, 0, 0.4);
+  color: rgba(0, 0, 0, 0.45);
   position: absolute;
   width: 100%;
   bottom: 0;
-  font-size: 75%;
+  font-size: 77.5%;
   white-space: wrap;
   text-align: center;
   padding-inline: inherit;
-  padding-bottom: 5px;
+  padding-bottom: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -367,6 +371,14 @@ body:has(#video.stall) #clear-button {
   animation-iteration-count: infinite;
 }
 
+.drop-box svg {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.2125em;
+  margin-left: .3em;
+  fill: currentColor;
+}
+
 #file-picker input[type="file"] {
   clip: (0, 0, 0, 0);
   clip-path: inset(50%);
@@ -378,11 +390,11 @@ body:has(#video.stall) #clear-button {
 }
 
 #file-picker > form > div > span > label:not(.drop-box) {
-  color: grey;
+  color: rgba(245, 245, 245, 0.85);
 }
 
 #file-picker > form > div > span > output {
-  color: lightgrey;
+  color: rgba(245, 245, 245, 0.85);
   text-align: end;
 }
 

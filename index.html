@@ -35,9 +35,9 @@
   <link rel="stylesheet" href="index.css">
   <style>
   .magic {
-    --tmg-orange: rgb(223,110,2);
-    --tmg-white: white;
-    --tmg-pink: rgb(244,143,177);
+    --tmg-orange: rgba(223, 109, 2, 0.85);
+    --tmg-white: rgba(255, 255, 255, 0.85);
+    --tmg-pink: rgba(244, 143, 177, 0.85);
     display: inline-block;
     position: relative;
   }
@@ -132,7 +132,7 @@
             <span class="magic-text">TVP</span>
           </span>
         </h1>
-        <p>The Video Player that allows you to play videos from your local device in your web browser.</p>
+        <p>Select videos or folders to play directly in your browser with no hassle!</p>
       </div>
       <div id="video-player-container">
         <video id="video" class="stall" tmg--settings--timeline-position="top"></video>
@@ -143,11 +143,24 @@
             <div>
               <span id="file-inputs-wrapper">
                 <label for="videos-file-input" id="videos-drop-box" class="drop-box" aria-label="Click or drag and drop">
-                  Add videos +
+                  <span>Add videos</span>
+                  <span>
+                    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path fill="none" d="m11 14 7-4-7-4z"/>
+                      <path d="M4 8H2v12c0 1.103.897 2 2 2h12v-2H4z"/>
+                      <path d="M20 2H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2m-9 12V6l7 4z"/>
+                    </svg>
+                  </span>
                   <input id="videos-file-input" type="file" multiple />
                 </label>
                 <label for="folders-file-input" id="folders-drop-box" class="drop-box" aria-label="Click or drag and drop">
-                  Add folders +
+                  <span>Add folders</span>
+                  <span>
+                    <svg width="24" height="24" viewBox="0 0 0.45 0.45" fill="none" xmlns="http://www.w3.org/2000/svg" style="transform: translateY(-1px) scale(.8);">
+                      <path d="M.135 0A.045.045 0 0 0 .09.045v.21A.045.045 0 0 0 .135.3h.27A.045.045 0 0 0 .45.255v-.15A.045.045 0 0 0 .405.06H.291L.231 0z" fill="currentColor"/>
+                      <path d="M.36.33H.135A.075.075 0 0 1 .06.255V.15H.045A.045.045 0 0 0 0 .195v.21A.045.045 0 0 0 .045.45h.27A.045.045 0 0 0 .36.405z" fill="currentColor"/>
+                    </svg>
+                  </span>
                   <input id="folders-file-input" type="file" webkitdirectory multiple />
                 </label>
               </span>
@@ -171,7 +184,7 @@
           <button type="button" title="Clear Files!" id="clear-button">Clear Files</button>
           <h2>Selected Files</h2>
           <div id="file-list">
-            <p id="no-files-text">No videos currently selected!</p>
+            <p id="no-files-text">No videos currently selected :&lpar;</p>
           </div>
         </div>
       </div>
