@@ -286,11 +286,27 @@ body:has(#video.stall) #clear-button {
 }
 
 #file-picker:hover,
-#file-picker:has(#drop-box.active) {
+#file-picker:has(.drop-box.active) {
   box-shadow: 0 4px 10px rgba(244, 143, 177, 0.4); /* 🧪 glow */
 }
 
-#drop-box {
+#file-picker > form > div {
+  display: flex;
+  flex-direction: column;
+  gap: 12.5px;
+  font-size: 14.5px;
+  font-weight: 450;
+}
+
+#file-picker > form > div > span {
+  flex: 100%;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.drop-box {
   background: linear-gradient(
     to right,
     var(--T_M_G-brand-color),
@@ -298,7 +314,8 @@ body:has(#video.stall) #clear-button {
     var(--T_M_G-lighter-brand-color)
   );
   border-radius: 10px;
-  flex: 0 0 100%;
+  flex: 1 1;
+  min-width: max-content;
   height: 110px;
   position: relative;
   inset: 0;
@@ -314,8 +331,8 @@ body:has(#video.stall) #clear-button {
   font-weight: bolder;
 }
 
-#drop-box::after {
-  content: "Click to select more or just drag and drop";
+.drop-box::after {
+  content: attr(aria-label);
   color: black;
   position: absolute;
   bottom: 0%;
@@ -327,8 +344,9 @@ body:has(#video.stall) #clear-button {
   margin: 5px;
 }
 
-#drop-box:hover,
-#drop-box.active {
+.drop-box:hover,
+.drop-box.active,
+.drop-box:has(:focus-visible) {
   background: linear-gradient(
     to right,
     var(--T_M_G-brand-color),
@@ -340,7 +358,8 @@ body:has(#video.stall) #clear-button {
   animation: background-pan 600ms ease;
 }
 
-#drop-box.active {
+.drop-box.active,
+.drop-box:has(:focus-visible) {
   animation-iteration-count: infinite;
 }
 
@@ -354,21 +373,7 @@ body:has(#video.stall) #clear-button {
   white-space: nowrap;
 }
 
-#file-picker > form > div {
-  display: flex;
-  flex-direction: column;
-  gap: 12.5px;
-  font-size: 14.5px;
-  font-weight: 450;
-}
-
-#file-picker > form > div > span {
-  flex: 100%;
-  display: flex;
-  justify-content: space-between;
-}
-
-#file-picker > form > div > span > label:not(#drop-box) {
+#file-picker > form > div > span > label:not(.drop-box) {
   color: grey;
 }
 

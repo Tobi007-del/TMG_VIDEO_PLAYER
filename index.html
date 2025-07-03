@@ -141,10 +141,15 @@
         <div id="file-picker">
           <form>
             <div>
-              <span>
-                <label for="file-input" id="drop-box" aria-label="Import videos by clicking or drag and drop">Import videos
-                  +</label>
-                <input id="file-input" type="file" multiple />
+              <span id="file-inputs-wrapper">
+                <label for="video-file-input" id="videos-drop-box" class="drop-box" aria-label="Click or drag and drop">
+                  Add videos +
+                  <input id="videos-file-input" type="file" multiple />
+                </label>
+                <label for="folders-file-input" id="folders-drop-box" class="drop-box" aria-label="Click or drag and drop">
+                  Add folders +
+                  <input id="folders-file-input" type="file" webkitdirectory multiple />
+                </label>
               </span>
               <span>
                 <label for="total-num">Selected files:</label>
@@ -180,7 +185,7 @@
           is actually just an early prototype but the video controls here has been in development for a while but just needs
           some field testing so do well to give feedback, report bugs, request features or just criticize by sending me a
           mail.
-        <p>
+        </p>
       </details>
     </div>
   </div>

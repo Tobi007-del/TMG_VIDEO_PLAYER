@@ -20,7 +20,7 @@ installButton.addEventListener("click", async () => {
     return;
   }
   const result = await installPrompt.prompt();
-  console.log(`Install prompt was: ${result.outcome}`);
+  console.log(`TVP Install prompt was: ${result.outcome}`);
   if (result.outcome === "accepted") installButton.style.display = "none"
   installPrompt = null;
 });
@@ -30,11 +30,18 @@ window.addEventListener("appinstalled", () => {
   installButton.style.display = "none";
 });
 
+function isWebkitDirectorySupported() {
+  const input = document.createElement('input');
+  return 'webkitdirectory' in input;
+}
+
 const videoWorker = window.Worker ? new Worker('TVP_worker.js') : null,
 videoPlayerContainer = document.getElementById("video-player-container"),
-uploadInput = document.getElementById("file-input"),
+uploadVideosInput = document.getElementById("videos-file-input"),
+uploadFoldersInput = document.getElementById("folders-file-input"),
 fileList = document.getElementById("file-list"),
-dropBox = document.getElementById("drop-box"),
+videosDropBox = document.getElementById("videos-drop-box"),
+foldersDropBox = document.getElementById("folders-drop-box"),
 clearBtn = document.getElementById("clear-button"),
 mediaList = document.getElementById("file-list"),
 readyLines = {
@@ -72,7 +79,6 @@ readyLines = {
 },
 LINE_HEIGHT = 80,
 SCROLL_MARGIN = 80 // px from top/bottom to trigger scroll
-
 let video = document.getElementById("video"),
 videoPlayer = null,
 numberOfBytes = 0,
@@ -88,6 +94,7 @@ autoScrollAccId = null,
 LINES_PER_SEC = 3,
 SCROLL_SPEED = 0; // px per frame
 
+if (!isWebkitDirectorySupported()) foldersDropBox.remove();
 
 function emptyUI() {
   if (numberOfFiles < 1) {
@@ -137,13 +144,20 @@ function clearFiles() {
   emptyUI()
 }
 
-uploadInput.addEventListener("click", () => setTimeout(initUI, 1000))
-uploadInput.addEventListener("cancel", handleFileCancel)
-uploadInput.addEventListener("change", handleFileInput)
-dropBox.addEventListener("dragenter", handleDragEnter)
-dropBox.addEventListener("dragover", handleDragOver)
-dropBox.addEventListener("dragleave", handleDragLeave)
-dropBox.addEventListener("drop", handleDrop)
+uploadVideosInput.addEventListener("click", () => setTimeout(initUI, 1000))
+uploadVideosInput.addEventListener("cancel", handleFileCancel)
+uploadVideosInput.addEventListener("change", handleFileInput)
+uploadFoldersInput.addEventListener("click", () => setTimeout(initUI, 1000))
+uploadFoldersInput.addEventListener("cancel", handleFileCancel)
+uploadFoldersInput.addEventListener("change", handleFileInput)
+videosDropBox.addEventListener("dragenter", handleDragEnter)
+videosDropBox.addEventListener("dragover", handleDragOver)
+videosDropBox.addEventListener("dragleave", handleDragLeave)
+videosDropBox.addEventListener("drop", handleDrop)
+foldersDropBox.addEventListener("dragenter", handleDragEnter)
+foldersDropBox.addEventListener("dragover", handleDragOver)
+foldersDropBox.addEventListener("dragleave", handleDragLeave)
+foldersDropBox.addEventListener("drop", handleDrop)
 clearBtn.addEventListener("click", clearFiles)
 
 function handleFiles(files) {
@@ -379,15 +393,16 @@ function handleFileCancel() {
 }
 
 function handleFileInput({target}) {
-  if ([...target.files].some(file => !file.type.includes("video"))) Toast.warn("Only video files are supported")
-  const files = [...target.files]?.filter(file => file.type.includes("video"))
-  handleFiles(files)
+  const allFiles = [...target.files]
+  if (allFiles?.some(file => !file.type.startsWith("video/"))) Toast.warn("Only video files are supported")
+  const videoFiles = allFiles?.filter(file => file.type.startsWith("video/"))
+  handleFiles(videoFiles)
 }
 
 function handleDragEnter(e) {
   e.stopPropagation()
   e.preventDefault()
-  dropBox.classList.add("active")
+  e.currentTarget.classList.add("active")
 }
 
 function handleDragOver(e) {
@@ -398,17 +413,42 @@ function handleDragOver(e) {
 function handleDragLeave(e) {
   e.stopPropagation()
   e.preventDefault()
-  dropBox.classList.remove("active")
+  e.currentTarget.classList.remove("active")
 }
 
-function handleDrop(e) {
+async function handleDrop(e) {
   e.stopPropagation()
   e.preventDefault() 
-  const dt = e.dataTransfer
-  if ([...dt.files].some(file => !file.type.includes("video"))) Toast.warn("You can only drop video files!")
-  const files = [...dt.files]?.filter(file => file.type.includes("video"))
-  handleFiles(files)
-  dropBox.classList.remove("active")
+  const dtItems = Array.from(e.dataTransfer.items || []);
+  const traverseFileTree = async item => {
+    return new Promise(resolve => {
+      if (item.isFile) item.file(resolve, () => resolve([]));
+      else if (item.isDirectory) {
+        const dirReader = item.createReader();
+        dirReader.readEntries(async entries => {
+          try {
+            const nestedFiles = await Promise.all(entries.map(traverseFileTree));
+            resolve(nestedFiles.flat());
+          } catch {
+            resolve([]);
+          }
+        })
+      } else resolve([]);
+    })
+  }
+  const promises = [];
+  for (let i = 0; i < dtItems.length; i++) {
+    const entry = dtItems[i].webkitGetAsEntry?.();
+    if (entry) promises.push(traverseFileTree(entry));
+    else if (dtItems[i].kind === "file") promises.push(Promise.resolve(dtItems[i].getAsFile()));
+    else return Promise.resolve([]);
+  }
+  const flatFiles = (await Promise.all(promises)).flat().filter(Boolean);
+  const videoFiles = flatFiles.filter(file => file.type.startsWith("video/"));
+  const rejectedCount = flatFiles.length - videoFiles.length
+  if (rejectedCount > 0) Toast.warn(`You dropped ${rejectedCount} unsupported file${rejectedCount>1?'s':''}. Only video files are supported.`);
+  if (videoFiles.length) handleFiles(videoFiles)
+  e.currentTarget.classList.remove("active")
 }
 
 function highlightCurrentPlaying(index) {
