@@ -416,6 +416,25 @@ function handleDragLeave(e) {
   e.currentTarget.classList.remove("active")
 }
 
+function getMimeTypeFromExtension(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  const mimeTypes = {
+    'avi': 'video/x-msvideo',
+    'mp4': 'video/mp4',
+    'mkv': 'video/x-matroska',
+    'mov': 'video/quicktime',  // Apple MOV format
+    'flv': 'video/x-flv',      // Flash Video
+    'webm': 'video/webm',      // WebM format
+    'ogg': 'video/ogg',        // Ogg video format
+    'wmv': 'video/x-ms-wmv',   // Windows Media Video
+    '3gp': 'video/3gpp',       // 3GPP Video
+    'mpeg': 'video/mpeg',      // MPEG video format
+    'ts': 'video/mp2t',        // MPEG transport stream
+  };
+
+  return mimeTypes[ext] || 'application/octet-stream'; // Default to binary stream
+}
+
 async function handleDrop(e) {
   e.stopPropagation()
   e.preventDefault() 
@@ -444,8 +463,7 @@ async function handleDrop(e) {
     else return Promise.resolve([]);
   }
   const flatFiles = (await Promise.all(promises)).flat().filter(Boolean);
-  const videoFiles = flatFiles.filter(file => file.type.startsWith("video/"));
-  console.log(flatFiles, videoFiles);
+  const videoFiles = flatFiles.filter(file => (file.type || getMimeTypeFromExtension(file.name)).startsWith("video/"));
   const rejectedCount = flatFiles.length - videoFiles.length;
   if (rejectedCount > 0) Toast.warn(`You dropped ${rejectedCount} unsupported file${rejectedCount>1?'s':''}. Only video files are supported.`);
   if (videoFiles.length > 0) handleFiles(videoFiles)

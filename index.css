@@ -323,25 +323,29 @@ body:has(#video.stall) #clear-button {
   display: flex;
   justify-content: center;
   align-items: center;
-  color: black;
+  color: rgba(0, 0, 0, 0.85);
   cursor: pointer;
   transition: 200ms ease;
   border: 2px solid grey;
   font-size: 18px;
   font-weight: bolder;
+  padding: 10px;
 }
 
 .drop-box::after {
   content: attr(aria-label);
-  color: black;
+  color: rgba(0, 0, 0, 0.4);
   position: absolute;
-  bottom: 0%;
-  font-size: 77.5%;
-  font-weight: light;
-  opacity: 0.4;
+  width: 100%;
+  bottom: 0;
+  font-size: 75%;
   white-space: wrap;
   text-align: center;
-  margin: 5px;
+  padding-inline: inherit;
+  padding-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .drop-box:hover,
