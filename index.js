@@ -445,10 +445,12 @@ async function handleDrop(e) {
   }
   const flatFiles = (await Promise.all(promises)).flat().filter(Boolean);
   const videoFiles = flatFiles.filter(file => file.type.startsWith("video/"));
-  const rejectedCount = flatFiles.length - videoFiles.length
+  console.log(flatFiles, videoFiles);
+  const rejectedCount = flatFiles.length - videoFiles.length;
   if (rejectedCount > 0) Toast.warn(`You dropped ${rejectedCount} unsupported file${rejectedCount>1?'s':''}. Only video files are supported.`);
-  if (videoFiles.length) handleFiles(videoFiles)
-  e.currentTarget.classList.remove("active")
+  if (videoFiles.length > 0) handleFiles(videoFiles)
+  videosDropBox.classList.remove("active")
+  foldersDropBox.classList.remove("active")
 }
 
 function highlightCurrentPlaying(index) {
