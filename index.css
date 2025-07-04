@@ -101,7 +101,7 @@ body::before {
   height: 100lvh;
   z-index: -1;
   background: linear-gradient(#0b1012e8, #0b1012e8),
-    center/cover url("/TMG_VIDEO_PLAYER/assets/images/lone-tree.jpg"), #0b1012;
+    center/cover url("./assets/images/lone-tree.jpg"), #0b1012;
   filter: brightness(0.95);
 }
 
@@ -116,6 +116,12 @@ body.light::before {
     ),
     center/cover url("./assets/images/lone-tree.jpg"), #0b1012;
   animation: rotateLight 30s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none !important;
+  }
 }
 
 body.offline .offline-notice {
@@ -528,7 +534,6 @@ body:has(#video.stall) #clear-button {
   display: flex;
   justify-content: center;
   align-items: center;
-  position: relative;
   color: white;
   border-radius: 5px;
   overflow: hidden;
@@ -558,13 +563,12 @@ body:has(#video.stall) #clear-button {
   color: white;
   padding-inline: 5px;
   cursor: pointer;
-  transition: 200ms ease;
   display: flex;
   justify-content: center;
   align-items: center;
   position: absolute;
   z-index: 1;
-  transition: transform 200ms ease;
+  transition: all 200ms ease;
 }
 
 .thumbnail-container button:hover {
@@ -620,6 +624,34 @@ body:has(#video.stall) #clear-button {
   height: 100%;
 }
 
+.content-line.error {
+  opacity: 0.8;
+}
+
+.content-line.error p span:last-child {
+  color: #f73839cc;
+}
+
+.content-line.error .thumbnail-container {
+  position: relative;
+  background: #1c1c1c;
+  cursor: not-allowed;
+}
+
+.content-line.error .thumbnail-container::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23e74c3c"/><path fill="%23f73839cc" stroke="%23fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 8l8 8M16 8l-8 8"/></svg>') no-repeat center / 25px;
+}
+
+.content-line.error .thumbnail-container button,
+.content-line.error .thumbnail {
+  display: none;
+}
+
 .drag-handle {
   touch-action: none;
   cursor: grab;
@@ -654,7 +686,7 @@ body:has(#video.stall) #clear-button {
 }
 
 .delete-btn svg path {
-  fill: rgb(247, 56, 57, 0.8);
+  fill: #f73839cc;
 }
 
 @media (max-width: 480px),

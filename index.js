@@ -164,9 +164,11 @@ clearBtn.addEventListener("click", clearFiles)
 function smartFlatSort(files) {
   // Extract base title from filename, ignoring S01E01 etc
   function getTitlePrefix(name) {
+    const match = name.match(/(.*?)(s\d{1,2})e\d{1,2}/i); // keep "Game of Thrones S02"
+    if (match) return match[1].replace(/[^a-z0-9]+/gi, ' ').trim().toLowerCase() + ' ' + match[2].toLowerCase();
     return name
-      .replace(/(s\d+e\d+|season\s?\d+|episode\s?\d+|ep\s?\d+|e\d+|part\s?\d+)/gi, '')
-      .replace(/[^a-z0-9]+/gi, ' ') // remove symbols
+      .replace(/(episode\s?\d+|ep\s?\d+|e\d+|part\s?\d+)/gi, '')
+      .replace(/[^a-z0-9]+/gi, ' ')
       .trim()
       .toLowerCase();
   }
@@ -207,7 +209,6 @@ function smartFlatSort(files) {
   }
   return sortedFiles;
 }
-
 
 function handleFiles(files) {
 try {
@@ -402,6 +403,11 @@ if (files?.length > 0) {
         target.currentTime = 2
         document.getElementById("total-time").textContent = window.tmg.formatTime(totalTime)
         target.closest(".content-line").querySelector(".file-duration span:last-child").innerHTML = `${window.tmg.formatTime(target.duration)}`
+      }
+      thumbnails[n].onerror = ({target}) => {
+        const line = target.closest(".content-line")
+        line.querySelector(".file-duration span:last-child").innerHTML = "Failed to load :&lpar;"
+        line.classList.add("error");
       }
       thumbnails[n].src = url
     })
