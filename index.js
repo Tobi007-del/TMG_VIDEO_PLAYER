@@ -178,30 +178,46 @@ function smartFlatSort(files) {
       .trim()
       .toLowerCase();
   }
+  function romanToInt(roman) {
+    // Map of Roman numeral characters to their integer values
+    const ROMAN = { I:1, V:5, X:10, L:50, C:100, D:500, M:1000 };
+    return roman
+      .toUpperCase()               // Ensure consistent uppercase (e.g., 'iv' becomes 'IV')
+      .split('')                   // Turn into array of characters: 'XIV' → ['X','I','V']
+      .reduce((acc, val, i, arr) => {
+        const curr = ROMAN[val] || 0;           // Current character's value
+        const next = ROMAN[arr[i + 1]] || 0;    // Look ahead to the next character (if any)
+        // Subtractive notation: if current is less than next (e.g., I before V → 4)
+        // Otherwise, just add normally
+        return acc + (curr < next ? -curr : curr);
+      }, 0); // Start accumulator at 0
+  }
   // Extract episode key: season, episode number(s), or special flags
   function extractEpisodeKey(name) {
-    name = name.toLowerCase();
-    // Match multi-episode (e.g., S02E05-E06)
+    name = name.toLowerCase(); // Normalize the name to lowercase for consistent matching
+    // Match formats like "S02E05-E06" (multi-episode, we only care about the first one)
     const multiEp = name.match(/s(\d{1,2})e(\d{1,2})[-_. ]?e?(\d{1,2})/);
-    if (multiEp) {
-      const season = parseInt(multiEp[1]);
-      const epStart = parseInt(multiEp[2]);
-      return [season, epStart];
-    }
-    // Match single SxxEyy or SxEy
+    if (multiEp) return [parseInt(multiEp[1]), parseInt(multiEp[2])];
+    // Match standard format like "S01E01", "s5e3"
     const standard = name.match(/s(\d{1,2})e(\d{1,2})/);
     if (standard) return [parseInt(standard[1]), parseInt(standard[2])];
-    // Match 1x01
+    // Match "1x01", "5x12" — alternate style used by some encoders or fansubs
     const alt = name.match(/(\d{1,2})x(\d{1,2})/);
     if (alt) return [parseInt(alt[1]), parseInt(alt[2])];
-    // Match S00E?? for Specials
+    // Match special episodes in format "S00E05"
     const special = name.match(/s00e(\d{1,2})/);
-    if (special) return [0, parseInt(special[1])];
-    // Try fallback: ep 9, episode 9, e9
+    if (special) return [0, parseInt(special[1])]; // Special episodes get season 0
+    // Match lazy formats like "S02 - Episode 3", "S3 ep4", "S5E 7" (not strict SxxEyy)
+    const looseCombo = name.match(/s(\d{1,2}).*?(?:ep|e|episode)[\s\-]?(\d{1,3})/);
+    if (looseCombo) return [parseInt(looseCombo[1]), parseInt(looseCombo[2])];
+    // Match Roman numerals like "Season IV Episode IX"
+    const roman = name.match(/season\s+([ivxlcdm]+).*?(?:ep|e|episode)?\s*([ivxlcdm]+)/i);
+    if (roman) return [romanToInt(roman[1]), romanToInt(roman[2])];
+    // Match fallback single-episode formats like "Ep12", "Episode 5", "E7" without season info
     const loose = name.match(/(?:ep|episode|e)(\d{1,3})/);
-    if (loose) return [999, parseInt(loose[1])];
-    // Fallback to force sort later
-    return [9999, 9999];
+    if (loose) return [999, parseInt(loose[1])]; // Put these at the end with fake season 999
+    // Totally unmatchable junk (e.g. "Behind the Scenes", "Bonus Feature")
+    return [9999, 9999]; // Hard fallback — gets sorted dead last
   }
   function sortByEpisode(a, b) {
     const ak = extractEpisodeKey(a.name);
@@ -420,7 +436,7 @@ if (files?.length > 0) {
       }
       thumbnails[n].onerror = ({target}) => {
         const line = target.closest(".content-line")
-        line.querySelector(".file-duration span:last-child").innerHTML = "Failed to load :&lpar;"
+        line.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load"
         line.classList.add("error");
       }
       thumbnails[n].src = url

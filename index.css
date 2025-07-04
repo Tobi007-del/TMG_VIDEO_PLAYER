@@ -506,6 +506,10 @@ body:has(#video.stall) #clear-button {
   overflow: hidden;
 }
 
+.file-duration {
+  word-break: keep-all;
+}
+
 .content-line p span:first-child {
   color: gray;
 }
@@ -634,8 +638,8 @@ body:has(#video.stall) #clear-button {
 
 .content-line.error .thumbnail-container {
   position: relative;
-  background: #1c1c1c;
   cursor: not-allowed;
+  background: rgb(55, 55, 55);
 }
 
 .content-line.error .thumbnail-container::before {
