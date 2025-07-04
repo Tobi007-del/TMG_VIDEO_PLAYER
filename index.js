@@ -162,49 +162,63 @@ foldersDropBox.addEventListener("drop", handleDrop)
 clearBtn.addEventListener("click", clearFiles)
 
 function smartFlatSort(files) {
-  // Extract base title from filename, ignoring S01E01 etc
+  // Extracts the main series title + optional season
   function getTitlePrefix(name) {
-    const match = name.match(/(.*?)(s\d{1,2})e\d{1,2}/i); // keep "Game of Thrones S02"
-    if (match) return match[1].replace(/[^a-z0-9]+/gi, ' ').trim().toLowerCase() + ' ' + match[2].toLowerCase();
+    const match = name.match(/(.*?)(s\d{1,2})(e\d{1,2})?/i);
+    if (match) {
+      return (
+        match[1].replace(/[^a-z0-9]+/gi, ' ').trim().toLowerCase() +
+        ' ' +
+        match[2].toLowerCase()
+      );
+    }
     return name
       .replace(/(episode\s?\d+|ep\s?\d+|e\d+|part\s?\d+)/gi, '')
       .replace(/[^a-z0-9]+/gi, ' ')
       .trim()
       .toLowerCase();
   }
-  // Break a string into text/number chunks for natural sort
-  function naturalTokenize(str) {
-    return str
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, ' ')
-      .trim()
-      .split(/\s+/)
-      .map(token => (isFinite(token) ? parseInt(token) : token));
-  }
-  // Compare two file names using natural sort
-  function naturalSort(a, b) {
-    const ax = naturalTokenize(a.name);
-    const bx = naturalTokenize(b.name);
-    for (let i = 0; i < Math.max(ax.length, bx.length); i++) {
-      if (ax[i] === undefined) return -1;
-      if (bx[i] === undefined) return 1;
-      if (ax[i] !== bx[i]) return ax[i] < bx[i] ? -1 : 1;
+  // Extract episode key: season, episode number(s), or special flags
+  function extractEpisodeKey(name) {
+    name = name.toLowerCase();
+    // Match multi-episode (e.g., S02E05-E06)
+    const multiEp = name.match(/s(\d{1,2})e(\d{1,2})[-_. ]?e?(\d{1,2})/);
+    if (multiEp) {
+      const season = parseInt(multiEp[1]);
+      const epStart = parseInt(multiEp[2]);
+      return [season, epStart];
     }
-    return 0;
+    // Match single SxxEyy or SxEy
+    const standard = name.match(/s(\d{1,2})e(\d{1,2})/);
+    if (standard) return [parseInt(standard[1]), parseInt(standard[2])];
+    // Match 1x01
+    const alt = name.match(/(\d{1,2})x(\d{1,2})/);
+    if (alt) return [parseInt(alt[1]), parseInt(alt[2])];
+    // Match S00E?? for Specials
+    const special = name.match(/s00e(\d{1,2})/);
+    if (special) return [0, parseInt(special[1])];
+    // Try fallback: ep 9, episode 9, e9
+    const loose = name.match(/(?:ep|episode|e)(\d{1,3})/);
+    if (loose) return [999, parseInt(loose[1])];
+    // Fallback to force sort later
+    return [9999, 9999];
   }
-  // Group files by title prefix (series base name)
+  function sortByEpisode(a, b) {
+    const ak = extractEpisodeKey(a.name);
+    const bk = extractEpisodeKey(b.name);
+    if (ak[0] !== bk[0]) return ak[0] - bk[0]; // season
+    return ak[1] - bk[1]; // episode
+  }
   const groups = new Map();
   for (const file of files) {
     const key = getTitlePrefix(file.name);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(file);
   }
-  // Sort groups A-Z by title prefix
   const sortedGroups = [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
-  // Sort each group naturally, then flatten
   const sortedFiles = [];
   for (const [, group] of sortedGroups) {
-    group.sort(naturalSort);
+    group.sort(sortByEpisode);
     sortedFiles.push(...group);
   }
   return sortedFiles;
