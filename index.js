@@ -161,10 +161,59 @@ foldersDropBox.addEventListener("dragleave", handleDragLeave)
 foldersDropBox.addEventListener("drop", handleDrop)
 clearBtn.addEventListener("click", clearFiles)
 
+function smartFlatSort(files) {
+  // Extract base title from filename, ignoring S01E01 etc
+  function getTitlePrefix(name) {
+    return name
+      .replace(/(s\d+e\d+|season\s?\d+|episode\s?\d+|ep\s?\d+|e\d+|part\s?\d+)/gi, '')
+      .replace(/[^a-z0-9]+/gi, ' ') // remove symbols
+      .trim()
+      .toLowerCase();
+  }
+  // Break a string into text/number chunks for natural sort
+  function naturalTokenize(str) {
+    return str
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .map(token => (isFinite(token) ? parseInt(token) : token));
+  }
+  // Compare two file names using natural sort
+  function naturalSort(a, b) {
+    const ax = naturalTokenize(a.name);
+    const bx = naturalTokenize(b.name);
+    for (let i = 0; i < Math.max(ax.length, bx.length); i++) {
+      if (ax[i] === undefined) return -1;
+      if (bx[i] === undefined) return 1;
+      if (ax[i] !== bx[i]) return ax[i] < bx[i] ? -1 : 1;
+    }
+    return 0;
+  }
+  // Group files by title prefix (series base name)
+  const groups = new Map();
+  for (const file of files) {
+    const key = getTitlePrefix(file.name);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(file);
+  }
+  // Sort groups A-Z by title prefix
+  const sortedGroups = [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+  // Sort each group naturally, then flatten
+  const sortedFiles = [];
+  for (const [, group] of sortedGroups) {
+    group.sort(naturalSort);
+    sortedFiles.push(...group);
+  }
+  return sortedFiles;
+}
+
+
 function handleFiles(files) {
 try {
 if (files?.length > 0) {
-  initUI() 
+  initUI()
+  files = smartFlatSort(files);
   // providing some available metrics to the user 
   for (const file of files) {
     numberOfBytes += file.size

@@ -284,11 +284,11 @@ body:has(#video.stall) #clear-button {
   height: fit-content;
   width: 100%;
   padding: 10px;
-  border: 1.35px solid darkgrey;
+  border: 1.35px solid rgba(169, 169, 169, 0.6);
+  box-shadow: 1px 1px 2px rgba(244, 143, 177, 0.4);
   transition: all 250ms ease;
 }
 
-#file-picker:hover,
 #file-picker:has(.drop-box.active) {
   box-shadow: 0 4px 10px rgba(244, 143, 177, 0.4); /* 🧪 glow */
 }
@@ -330,7 +330,7 @@ body:has(#video.stall) #clear-button {
   color: rgba(0, 0, 0, 0.75);
   cursor: pointer;
   transition: 200ms ease;
-  border: 1.35px solid darkgrey;
+  border: 1.35px solid rgba(169, 169, 169, 0.6);
   font-size: 16.5px;
   font-weight: bolder;
   padding: 10px;
