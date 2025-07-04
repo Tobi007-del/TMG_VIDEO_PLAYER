@@ -628,7 +628,7 @@ body:has(#video.stall) #clear-button {
   opacity: 0.8;
 }
 
-.content-line.error p span:last-child {
+.content-line.error .file-duration span:last-child {
   color: #f73839cc;
 }
 
@@ -643,8 +643,10 @@ body:has(#video.stall) #clear-button {
   position: absolute;
   top: 50%;
   left: 50%;
+  width: 100%;
+  height: 100%;
   transform: translate(-50%, -50%);
-  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23e74c3c"/><path fill="%23f73839cc" stroke="%23fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 8l8 8M16 8l-8 8"/></svg>') no-repeat center / 25px;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23f73839cc"/><path fill="%23fff" stroke="%23fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 8l8 8M16 8l-8 8"/></svg>') no-repeat center/25px;
 }
 
 .content-line.error .thumbnail-container button,
