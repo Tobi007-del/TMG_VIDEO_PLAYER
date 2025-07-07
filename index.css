@@ -642,7 +642,7 @@ body:has(#video.stall) #clear-button {
   background: rgb(55, 55, 55);
 }
 
-.content-line.error:not(.playing) .thumbnail-container::before {
+/* .content-line.error:not(.playing) .thumbnail-container::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -651,9 +651,9 @@ body:has(#video.stall) #clear-button {
   height: 100%;
   transform: translate(-50%, -50%);
   background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23f73839cc"/><path fill="%23fff" stroke="%23fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 8l8 8M16 8l-8 8"/></svg>') no-repeat center/25px;
-}
+} */
 
-.content-line.error:not(.playing) .thumbnail-container button,
+/* .content-line.error:not(.playing) .thumbnail-container button, */
 .content-line.error .thumbnail {
   display: none;
 }
