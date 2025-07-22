@@ -5,7 +5,7 @@
     "start_url": "/TMG_VIDEO_PLAYER/index.html",
     "id": "/TMG_VIDEO_PLAYER/index.html",
     "display": "standalone",
-    "theme_color": "#fed7b2",
+    "theme_color": "​#141414",
     "background_color": "#e26e02",
     "icons": [{
         "src": "/TMG_VIDEO_PLAYER/assets/icons/tmg-icon.png",
