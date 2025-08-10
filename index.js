@@ -435,6 +435,7 @@ if (files?.length > 0) {
         target.closest(".content-line").querySelector(".file-duration span:last-child").innerHTML = `${window.tmg.formatTime(target.duration)}`
       }
       thumbnails[n].onerror = ({target}) => {
+        if (window.tmg.formatNumber(target.duration) > 0) return;
         const line = target.closest(".content-line")
         line.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load"
         line.classList.add("error");
