@@ -34,7 +34,9 @@
   --loader-width: 4px;
   --degree: 180deg;
   /* lib variables */
-  --T_M_G-video-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --T_M_G-video-font-family:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   --t007-toast-type-color: var(--T_M_G-brand-color);
   --t007-toast-progress-background: linear-gradient(
     to left,
@@ -101,13 +103,16 @@ body::before {
   width: 100%;
   height: 100lvh;
   z-index: -1;
-  background: linear-gradient(#0b1012e8, #0b1012e8),
-    center/cover url("./assets/images/lone-tree.jpg"), #0b1012;
+  background:
+    linear-gradient(#0b1012e8, #0b1012e8),
+    center/cover url("./assets/images/lone-tree.jpg"),
+    #0b1012;
   filter: brightness(0.95);
 }
 
 body.light::before {
-  background: conic-gradient(
+  background:
+    conic-gradient(
       from var(--turn) at 50% -10%,
       #0b1012e8 10deg,
       #0b1012e8 calc((360deg - var(--degree)) / 2),
@@ -115,7 +120,8 @@ body.light::before {
       #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2),
       #0b1012e8 350deg
     ),
-    center/cover url("./assets/images/lone-tree.jpg"), #0b1012;
+    center/cover url("./assets/images/lone-tree.jpg"),
+    #0b1012;
   animation: rotateLight 30s linear infinite;
 }
 
@@ -152,7 +158,7 @@ body.offline .offline-notice {
 }
 
 body:has(.dragging) {
-  cursor: grabbing!important;
+  cursor: grabbing !important;
 }
 
 .attribution {
@@ -219,7 +225,9 @@ body:has(#video.stall) #clear-button {
   border-left-color: var(--T_M_G-brand-color);
   border-right-color: grey;
   rotate: 0;
-  animation: spin 800ms linear infinite, switch 800ms infinite ease forwards;
+  animation:
+    spin 800ms linear infinite,
+    switch 800ms infinite ease forwards;
 }
 
 @media (max-width: 780px) {
@@ -382,7 +390,7 @@ body:has(#video.stall) #clear-button {
   width: 1em;
   height: 1em;
   vertical-align: -0.2125em;
-  margin-left: .3em;
+  margin-left: 0.3em;
   fill: currentColor;
 }
 
@@ -608,9 +616,11 @@ body:has(#video.stall) #clear-button {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     height: 4px;
-  } 50% {
+  }
+  50% {
     height: 20px;
   }
 }
@@ -633,7 +643,7 @@ body:has(#video.stall) #clear-button {
   opacity: 0.8;
 }
 
-.content-line.error .file-duration span:last-child {
+.content-line.error .file-duration span:last-child.failed {
   color: #f73839cc;
 }
 
