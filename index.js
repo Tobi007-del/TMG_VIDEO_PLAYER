@@ -459,7 +459,7 @@ function handleFiles(files) {
               artist: "TMG Video Player",
             },
             settings: {
-              previewImages: true,
+              time: { previewImages: true },
             },
           });
           thumbnails[n].onloadedmetadata = ({ target }) => {
@@ -491,7 +491,7 @@ function handleFiles(files) {
           );
           video.addEventListener("tmgready", readyUI, { once: true });
           videoPlayer = new tmg.Player({ playlist: playlist });
-          videoPlayer.build.playlist[0].settings.startTime = 2;
+          videoPlayer.build.playlist[0].settings.time = { start: 2 };
           videoPlayer.attach(video);
           video.addEventListener("loadedmetadata", dispatchPlayerReadyToast, {
             once: true,
