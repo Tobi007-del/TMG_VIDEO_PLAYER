@@ -1,2 +1,1 @@
-onmessage = (event) =>
-  postMessage(event.data.map((file) => URL.createObjectURL(file)));
+onmessage = (e) => postMessage(e.data.map(URL.createObjectURL));

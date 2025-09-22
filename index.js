@@ -5,7 +5,7 @@ import Toast from "/T007_TOOLS/T007_toast_library/T007_toast.js";
     await navigator.serviceWorker
       .register("TVP_sw.js")
       .catch((error) =>
-        console.log("Service Worker Registration failed with " + error)
+        console.log("Service Worker Registration failed with " + error),
       );
   } else console.error("Service workers are not supported");
 })();
@@ -142,7 +142,7 @@ function clearFiles() {
   document
     .querySelectorAll(".thumbnail-container")
     .forEach((container) =>
-      container.style.setProperty("--video-progress-position", 0)
+      container.style.setProperty("--video-progress-position", 0),
     );
   numberOfBytes = numberOfFiles = totalTime = 0;
   video.removeAttribute("src");
@@ -223,12 +223,12 @@ function smartFlatSort(files) {
     if (special) return [0, parseInt(special[1])]; // Special episodes get season 0
     // Match lazy formats like "S02 - Episode 3", "S3 ep4", "S5E 7" (not strict SxxEyy)
     const looseCombo = name.match(
-      /s(\d{1,2}).*?(?:ep|e|episode)[\s\-]?(\d{1,3})/
+      /s(\d{1,2}).*?(?:ep|e|episode)[\s\-]?(\d{1,3})/,
     );
     if (looseCombo) return [parseInt(looseCombo[1]), parseInt(looseCombo[2])];
     // Match Roman numerals like "Season IV Episode IX"
     const roman = name.match(
-      /season\s+([ivxlcdm]+).*?(?:ep|e|episode)?\s*([ivxlcdm]+)/i
+      /season\s+([ivxlcdm]+).*?(?:ep|e|episode)?\s*([ivxlcdm]+)/i,
     );
     if (roman) return [romanToInt(roman[1]), romanToInt(roman[2])];
     // Match fallback single-episode formats like "Ep12", "Episode 5", "E7" without season info
@@ -250,7 +250,7 @@ function smartFlatSort(files) {
     groups.get(key).push(file);
   }
   const sortedGroups = [...groups.entries()].sort(([a], [b]) =>
-    a.localeCompare(b)
+    a.localeCompare(b),
   );
   const sortedFiles = [];
   for (const [, group] of sortedGroups) {
@@ -288,21 +288,22 @@ function handleFiles(files) {
         thumbnailContainer.onclick = () =>
           videoPlayer.Player.movePlaylistTo(
             videoPlayer.Player.playlist.findIndex(
-              (vid) => vid.src === thumbnailContainer.querySelector("video").src
-            )
+              (vid) =>
+                vid.src === thumbnailContainer.querySelector("video").src,
+            ),
           );
         li.appendChild(thumbnailContainer);
         const playbtn = document.createElement("button");
         playbtn.innerHTML = `
-    <svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25">
-      <path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" />
-    </svg>         
-    <svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated" xmlns="http://www.w3.org/2000/svg">
-      <rect x="4" width="3" height="10" fill="white"></rect>
-      <rect x="10" width="3" height="10" fill="white"></rect>
-      <rect x="16" width="3" height="10" fill="white"></rect>
-    </svg>
-    `;
+          <svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25">
+            <path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" />
+          </svg>         
+          <svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" width="3" height="10" fill="white"></rect>
+            <rect x="10" width="3" height="10" fill="white"></rect>
+            <rect x="16" width="3" height="10" fill="white"></rect>
+          </svg>
+        `;
         thumbnailContainer.appendChild(playbtn);
         const thumbnail = document.createElement("video");
         thumbnails.push(thumbnail);
@@ -312,20 +313,20 @@ function handleFiles(files) {
         span.classList.add("file-info-wrapper");
         const size = files[i].size;
         span.innerHTML = `
-      <p class="file-name"><span>Name: </span><span>${files[i].name}</span></p>
-      <p class="file-size"><span>Size: </span><span>${formatBytes(
-        size
-      )}</span></p>
-      <p class="file-duration"><span>Duration: </span><span>Initializing...</span></p>
-    `;
+          <p class="file-name"><span>Name: </span><span>${files[i].name}</span></p>
+          <p class="file-size"><span>Size: </span><span>${formatBytes(
+            size,
+          )}</span></p>
+          <p class="file-duration"><span>Duration: </span><span>Initializing...</span></p>
+        `;
         li.appendChild(span);
         const dragHandle = document.createElement("span");
         dragHandle.className = "drag-handle";
         dragHandle.innerHTML = `
-    <svg fill="#000000" height="20px" width="20px" version="1.1" id="XMLID_308_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" xml:space="preserve">
-      <path d="M10,6H6V2h4V6z M18,2h-4v4h4V2z M10,10H6v4h4V10z M18,10h-4v4h4V10z M10,18H6v4h4V18z M18,18h-4v4h4V18z"/>
-    </svg>
-    `;
+          <svg fill="#000000" height="20px" width="20px" version="1.1" id="XMLID_308_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" xml:space="preserve">
+            <path d="M10,6H6V2h4V6z M18,2h-4v4h4V2z M10,10H6v4h4V10z M18,10h-4v4h4V10z M10,18H6v4h4V18z M18,18h-4v4h4V18z"/>
+          </svg>
+        `;
         dragHandle.title = "Drag to reorder";
         li.appendChild(dragHandle);
         let clientY = 0,
@@ -370,7 +371,7 @@ function handleFiles(files) {
             dragPosY = tmg.clamp(
               0,
               scrollY + clientY - offsetY - dragItem.offsetHeight / 2,
-              maxOffset - dragItem.offsetHeight
+              maxOffset - dragItem.offsetHeight,
             );
             dragItem.style.top = `${dragPosY}px`;
             if (dragPosY > 0 && dragPosY < maxOffset - dragItem.offsetHeight) {
@@ -393,7 +394,7 @@ function handleFiles(files) {
         }
         function recomputeList() {
           const children = Array.from(
-            list.querySelectorAll(".content-line:not(.dragging)")
+            list.querySelectorAll(".content-line:not(.dragging)"),
           );
           const afterLine = children.reduce(
             (closest, child) => {
@@ -403,7 +404,7 @@ function handleFiles(files) {
                 return { offset: offset, element: child };
               else return closest;
             },
-            { offset: Number.NEGATIVE_INFINITY }
+            { offset: Number.NEGATIVE_INFINITY },
           ).element;
           if (afterLine) list.insertBefore(placeholderItem, afterLine);
           else list.appendChild(placeholderItem);
@@ -424,10 +425,10 @@ function handleFiles(files) {
         const deleteBtn = document.createElement("button");
         deleteBtn.className = "delete-btn";
         deleteBtn.innerHTML = `
-    <svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="#0D0D0D"/>
-    </svg>
-    `;
+        <svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="#0D0D0D"/>
+        </svg>
+        `;
         deleteBtn.title = "Remove video";
         li.appendChild(deleteBtn);
         // Delete button handler
@@ -459,7 +460,7 @@ function handleFiles(files) {
               artist: "TMG Video Player",
             },
             settings: {
-              time: { previewImages: true },
+              time: { previews: true },
             },
           });
           thumbnails[n].onloadedmetadata = ({ target }) => {
@@ -469,9 +470,8 @@ function handleFiles(files) {
               tmg.formatTime(totalTime);
             target
               .closest(".content-line")
-              .querySelector(
-                ".file-duration span:last-child"
-              ).innerHTML = `${tmg.formatTime(target.duration)}`;
+              .querySelector(".file-duration span:last-child").innerHTML =
+              `${tmg.formatTime(target.duration)}`;
           };
           thumbnails[n].onerror = ({ target }) => {
             const line = target.closest(".content-line");
@@ -487,11 +487,11 @@ function handleFiles(files) {
         });
         if (!videoPlayer) {
           const containers = document.getElementsByClassName(
-            "thumbnail-container"
+            "thumbnail-container",
           );
           video.addEventListener("tmgready", readyUI, { once: true });
-          videoPlayer = new tmg.Player({ playlist: playlist });
-          videoPlayer.build.playlist[0].settings.time = { start: 2 };
+          videoPlayer = new tmg.Player({ playlist });
+          videoPlayer.build.playlist[0].settings.time.start = 2;
           videoPlayer.attach(video);
           video.addEventListener("loadedmetadata", dispatchPlayerReadyToast, {
             once: true,
@@ -502,7 +502,7 @@ function handleFiles(files) {
                 videoPlayer.Player?.currentPlaylistIndex
               ]?.style.setProperty(
                 "--video-progress-position",
-                video.currentTime / video.duration
+                video.currentTime / video.duration,
               );
           };
           video.onplay = () => {
@@ -513,7 +513,7 @@ function handleFiles(files) {
           };
           video.onpause = () => {
             containers[videoPlayer.Player?.currentPlaylistIndex]?.classList.add(
-              "paused"
+              "paused",
             );
           };
         } else
@@ -596,7 +596,7 @@ async function handleDrop(e) {
         dirReader.readEntries(async (entries) => {
           try {
             const nestedFiles = await Promise.all(
-              entries.map(traverseFileTree)
+              entries.map(traverseFileTree),
             );
             resolve(nestedFiles.flat());
           } catch {
@@ -616,14 +616,14 @@ async function handleDrop(e) {
   }
   const flatFiles = (await Promise.all(promises)).flat().filter(Boolean);
   const videoFiles = flatFiles.filter((file) =>
-    (file.type || getMimeTypeFromExtension(file.name)).startsWith("video/")
+    (file.type || getMimeTypeFromExtension(file.name)).startsWith("video/"),
   );
   const rejectedCount = flatFiles.length - videoFiles.length;
   if (rejectedCount > 0)
     Toast.warn(
       `You dropped ${rejectedCount} unsupported file${
         rejectedCount > 1 ? "s" : ""
-      }. Only video files are supported.`
+      }. Only video files are supported.`,
     );
   if (videoFiles.length > 0) handleFiles(videoFiles);
   videosDropBox.classList.remove("active");
@@ -655,7 +655,7 @@ function rebuildPlaylistFromUI() {
   mediaList.querySelectorAll(".content-line").forEach((li) => {
     const src = li.querySelector("video")?.src;
     newPlaylist.push(
-      videoPlayer.Player.playlist.find((vid) => vid.src === src)
+      videoPlayer.Player.playlist.find((vid) => vid.src === src),
     );
   });
 
@@ -671,7 +671,7 @@ function formatBytes(bytes) {
   const sizes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
   const i = Math.min(
     Math.floor(Math.log(bytes) / Math.log(k)),
-    sizes.length - 1
+    sizes.length - 1,
   );
   return `${(bytes / Math.pow(k, i)).toFixed(dm)} ${sizes[i]}`;
 }
@@ -708,10 +708,10 @@ function dispatchPlayerReadyToast() {
 }
 
 window.addEventListener("online", () =>
-  document.body.classList.remove("offline")
+  document.body.classList.remove("offline"),
 );
 window.addEventListener("offline", () =>
-  document.body.classList.add("offline")
+  document.body.classList.add("offline"),
 );
 
 window.addEventListener("load", () => {
@@ -720,10 +720,10 @@ window.addEventListener("load", () => {
     if (navigator.onLine) {
       fetch(
         "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-        { method: "HEAD", cache: "no-cache" }
+        { method: "HEAD", cache: "no-cache" },
       )
         .then((response) =>
-          document.body.classList.toggle("offline", !response.ok)
+          document.body.classList.toggle("offline", !response.ok),
         )
         .catch((error) => document.body.classList.add("offline"));
     }
