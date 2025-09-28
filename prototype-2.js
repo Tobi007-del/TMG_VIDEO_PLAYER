@@ -2126,7 +2126,7 @@ class T_M_G_Video_Controller {
     const parts = tmg.chunkArr(cue.text.split(" "), 8);
     parts.forEach((part) => {
       const cueLine = tmg.createEl("div", { className: "T_M_G-video-cue-line" });
-      const cueEl = tmg.createEl("span", { className: "T_M_G-video-cue", textContent: part.join(" ") });
+      const cueEl = tmg.createEl("span", { className: "T_M_G-video-cue", innerHTML: part.join(" ") });
       cueLine.appendChild(cueEl);
       cueWrapper.appendChild(cueLine);
     });
