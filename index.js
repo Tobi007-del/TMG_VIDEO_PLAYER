@@ -57,7 +57,8 @@ const { createFFmpeg, fetchFile } = FFmpeg,
   LINE_HEIGHT = 80,
   SCROLL_MARGIN = 80; // px from top/bottom to trigger scroll
 
-let video = document.getElementById("video"),
+let ffmpegLock = Promise.resolve(),
+  video = document.getElementById("video"),
   installPrompt = null,
   mP = null, // media player
   numberOfBytes = 0,
@@ -90,8 +91,8 @@ window.addEventListener("beforeinstallprompt", (event) => {
   installButton.style.display = "flex";
 });
 window.addEventListener("appinstalled", () => {
-  installButton.style.display = "none"
-  Toast.success("TVP was installed successfully!")
+  installButton.style.display = "none";
+  Toast.success("TVP was installed successfully!");
 });
 
 installButton.addEventListener("click", async () => {
@@ -296,7 +297,7 @@ function handleFiles(files) {
               {
                 height: `${rect.height}px`,
                 width: `${rect.width}px`,
-              },
+              }
             );
             li.parentElement.insertBefore(placeholderItem, li.nextElementSibling);
             li.classList.add("dragging");
@@ -306,7 +307,7 @@ function handleFiles(files) {
             document.addEventListener("pointercancel", onPointerUp);
             dragLoop();
           },
-          { passive: false },
+          { passive: false }
         );
         function onPointerMove(e) {
           clientY = e.clientY;
@@ -322,8 +323,7 @@ function handleFiles(files) {
               if (clientY < SCROLL_MARGIN || clientY > window.innerHeight - SCROLL_MARGIN) {
                 if (autoScrollAccId === null) autoScrollAccId = setTimeout(() => (LINES_PER_SEC += 1), 2000);
                 else if (LINES_PER_SEC > 3) LINES_PER_SEC = Math.min(LINES_PER_SEC + 1, 10);
-                if (clientY < SCROLL_MARGIN)
-                  window.scrollBy(0, -scrollSpeed); // Scroll upward
+                if (clientY < SCROLL_MARGIN) window.scrollBy(0, -scrollSpeed); // Scroll upward
                 else if (clientY > window.innerHeight - SCROLL_MARGIN) window.scrollBy(0, scrollSpeed); // Scroll downward
               } else {
                 clearTimeout(autoScrollAccId);
@@ -345,7 +345,7 @@ function handleFiles(files) {
               if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
               else return closest;
             },
-            { offset: Number.NEGATIVE_INFINITY },
+            { offset: Number.NEGATIVE_INFINITY }
           ).element;
           if (afterLine) list.insertBefore(placeholderItem, afterLine);
           else list.appendChild(placeholderItem);
@@ -411,7 +411,7 @@ function handleFiles(files) {
               () => {
                 if (video.currentTime > 3) containers[mP.Controller.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.parseNumber(video.currentTime / video.duration));
               },
-              1000,
+              1000
             );
           };
           video.onplay = () => {
@@ -422,17 +422,15 @@ function handleFiles(files) {
         } else mP.Controller.playlist = [...mP.Controller.playlist, ...playlist];
       };
       const deployCaptions = async () => {
-        const promises = playlist.map((item, i) => {
-          return new Promise(async (resolve) => {
-            const res = await extractCaptions(files[i], i);
-            if (res.success) {
+        await Promise.all(
+          playlist.map(async (item, i) => {
+            const res = await queueFFmpeg(() => extractCaptions(files[i], i));
+            if (res.success && item) {
               item.tracks = [res.track];
-              resolve({ ok: true, item });
-            } else resolve({ ok: false, error: res.error });
-          });
-        });
-        const added = (await Promise.all(promises)).filter((r) => r.ok).length;
-        if (added > 0) Toast.success(`Captions extracted for ${added} video${added > 1 ? "s" : ""}`);
+              return { ok: true, item };
+            } else return { ok: false, error: res.error };
+          })
+        );
       };
       deployVideos(files.map((file) => URL.createObjectURL(file)));
       deployCaptions();
@@ -443,27 +441,31 @@ function handleFiles(files) {
   }
 }
 
+function queueFFmpeg(task) {
+  ffmpegLock = ffmpegLock.then(task, task);
+  return ffmpegLock;
+}
+
 async function extractCaptions(file, i = Math.random()) {
   try {
     console.log(`🎥 Selected file: ${file.name}`);
-    if (!ffmpeg.isLoaded()) {
-      console.log("⚙ Loading ffmpeg.wasm...");
-      await ffmpeg.load();
-      console.log("✅ ffmpeg loaded.");
-    }
-    const inputName = "input.mp4";
-    const outputName = "sub.vtt";
+    if (!ffmpeg.isLoaded()) await ffmpeg.load();
+    const ts = Date.now();
+    const inputName = `input_${ts}_${i}.mp4`;
+    const outputName = `captions_${ts}_${i}.vtt`;
     ffmpeg.FS("writeFile", inputName, await fetchFile(file));
     console.log("🛠 Extracting first subtitle stream to .vtt...");
     await ffmpeg.run("-i", inputName, "-map", "0:s:0?", "-f", "webvtt", outputName);
     const vttData = ffmpeg.FS("readFile", outputName);
+    ffmpeg.FS("unlink", inputName);
+    ffmpeg.FS("unlink", outputName);
     const vttBlob = new Blob([vttData.buffer], { type: "text/vtt" });
     const vttURL = URL.createObjectURL(vttBlob);
     console.log("✅ Subtitles extracted from video.");
     return {
       success: true,
       track: {
-        id: i + "-" + Date.now(),
+        id: `track_${ts}_${i}`,
         kind: "subtitles",
         label: "English",
         srclang: "en",
