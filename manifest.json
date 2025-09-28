@@ -2,81 +2,81 @@
   "name": "TMG Video Player",
   "short_name": "TVP",
   "desciption": "TVP is a simple video player that allows you to play videos from your local device in your web browser.",
-  "start_url": "/TMG_VIDEO_PLAYER/index.html",
-  "id": "/TMG_VIDEO_PLAYER/index.html",
+  "start_url": "index.html",
+  "id": "index.html",
   "display": "standalone",
   "theme_color": "#141414",
   "background_color": "#e26e02",
   "icons": [
     {
-      "src": "/TMG_VIDEO_PLAYER/assets/icons/tmg-icon.png",
+      "src": "assets/icons/tmg-icon.png",
       "sizes": "225x225",
       "type": "image/png"
     }
   ],
   "screenshots": [
     {
-      "src": "/TMG_VIDEO_PLAYER/assets/images/desktop_preview.png",
+      "src": "assets/images/desktop_preview.png",
       "sizes": "2530x1260",
       "type": "image/png",
       "form_factor": "wide"
     },
     {
-      "src": "/TMG_VIDEO_PLAYER/assets/images/mobile_preview.png",
+      "src": "assets/images/mobile_preview.png",
       "sizes": "410x900",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/TMG_VIDEO_PLAYER/assets/images/player_desktop_preview.png",
+      "src": "assets/images/player_desktop_preview.png",
       "sizes": "2530x1260",
       "type": "image/png",
       "form_factor": "wide"
     },
     {
-      "src": "/TMG_VIDEO_PLAYER/assets/images/player_mobile_preview.png",
+      "src": "assets/images/player_mobile_preview.png",
       "sizes": "410x900",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/TMG_VIDEO_PLAYER/assets/images/player_desktop_fullscreen_preview.png",
+      "src": "assets/images/player_desktop_fullscreen_preview.png",
       "sizes": "2530x1260",
       "type": "image/png",
       "form_factor": "wide"
     },
     {
-      "src": "/TMG_VIDEO_PLAYER/assets/images/player_mobile_fullscreen_rotate_preview.png",
+      "src": "assets/images/player_mobile_fullscreen_rotate_preview.png",
       "sizes": "410x900",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/TMG_VIDEO_PLAYER/assets/images/player_theater_preview.png",
+      "src": "assets/images/player_theater_preview.png",
       "sizes": "2530x1260",
       "type": "image/png",
       "form_factor": "wide"
     },
     {
-      "src": "/TMG_VIDEO_PLAYER/assets/images/player_desktop_pictureinpicture_preview.png",
+      "src": "assets/images/player_desktop_pictureinpicture_preview.png",
       "sizes": "2530x1260",
       "type": "image/png",
       "form_factor": "wide"
     },
     {
-      "src": "/TMG_VIDEO_PLAYER/assets/images/player_mobile_pictureinpicture_preview.png",
+      "src": "assets/images/player_mobile_pictureinpicture_preview.png",
       "sizes": "410x900",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/TMG_VIDEO_PLAYER/assets/images/miniplayer_desktop_preview.png",
+      "src": "assets/images/miniplayer_desktop_preview.png",
       "sizes": "2530x1260",
       "type": "image/png",
       "form_factor": "wide"
     },
     {
-      "src": "/TMG_VIDEO_PLAYER/assets/images/miniplayer_mobile_preview.png",
+      "src": "assets/images/miniplayer_mobile_preview.png",
       "sizes": "410x900",
       "type": "image/png",
       "form_factor": "narrow"

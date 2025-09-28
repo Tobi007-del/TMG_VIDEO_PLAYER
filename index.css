@@ -1,12 +1,3 @@
-*,
-*::after,
-*::before {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  -webkit-tap-highlight-color: transparent;
-}
-
 @property --T_M_G-brand-color {
   syntax: "<color>";
   initial-value: rgb(226, 110, 2);
@@ -21,29 +12,16 @@
 
 :root {
   --T_M_G-brand-color: rgb(226, 110, 2);
-  --T_M_G-lighter-brand-color: hsl(
-    from var(--T_M_G-brand-color) h s calc(l + 40)
-  );
+  --T_M_G-brand-light-color: hsl(from var(--T_M_G-brand-color) h s calc(l + 40));
   --T_M_G-brand-accent-color: rgb(244, 143, 177);
-  --scrollbar-track-color: rgb(20, 20, 20);
-  --scrollbar-thumb-color: #f0ad5f;
-  --scrollbar-thumb-hover-color: #eb9634;
-  --scrollbar-thumb-active-color: #ed8f23;
   --max-turn: 0.235turn;
   --loader-size: 75px;
   --loader-width: 4px;
   --degree: 180deg;
   /* lib variables */
-  --T_M_G-video-font-family:
-    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  --T_M_G-video-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --t007-toast-type-color: var(--T_M_G-brand-color);
-  --t007-toast-progress-background: linear-gradient(
-    to left,
-    var(--T_M_G-brand-color),
-    var(--T_M_G-brand-accent-color),
-    var(--T_M_G-lighter-brand-color)
-  );
+  --t007-toast-progress-background: linear-gradient(to left, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-brand-light-color));
 }
 
 @keyframes rotateLight {
@@ -85,6 +63,16 @@
   }
 }
 
+*,
+*::after,
+*::before {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  scrollbar-color: #f0ad5f rgb(20, 20, 20);
+}
+
 html {
   background-color: #0b1012;
 }
@@ -112,14 +100,7 @@ body::before {
 
 body.light::before {
   background:
-    conic-gradient(
-      from var(--turn) at 50% -10%,
-      #0b1012e8 10deg,
-      #0b1012e8 calc((360deg - var(--degree)) / 2),
-      #5c80f755,
-      #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2),
-      #0b1012e8 350deg
-    ),
+    conic-gradient(from var(--turn) at 50% -10%, #0b1012e8 10deg, #0b1012e8 calc((360deg - var(--degree)) / 2), #5c80f755, #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2), #0b1012e8 350deg),
     center/cover url("./assets/images/lone-tree.jpg"),
     #0b1012;
   animation: rotateLight 30s linear infinite;
@@ -142,13 +123,7 @@ body.offline .offline-notice {
   width: 100%;
   max-height: fit-content;
   padding: 2px;
-  background: linear-gradient(
-    to right,
-    rgb(from var(--T_M_G-brand-color) r g b/.6),
-    rgb(from var(--T_M_G-brand-accent-color) r g b/.6),
-    rgb(from var(--T_M_G-lighter-brand-color) r g b/.6),
-    rgb(from var(--T_M_G-brand-color) r g b/.6)
-  );
+  background: linear-gradient(to right, rgb(from var(--T_M_G-brand-color) r g b/.6), rgb(from var(--T_M_G-brand-accent-color) r g b/.6), rgb(from var(--T_M_G-brand-light-color) r g b/.6), rgb(from var(--T_M_G-brand-color) r g b/.6));
   backdrop-filter: blur(5px);
   z-index: 10000;
 }
@@ -171,7 +146,7 @@ body:has(.dragging) {
 }
 
 .attribution a {
-  color: var(--T_M_G-lighter-brand-color);
+  color: var(--T_M_G-brand-light-color);
 }
 
 .attribution {
@@ -237,8 +212,7 @@ body:has(#video.stall) #clear-button {
   }
 }
 
-@media (max-width: 480px),
-  (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+@media (max-width: 480px), (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
   :root {
     --loader-size: 40px;
     --loader-width: 2px;
@@ -288,12 +262,7 @@ body:has(#video.stall) #clear-button {
 }
 
 #file-picker {
-  background: linear-gradient(
-    to left,
-    rgb(from var(--T_M_G-brand-color) r g b/.6),
-    rgb(from var(--T_M_G-brand-accent-color) r g b/.6),
-    rgb(from var(--T_M_G-lighter-brand-color) r g b/.6)
-  );
+  background: linear-gradient(to left, rgb(from var(--T_M_G-brand-color) r g b/.6), rgb(from var(--T_M_G-brand-accent-color) r g b/.6), rgb(from var(--T_M_G-brand-light-color) r g b/.6));
   backdrop-filter: blur(5px);
   border-radius: 16px;
   height: fit-content;
@@ -325,12 +294,7 @@ body:has(#video.stall) #clear-button {
 }
 
 .drop-box {
-  background: linear-gradient(
-    to right,
-    rgb(from var(--T_M_G-brand-color) r g b/.6),
-    rgb(from var(--T_M_G-brand-accent-color) r g b/.6),
-    rgb(from var(--T_M_G-lighter-brand-color) r g b/.6)
-  );
+  background: linear-gradient(to right, rgb(from var(--T_M_G-brand-color) r g b/.6), rgb(from var(--T_M_G-brand-accent-color) r g b/.6), rgb(from var(--T_M_G-brand-light-color) r g b/.6));
   backdrop-filter: blur(5px);
   border-radius: 11px;
   flex: 1 1;
@@ -370,13 +334,7 @@ body:has(#video.stall) #clear-button {
 .drop-box:hover,
 .drop-box.active,
 .drop-box:has(:focus-visible) {
-  background: linear-gradient(
-    to right,
-    var(--T_M_G-brand-color),
-    var(--T_M_G-brand-accent-color),
-    var(--T_M_G-lighter-brand-color),
-    var(--T_M_G-brand-color)
-  );
+  background: linear-gradient(to right, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-brand-light-color), var(--T_M_G-brand-color));
   background-size: 200%;
   animation: background-pan 600ms ease;
 }
@@ -431,7 +389,7 @@ body:has(#video.stall) #clear-button {
   padding: 7px;
   border-radius: 5px;
   font-size: 13px;
-  background: var(--T_M_G-lighter-brand-color);
+  background: var(--T_M_G-brand-light-color);
   font-weight: 550;
   color: grey;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25); /* 🧪 subtle lift */
@@ -625,7 +583,6 @@ body:has(#video.stall) #clear-button {
   }
 }
 
-/* 👇 To pause animation */
 .paused rect {
   animation-play-state: paused;
 }
@@ -706,8 +663,7 @@ body:has(#video.stall) #clear-button {
   fill: #f73839cc;
 }
 
-@media (max-width: 480px),
-  (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+@media (max-width: 480px), (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
   #video-player-container {
     max-width: unset;
   }
