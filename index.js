@@ -89,7 +89,10 @@ window.addEventListener("beforeinstallprompt", (event) => {
   installPrompt = event;
   installButton.style.display = "flex";
 });
-window.addEventListener("appinstalled", () => (installButton.style.display = "none"));
+window.addEventListener("appinstalled", () => {
+  installButton.style.display = "none"
+  Toast.success("TVP was installed successfully!")
+});
 
 installButton.addEventListener("click", async () => {
   const result = await installPrompt?.prompt?.();
