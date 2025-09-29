@@ -312,6 +312,8 @@
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  scrollbar-width: thin;
+  scrollbar-color: var(--T_M_G-video-brand-color) transparent;
 }
 
 :where(.T_M_G-media-container) *,
@@ -1862,12 +1864,14 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   right: var(--T_M_G-video-current-cue-x);
   bottom: var(--T_M_G-video-current-cue-y);
   translate: 50%;
+  max-height: calc(100% - 0.5em);
   font-size: calc(var(--T_M_G-video-captions-font-size-base) * var(--f));
   padding: 0.25rem 1em;
+  opacity: 0;
+  overflow-y: auto;
   background: rgb(from var(--T_M_G-video-captions-window-color) r g b / var(--T_M_G-video-captions-window-opacity));
   touch-action: none;
   cursor: grab;
-  opacity: 0;
   will-change: right, bottom;
   transition:
     var(--T_M_G-video-motion-transition),

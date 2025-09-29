@@ -1441,14 +1441,13 @@ class T_M_G_Video_Controller {
     return URL.createObjectURL(await new Promise((res) => this.exportCanvas.toBlob(res)));
   }
   async exportVideoFrame(monochrome) {
-    const url = await this.getVideoFrameURL(this.currentTime, monochrome === true);
+    this.fire("screenshot");
     const link = tmg.createEl("a", {
-      href: url,
+      href: await this.getVideoFrameURL(this.currentTime, monochrome === true),
       download: `${this.media?.title ?? "Video"}${monochrome === true ? `_black&white` : ""}_at_'${tmg.formatTime(this.video.currentTime, "human", true)}'.png`.replace(/\s/g, "_"),
     });
     link.click();
     URL.revokeObjectURL(link.href);
-    this.fire("screenshot");
   }
   convertToMonoChrome(canvas, context) {
     const frame = context.getImageData(0, 0, canvas.width, canvas.height);

@@ -1,7 +1,7 @@
 import Toast from "./T007_toast.js";
 
 (async function registerServiceWorker() {
-  if (!("serviceWorker" in navigator)) return Toast.warn(" Offline support not available in this browser");
+  if (!("serviceWorker" in navigator)) return Toast.warn("Offline support is unavailable here");
   try {
     await navigator.serviceWorker.register("TVP_sw.js");
   } catch (error) {
@@ -483,25 +483,22 @@ function cancelJob(id) {
 
 async function extractCaptions(file, id) {
   try {
-    console.log(`🎥 Selected file: ${file.name}`);
-    if (!ffmpeg.isLoaded()) await ffmpeg.load();
+    console.log(`🎥 Processing file: '${file.name}'`);
     const inputName = `video${id}.mp4`;
     const outputName = `cue${id}.vtt`;
-    ffmpeg.FS("writeFile", inputName, await fetchFile(file));
+    const fileSlice = file.slice(0, Math.min(file.size, 20 * 1024 * 1024)); // first 20MB
+    if (!ffmpeg.isLoaded()) await ffmpeg.load();
+    ffmpeg.FS("writeFile", inputName, await fetchFile(fileSlice));
     console.log("🛠 Extracting first subtitle stream to .vtt...");
-    await ffmpeg.run("-i", inputName, "-map", "0:s:0?", "-f", "webvtt", outputName);
+    await ffmpeg.run("-i", inputName, "-map", "0:s:0", "-f", "webvtt", outputName);
     const vttData = ffmpeg.FS("readFile", outputName);
     ffmpeg.FS("unlink", inputName);
     ffmpeg.FS("unlink", outputName);
-    const vttBlob = new Blob([vttData.buffer], { type: "text/vtt" });
-    console.log("✅ Subtitles extracted from video.");
-    return {
-      success: true,
-      track: { id, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(vttBlob), default: true },
-    };
+    if (tmg.queryMediaMobile()) ffmpeg.exit();
+    console.log("✅ First subtitle stream extracted successfully.");
+    return { success: true, track: { id, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([vttData.buffer], { type: "text/vtt" })), default: true } };
   } catch (err) {
-    console.log("❌ Failed to extract subtitles.");
-    console.log(err.toString());
+    console.warn("❌ Subtitle stream extraction failed:", err);
     return { success: false, error: err.toString() };
   }
 }
