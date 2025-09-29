@@ -11,7 +11,7 @@ import Toast from "./T007_toast.js";
 })();
 
 const { createFFmpeg, fetchFile } = FFmpeg,
-  ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js", }),
+  ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" }),
   installButton = document.getElementById("install"),
   videoPlayerContainer = document.getElementById("video-player-container"),
   uploadVideosInput = document.getElementById("videos-file-input"),
@@ -303,7 +303,7 @@ function handleFiles(files) {
               {
                 height: `${rect.height}px`,
                 width: `${rect.width}px`,
-              }
+              },
             );
             li.parentElement.insertBefore(placeholderItem, li.nextElementSibling);
             li.classList.add("dragging");
@@ -313,7 +313,7 @@ function handleFiles(files) {
             document.addEventListener("pointercancel", onPointerUp);
             dragLoop();
           },
-          { passive: false }
+          { passive: false },
         );
         function onPointerMove(e) {
           clientY = e.clientY;
@@ -329,7 +329,8 @@ function handleFiles(files) {
               if (clientY < SCROLL_MARGIN || clientY > window.innerHeight - SCROLL_MARGIN) {
                 if (autoScrollAccId === null) autoScrollAccId = setTimeout(() => (LINES_PER_SEC += 1), 2000);
                 else if (LINES_PER_SEC > 3) LINES_PER_SEC = Math.min(LINES_PER_SEC + 1, 10);
-                if (clientY < SCROLL_MARGIN) window.scrollBy(0, -scrollSpeed); // Scroll upward
+                if (clientY < SCROLL_MARGIN)
+                  window.scrollBy(0, -scrollSpeed); // Scroll upward
                 else if (clientY > window.innerHeight - SCROLL_MARGIN) window.scrollBy(0, scrollSpeed); // Scroll downward
               } else {
                 clearTimeout(autoScrollAccId);
@@ -351,7 +352,7 @@ function handleFiles(files) {
               if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
               else return closest;
             },
-            { offset: Number.NEGATIVE_INFINITY }
+            { offset: Number.NEGATIVE_INFINITY },
           ).element;
           if (afterLine) list.insertBefore(placeholderItem, afterLine);
           else list.appendChild(placeholderItem);
@@ -418,7 +419,7 @@ function handleFiles(files) {
               () => {
                 if (video.currentTime > 3) containers[mP.Controller.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.parseNumber(video.currentTime / video.duration));
               },
-              1000
+              1000,
             );
           };
           video.onplay = () => {
@@ -439,7 +440,7 @@ function handleFiles(files) {
               if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === item) mP.Controller.playlist = mP.Controller.playlist;
               return { ok: true, item };
             } else return { ok: false, error: res.error };
-          })
+          }),
         );
       };
       deployVideos(files.map((file) => URL.createObjectURL(file)));
