@@ -11,7 +11,7 @@ import Toast from "./T007_toast.js";
 })();
 
 const { createFFmpeg, fetchFile } = FFmpeg,
-  ffmpeg = createFFmpeg({ log: false }),
+  ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js", }),
   installButton = document.getElementById("install"),
   videoPlayerContainer = document.getElementById("video-player-container"),
   uploadVideosInput = document.getElementById("videos-file-input"),

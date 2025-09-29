@@ -1,5 +1,5 @@
 const cacheName = "TVP_user_interface_cache_1";
-const precachedResources = ["assets/images/lone-tree.jpg", "assets/icons/movie-tape.png", "index.html", "index.css", "index.js", "prototype-2.js", "prototype-2-video.css", "assets/icons/tmg-icon.jpeg", "assets/icons/tmg-icon.png", "T007_toast.js", "T007_toast.css", "https://unpkg.com/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js"];
+const precachedResources = ["assets/images/lone-tree.jpg", "assets/icons/movie-tape.png", "index.html", "index.css", "index.js", "prototype-2.js", "prototype-2-video.css", "assets/icons/tmg-icon.jpeg", "assets/icons/tmg-icon.png", "T007_toast.js", "T007_toast.css", "assets/ffmpeg/ffmpeg.min.js", "assets/ffmpeg/ffmpeg-core.js", "assets/ffmpeg/ffmpeg-core.wasm"];
 
 async function precache() {
   const cache = await caches.open(cacheName);
@@ -8,7 +8,7 @@ async function precache() {
 
 function isCacheable(request) {
   const url = new URL(request.url);
-  return url.origin === self.location.origin || url.origin === "https://unpkg.com";
+  return url.origin === self.location.origin;
 }
 
 async function cacheFirstWithRefresh(request) {
