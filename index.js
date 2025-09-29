@@ -71,7 +71,7 @@ let video = document.getElementById("video"),
 
 installButton.style.display = "none";
 if (!isWebkitDirectorySupported()) foldersDropBox.remove();
-setTimeout(() => ffmpeg.load(), 2000); // let the UI breathe, don't suffocate it
+if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load(), 2000); // let the UI breathe, don't suffocate it
 
 window.addEventListener("load", () => {
   if ("navigator" in window) {
@@ -303,7 +303,7 @@ function handleFiles(files) {
               {
                 height: `${rect.height}px`,
                 width: `${rect.width}px`,
-              },
+              }
             );
             li.parentElement.insertBefore(placeholderItem, li.nextElementSibling);
             li.classList.add("dragging");
@@ -313,7 +313,7 @@ function handleFiles(files) {
             document.addEventListener("pointercancel", onPointerUp);
             dragLoop();
           },
-          { passive: false },
+          { passive: false }
         );
         function onPointerMove(e) {
           clientY = e.clientY;
@@ -329,8 +329,7 @@ function handleFiles(files) {
               if (clientY < SCROLL_MARGIN || clientY > window.innerHeight - SCROLL_MARGIN) {
                 if (autoScrollAccId === null) autoScrollAccId = setTimeout(() => (LINES_PER_SEC += 1), 2000);
                 else if (LINES_PER_SEC > 3) LINES_PER_SEC = Math.min(LINES_PER_SEC + 1, 10);
-                if (clientY < SCROLL_MARGIN)
-                  window.scrollBy(0, -scrollSpeed); // Scroll upward
+                if (clientY < SCROLL_MARGIN) window.scrollBy(0, -scrollSpeed); // Scroll upward
                 else if (clientY > window.innerHeight - SCROLL_MARGIN) window.scrollBy(0, scrollSpeed); // Scroll downward
               } else {
                 clearTimeout(autoScrollAccId);
@@ -352,7 +351,7 @@ function handleFiles(files) {
               if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
               else return closest;
             },
-            { offset: Number.NEGATIVE_INFINITY },
+            { offset: Number.NEGATIVE_INFINITY }
           ).element;
           if (afterLine) list.insertBefore(placeholderItem, afterLine);
           else list.appendChild(placeholderItem);
@@ -419,7 +418,7 @@ function handleFiles(files) {
               () => {
                 if (video.currentTime > 3) containers[mP.Controller.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.parseNumber(video.currentTime / video.duration));
               },
-              1000,
+              1000
             );
           };
           video.onplay = () => {
@@ -437,14 +436,14 @@ function handleFiles(files) {
             const res = await queueJob(() => extractCaptions(files[i], id), id);
             if (res.success && !res.cancelled && item) {
               item.tracks = [res.track];
-              if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === item) mP.Controller.playlist = mP.Controller.playlist;
+              if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === item) mP.Controller.tracks = item.tracks;
               return { ok: true, item };
             } else return { ok: false, error: res.error };
-          }),
+          })
         );
       };
       deployVideos(files.map((file) => URL.createObjectURL(file)));
-      deployCaptions();
+      if (!tmg.queryMediaMobile()) deployCaptions();
     } else if (numberOfFiles < 1) defaultUI();
   } catch (error) {
     console.error(error);
@@ -494,7 +493,6 @@ async function extractCaptions(file, id) {
     const vttData = ffmpeg.FS("readFile", outputName);
     ffmpeg.FS("unlink", inputName);
     ffmpeg.FS("unlink", outputName);
-    if (tmg.queryMediaMobile()) ffmpeg.exit();
     console.log("✅ First subtitle stream extracted successfully.");
     return { success: true, track: { id, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([vttData.buffer], { type: "text/vtt" })), default: true } };
   } catch (err) {
