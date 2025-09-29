@@ -486,9 +486,8 @@ async function extractCaptions(file, id) {
     console.log(`🎥 Processing file: '${file.name}'`);
     const inputName = `video${id}.mp4`;
     const outputName = `cue${id}.vtt`;
-    const fileSlice = file.slice(0, Math.min(file.size, 20 * 1024 * 1024)); // first 20MB
     if (!ffmpeg.isLoaded()) await ffmpeg.load();
-    ffmpeg.FS("writeFile", inputName, await fetchFile(fileSlice));
+    ffmpeg.FS("writeFile", inputName, await fetchFile(file));
     console.log("🛠 Extracting first subtitle stream to .vtt...");
     await ffmpeg.run("-i", inputName, "-map", "0:s:0", "-f", "webvtt", outputName);
     const vttData = ffmpeg.FS("readFile", outputName);
@@ -498,7 +497,7 @@ async function extractCaptions(file, id) {
     console.log("✅ First subtitle stream extracted successfully.");
     return { success: true, track: { id, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([vttData.buffer], { type: "text/vtt" })), default: true } };
   } catch (err) {
-    console.warn("❌ Subtitle stream extraction failed:", err);
+    console.error("❌ Subtitle stream extraction failed:", err);
     return { success: false, error: err.toString() };
   }
 }
