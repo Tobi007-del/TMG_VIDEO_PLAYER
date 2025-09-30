@@ -1245,6 +1245,7 @@ class T_M_G_Video_Controller {
     this.DOM.timelineContainer?.addEventListener("keydown", this._handleTimelineKeyDown);
     this.DOM.timeline?.addEventListener("mousemove", this._handleTimelineInput);
     this.DOM.timeline?.addEventListener("mouseleave", this.stopTimePreviewing);
+    this.DOM.timeline?.addEventListener("touchend", this.stopTimePreviewing);
     // cue container listeners
     this.DOM.cueContainer?.addEventListener("pointerdown", this._handleCueDragStart);
     // volume event listeners
@@ -1849,26 +1850,37 @@ class T_M_G_Video_Controller {
     if (this.isScrubbing) return;
     this.isScrubbing = true;
     this.DOM.timelineContainer?.setPointerCapture(e.pointerId);
-    this.videoContainer.classList.add("T_M_G-video-scrubbing");
     this.wasPaused = this.video.paused;
-    this.togglePlay(false);
-    this.generateCanvasPreviews();
+    this.scrubbingId = setTimeout(() => {
+      this.togglePlay(false);
+      this.videoContainer.classList.add("T_M_G-video-scrubbing");
+      this.isMediaMobile && this.DOM.scrubNotifier?.classList.add("T_M_G-video-control-active");
+    }, 150);
     this._handleTimelineInput(e);
-    this.scrubNotifierId = setTimeout(() => this.isMediaMobile && this.DOM.scrubNotifier?.classList.add("T_M_G-video-control-active"), 150);
+    this.generateCanvasPreviews();
     this.DOM.timelineContainer?.addEventListener("pointermove", this._handleTimelineInput);
     this.DOM.timelineContainer?.addEventListener("pointerup", this.stopTimeScrubbing);
   }
-  stopTimeScrubbing() {
+  stopTimeScrubbing(e) {
     if (!this.isScrubbing) return;
     this.isScrubbing = false;
+    this.DOM.timelineContainer?.releasePointerCapture(e.pointerId);
     this.currentTime = this.lastScrubPercent * this.duration;
+    clearTimeout(this.scrubbingId);
     this.togglePlay(!this.wasPaused);
-    clearTimeout(this.scrubNotifierId);
+    this.videoContainer.classList.remove("T_M_G-video-scrubbing");
     this.DOM.scrubNotifier?.classList.remove("T_M_G-video-control-active");
     this.stopTimePreviewing();
-    this.videoContainer.classList.remove("T_M_G-video-scrubbing");
     this.DOM.timelineContainer?.removeEventListener("pointermove", this._handleTimelineInput);
     this.DOM.timelineContainer?.removeEventListener("pointerup", this.stopTimeScrubbing);
+  }
+  stopTimePreviewing() {
+    this.overTimeline = false;
+    setTimeout(() => this.videoContainer.classList.remove("T_M_G-video-previewing"));
+  }
+  generateCanvasPreviews() {
+    if (!this.isMediaMobile) this.previewContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.previewCanvas.width, this.DOM.previewCanvas.height);
+    if (this.isScrubbing) this.thumbnailContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.thumbnailCanvas.width, this.DOM.thumbnailCanvas.height);
   }
   _handleTimelineInput({ clientX: x }) {
     this.overTimeline = true;
@@ -1900,14 +1912,6 @@ class T_M_G_Video_Controller {
       },
       20
     );
-  }
-  stopTimePreviewing() {
-    this.overTimeline = false;
-    this.videoContainer.classList.remove("T_M_G-video-previewing");
-  }
-  generateCanvasPreviews() {
-    if (!this.isMediaMobile) this.previewContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.previewCanvas.width, this.DOM.previewCanvas.height);
-    if (this.isScrubbing) this.thumbnailContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.thumbnailCanvas.width, this.DOM.thumbnailCanvas.height);
   }
   _handleGestureTimelineInput({ percent, sign, multiplier }) {
     multiplier = multiplier.toFixed(1);
@@ -2193,7 +2197,6 @@ class T_M_G_Video_Controller {
     this.rotateCaptionsProp(tmg.parseConfig(this.settings.captions).characterEdgeStyle.values, "videoCaptionsCharacterEdgeStyle", false);
   }
   _handleCueDragStart(e) {
-    this.DOM.cueContainer?.setPointerCapture(e.pointerId);
     this.DOM.cueContainer?.addEventListener("pointermove", this._handleCueDragging);
     this.DOM.cueContainer?.addEventListener("pointerup", this._handleCueDragEnd);
   }
