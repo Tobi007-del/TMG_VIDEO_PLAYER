@@ -1872,22 +1872,16 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   max-height: calc(100% - 0.5em);
   font-size: calc(var(--T_M_G-video-captions-font-size-base) * var(--f-f));
   padding: 0.25rem 1em;
-  opacity: 0;
   overflow-y: auto;
   background: rgb(from var(--T_M_G-video-captions-window-color) r g b / var(--T_M_G-video-captions-window-opacity));
   touch-action: none;
   cursor: grab;
   will-change: right, bottom;
   transition:
-    var(--T_M_G-video-motion-transition),
-    opacity var(--T_M_G-video-fade-transition-time) ease;
+    var(--T_M_G-video-motion-transition);
 }
 
-.T_M_G-video-cue-container:not(:empty, :has(:empty)) {
-  opacity: 1;
-}
-
-.T_M_G-video-container:is(.T_M_G-video-captions, .T_M_G-video-captions-preview) .T_M_G-video-cue-container {
+.T_M_G-video-container:is(.T_M_G-video-captions, .T_M_G-video-captions-preview) .T_M_G-video-cue-container:not(:empty, :has(:empty)) {
   display: block;
 }
 
