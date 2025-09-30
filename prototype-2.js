@@ -1548,11 +1548,11 @@ class T_M_G_Video_Controller {
       this.currentPlaylistIndex = curr ? this.playlist.indexOf(curr) : 0;
       const next = this.playlist[this.currentPlaylistIndex];
       if (curr) {
-        if (curr.tracks?.length !== this.tracks.length) this.tracks = curr.tracks;
         this.settings.time.start = curr.settings.time.start;
         this.settings.time.end = curr.settings.time.end;
         this.settings.time.previews = tmg.isObj(curr.settings.time.previews) && tmg.isObj(this.settings.time.previews) ? { ...this.settings.time.previews, ...curr.settings.time.previews } : curr.settings.time.previews;
         this.settings.status.ui.previews = this.settings.time.previews?.address && this.settings.time.previews?.spf;
+        if (curr.tracks?.length !== this.tracks.length) this.tracks = curr.tracks;
         this.setPreviewsState();
       } else {
         this.playlistCurrentTime = next?.settings.time.start;
@@ -1583,7 +1583,7 @@ class T_M_G_Video_Controller {
     this.settings.status.ui.previews = this.settings.time.previews?.address && this.settings.time.previews?.spf;
     if (v.src) this.src = v.src;
     else if (v.sources?.length > 0) this.sources = v.sources;
-    if (v.tracks?.length > 0) this.tracks = v.tracks;
+    this.tracks = v.tracks ?? [];
     this.setInitialStates();
     this.togglePlay(shouldPlay);
     this.canAutoMovePlaylist = true;
