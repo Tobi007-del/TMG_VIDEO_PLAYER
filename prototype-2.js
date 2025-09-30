@@ -45,6 +45,7 @@ class T_M_G_Video_Controller {
     this.audioSetup = this.loaded = this.locked = this.inFullScreen = this.isScrubbing = this.buffering = this.inFloatingPlayer = this.overTimeline = this.overVolume = this.overBrightness = this.gestureTouchXCheck = this.gestureTouchYCheck = this.gestureWheelXCheck = this.gestureWheelYCheck = this.shouldSetLastVolume = this.shouldSetLastBrightness = this.speedPointerCheck = this.speedCheck = this.skipPersist = false;
     this.parentIntersecting = this.isIntersecting = this.gestureTouchCanCancel = this.canAutoMovePlaylist = true;
     this.skipDuration = this.textTrackIndex = this.playTriggerCounter = 0;
+    this.lastCueText = "";
     this.isMediaMobile = tmg.queryMediaMobile();
     this.pfps = 30; // pseudo fps: just for frame stepping
     this.pframeDelay = Math.floor(1000 / this.pfps);
@@ -1383,6 +1384,8 @@ class T_M_G_Video_Controller {
       const { width = w, height = h } = tmg.getRenderedBox(this.video);
       this.DOM.thumbnailCanvas.height = this.DOM.thumbnailImg.height = height + 1;
       this.DOM.thumbnailCanvas.width = this.DOM.thumbnailImg.width = width + 1;
+      this.resetCueCharWidth();
+      this.previewCaptions("");
       repeat && requestAnimationFrame(this._handleMediaParentResize);
     } else {
       const { tier } = getTier(this.pseudoVideoContainer);
@@ -2112,25 +2115,29 @@ class T_M_G_Video_Controller {
     if (this.video.textTracks[this.textTrackIndex]) this.videoContainer.classList.toggle("T_M_G-video-captions");
     else this.previewCaptions("No captions available for this video");
   }
-  previewCaptions(show = "") {
-    this.videoContainer.classList.add("T_M_G-video-captions-preview");
-    const fallback = show || `${tmg.capitalize(this.videoContainer.dataset.trackKind || "captions")} look like this`;
-    this._handleCueChange({ text: !this.isModeActive("captions") || !this.DOM.cueContainer.innerHTML ? fallback : this.lastCueText });
+  previewCaptions(preview = `${tmg.capitalize(this.videoContainer.dataset.trackKind || "captions")} look like this`) {
+    const shouldPreview = !this.isModeActive("captions") || !this.DOM.cueContainer.textContent;
+    if (shouldPreview) this.videoContainer.classList.add("T_M_G-video-captions-preview");
+    this._handleCueChange({ text: shouldPreview ? preview : this.lastCueText });
     clearTimeout(this.previewCaptionsTimeoutId);
     this.previewCaptionsTimeoutId = setTimeout(() => {
       this.videoContainer.classList.remove("T_M_G-video-captions-preview");
-      if (this.DOM.cueContainer.textContent.replace(/\s/g, "") === fallback.replace(/\s/g, "")) this.DOM.cueContainer.innerHTML = "";
+      if (this.DOM.cueContainer.textContent.replace(/\s/g, "") === preview.replace(/\s/g, "")) this.DOM.cueContainer.innerHTML = "";
     }, 1500);
+  }
+  resetCueCharWidth() {
+    this.DOM.cueContainer.style.setProperty("display", "block", "important");
+    const measurer = tmg.createEl("span", { className: "T_M_G-video-cue", innerHTML: "abcdefghijklmnopqrstuvwxyz".repeat(2) }, {}, { visibility: "hidden" });
+    this.DOM.cueContainer.appendChild(measurer);
+    this.cueCharW = measurer.offsetWidth / (26 * 2);
+    measurer.remove();
+    this.DOM.cueContainer.style.removeProperty("display");
   }
   _handleCueChange(cue) {
     this.DOM.cueContainer.innerHTML = "";
     if (!cue) return;
     const cueWrapper = tmg.createEl("div", { className: "T_M_G-video-cue-wrapper" });
-    const measurer = tmg.createEl("span", { className: "T_M_G-video-cue", innerHTML: "abcdefghijklmnopqrstuvwxyz".repeat(2) }, {}, { visibility: "hidden" });
-    this.DOM.cueContainer.appendChild(measurer);
-    const charW = measurer.offsetWidth / (26 * 2);
-    measurer.remove();
-    const maxChars = Math.floor(this.videoContainer.offsetWidth / charW);
+    const maxChars = Math.floor(this.videoContainer.offsetWidth / this.cueCharW);
     let line = [],
       lineLen = 0,
       parts = [];
@@ -2167,12 +2174,14 @@ class T_M_G_Video_Controller {
       default:
         if (size < this.settings.captions.font.size.max) this.videoCaptionsFontSize = size + (size % value ? size % value : value);
     }
+    this.resetCueCharWidth();
     this.previewCaptions();
   }
   rotateCaptionsProp(steps, prop, numeric = true) {
     const curr = this[prop];
     const i = Math.max(0, numeric ? steps.reduce((cIdx, s, idx) => (Math.abs(s - curr) < Math.abs(steps[cIdx] - curr) ? idx : cIdx), 0) : steps.indexOf(curr));
     this[prop] = steps[(i + 1) % steps.length];
+    this.resetCueCharWidth();
     this.previewCaptions();
   }
   rotateCaptionsFontFamily() {

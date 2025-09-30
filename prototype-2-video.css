@@ -1883,7 +1883,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
     opacity var(--T_M_G-video-fade-transition-time) ease;
 }
 
-.T_M_G-video-cue-container:not(:empty) {
+.T_M_G-video-cue-container:not(:empty, :has(:empty)) {
   opacity: 1;
 }
 
@@ -1897,8 +1897,11 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 }
 
 .T_M_G-video-container.T_M_G-video-locked:is(.T_M_G-video-locked-overlay, :has(:focus-visible)) {
-  --T_M_G-video-current-cue-offset-t: 0px;
   --T_M_G-video-current-cue-offset-b: calc(var(--T_M_G-video-current-unit) * 5);
+}
+
+.T_M_G-video-container:is(.T_M_G-video-locked:is(.T_M_G-video-locked-overlay, :has(:focus-visible)), [data-size-tier^="xxxxx"]) {
+  --T_M_G-video-current-cue-offset-t: 0px;
 }
 
 .T_M_G-video-container:is(.T_M_G-video-overlay, :has(:focus-visible)):not(.T_M_G-video-cue-dragging, .T_M_G-video-mobile) .T_M_G-video-cue-container,
