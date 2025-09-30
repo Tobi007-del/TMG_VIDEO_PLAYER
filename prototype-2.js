@@ -1851,8 +1851,8 @@ class T_M_G_Video_Controller {
   }
   _handleTimelinePointerDown(e) {
     if (this.isScrubbing) return;
-    this.isScrubbing = true;
     this.DOM.timelineContainer?.setPointerCapture(e.pointerId);
+    this.isScrubbing = true;
     this.wasPaused = this.video.paused;
     this.scrubbingId = setTimeout(() => {
       this.togglePlay(false);
@@ -1866,8 +1866,8 @@ class T_M_G_Video_Controller {
   }
   stopTimeScrubbing(e) {
     if (!this.isScrubbing) return;
-    this.isScrubbing = false;
     this.DOM.timelineContainer?.releasePointerCapture(e.pointerId);
+    this.isScrubbing = false;
     this.currentTime = this.lastScrubPercent * this.duration;
     clearTimeout(this.scrubbingId);
     this.togglePlay(!this.wasPaused);
@@ -2206,6 +2206,7 @@ class T_M_G_Video_Controller {
     this.rotateCaptionsProp(tmg.parseConfig(this.settings.captions).characterEdgeStyle.values, "videoCaptionsCharacterEdgeStyle", false);
   }
   _handleCueDragStart(e) {
+    this.DOM.cueContainer?.setPointerCapture(e.pointerId);
     this.DOM.cueContainer?.addEventListener("pointermove", this._handleCueDragging);
     this.DOM.cueContainer?.addEventListener("pointerup", this._handleCueDragEnd);
   }
@@ -2228,7 +2229,8 @@ class T_M_G_Video_Controller {
       this.videoCurrentCueY = `${(posY / rect.height) * 100}%`;
     });
   }
-  _handleCueDragEnd() {
+  _handleCueDragEnd(e) {
+    this.DOM.cueContainer?.releasePointerCapture(e.pointerId);
     this.cancelRAFLoop("cueDragging");
     this.videoContainer.classList.remove("T_M_G-video-cue-dragging");
     this.DOM.cueContainer?.removeEventListener("pointermove", this._handleCueDragging);
