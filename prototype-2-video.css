@@ -615,6 +615,11 @@ body:has(.T_M_G-video-container.T_M_G-video-mini-player) .T_M_G-pseudo-video-con
   animation: T_M_G-slide-in 0.25s ease forwards;
 }
 
+.T_M_G-video-container.T_M_G-video-mini-player:active,
+.T_M_G-video-cue-container:active {
+  transition: none;
+}
+
 body:where(:has(.T_M_G-video-floating-player)) {
   font-family: system-ui, sans-serif;
   background-color: black;
@@ -1880,10 +1885,6 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 
 .T_M_G-video-cue-container:not(:empty) {
   opacity: 1;
-}
-
-.T_M_G-video-cue-container:active {
-  transition: none;
 }
 
 .T_M_G-video-container:is(.T_M_G-video-captions, .T_M_G-video-captions-preview) .T_M_G-video-cue-container {
