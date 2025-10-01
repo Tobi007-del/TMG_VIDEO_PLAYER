@@ -402,7 +402,19 @@ function handleFiles(files) {
           playlist.push({
             src: url,
             media: { title: files[i].name, artist: "TMG Video Player" },
-            settings: { time: { previews: true } },
+            settings: {
+              time: { previews: true },
+              captions: {
+                font: {
+                  size: { value: 400 },
+                  weight: { value: "900" },
+                },
+                background: {
+                  opacity: { value: 0 },
+                },
+                characterEdgeStyle: { value: "drop-shadow" },
+              },
+            },
           });
           thumbnails[i].src = url;
         });
