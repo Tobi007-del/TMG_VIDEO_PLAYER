@@ -413,7 +413,7 @@ function handleFiles(files) {
             settings: {
               captions: {
                 font: {
-                  size: { value: 300 },
+                  size: { value: 200 },
                   weight: { value: "700" },
                 },
                 background: {

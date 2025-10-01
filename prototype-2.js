@@ -1614,7 +1614,7 @@ class T_M_G_Video_Controller {
         <button title="Cancel" type="button" class="T_M_G-video-playlist-next-video-cancel-btn">&times;</button>         
       `,
     });
-    this.DOM.controlsContainer.append(toastContainer);
+    this.videoContainer.append(toastContainer);
     const updateToast = (timestamp) => {
         if (shouldUnPause) {
           lastTime = null;
@@ -1778,16 +1778,16 @@ class T_M_G_Video_Controller {
     this.stats = { fps: 30 };
     if (this.settings.time.start && !this.initialState) this.currentTime = this.settings.time.start;
     this.syncAspectRatio();
-    if (this.DOM.totalTimeElement) this.DOM.totalTimeElement.textContent = this.getTimeText(this.video.duration);
+    if (this.DOM.totalTimeElement) this.DOM.totalTimeElement.textContent = this.toTimeText(this.video.duration);
     this.videoCurrentPlayedPosition = this.currentTime < 1 ? (this.videoCurrentBufferedPosition = 0) : tmg.parseNumber(this.video.currentTime / this.video.duration);
     this.loaded = true;
     this.reactivate();
   }
   _handleLoadedData() {
-    if (this.DOM.totalTimeElement) this.DOM.totalTimeElement.textContent = this.getTimeText(this.video.duration);
+    if (this.DOM.totalTimeElement) this.DOM.totalTimeElement.textContent = this.toTimeText(this.video.duration);
   }
   _handleDurationChange() {
-    if (this.DOM.totalTimeElement) this.DOM.totalTimeElement.textContent = this.getTimeText(this.video.duration);
+    if (this.DOM.totalTimeElement) this.DOM.totalTimeElement.textContent = this.toTimeText(this.video.duration);
   }
   _handleLoadedProgress() {
     for (let i = 0; i < this.video.buffered.length; i++) {
@@ -1844,10 +1844,18 @@ class T_M_G_Video_Controller {
     return tmg.parseNumber(this.video.duration);
   }
   set currentTime(value) {
-    this.video.currentTime = Math.max(0, value);
+    this.video.currentTime = tmg.parseNumber(Math.max(0, value));
   }
   get currentTime() {
     return tmg.parseNumber(this.video.currentTime);
+  }
+  generateCanvasPreviews() {
+    if (!this.isMediaMobile) this.previewContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.previewCanvas.width, this.DOM.previewCanvas.height);
+    if (this.isScrubbing) this.thumbnailContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.thumbnailCanvas.width, this.DOM.thumbnailCanvas.height);
+  }
+  infoAtTimelinePos(x, all = false) {
+    const r = this.DOM.timelineContainer?.getBoundingClientRect();
+    return all ? { percent: tmg.clamp(0, x - r.left, r.width) / r.width, rect: r } : tmg.clamp(0, x - r.left, r.width) / r.width;
   }
   _handleTimelinePointerDown(e) {
     if (this.isScrubbing) return;
@@ -1868,7 +1876,7 @@ class T_M_G_Video_Controller {
     if (!this.isScrubbing) return;
     this.DOM.timelineContainer?.releasePointerCapture(e.pointerId);
     this.isScrubbing = false;
-    this.currentTime = this.lastScrubPercent * this.duration;
+    this.currentTime = this.infoAtTimelinePos(e.clientX) * this.duration;
     clearTimeout(this.scrubbingId);
     this.togglePlay(!this.wasPaused);
     this.videoContainer.classList.remove("T_M_G-video-scrubbing");
@@ -1881,25 +1889,19 @@ class T_M_G_Video_Controller {
     this.overTimeline = false;
     setTimeout(() => this.videoContainer.classList.remove("T_M_G-video-previewing"));
   }
-  generateCanvasPreviews() {
-    if (!this.isMediaMobile) this.previewContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.previewCanvas.width, this.DOM.previewCanvas.height);
-    if (this.isScrubbing) this.thumbnailContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.thumbnailCanvas.width, this.DOM.thumbnailCanvas.height);
-  }
   _handleTimelineInput({ clientX: x }) {
     this.overTimeline = true;
     if (!this.isMediaMobile) this.videoContainer.classList.add("T_M_G-video-previewing");
     this.throttle(
       "timelineInput",
       () => {
-        const rect = this.DOM.timelineContainer?.getBoundingClientRect();
-        const percent = tmg.clamp(0, x - rect.left, rect.width) / rect.width;
-        const previewImgMin = this.DOM.previewContainer.offsetWidth / 2 / rect.width;
-        const previewImgPercent = tmg.clamp(previewImgMin, percent, 1 - previewImgMin);
+        const { percent, rect } = this.infoAtTimelinePos(x, true),
+          previewImgMin = this.DOM.previewContainer.offsetWidth / 2 / rect.width;
         this.videoCurrentPreviewPosition = percent;
-        this.videoCurrentPreviewImgPosition = previewImgPercent;
-        this.DOM.previewContainer?.setAttribute("data-preview-time", this.getTimeText(percent * this.video.duration, true));
+        this.videoCurrentPreviewImgPosition = tmg.clamp(previewImgMin, percent, 1 - previewImgMin);
+        this.DOM.previewContainer?.setAttribute("data-preview-time", this.toTimeText(percent * this.video.duration, true));
         if (this.isScrubbing) {
-          this.videoCurrentPlayedPosition = this.lastScrubPercent = percent;
+          this.videoCurrentPlayedPosition = percent;
           this.delayOverlay();
         }
         if (this.settings.status.ui.previews) {
@@ -1922,7 +1924,7 @@ class T_M_G_Video_Controller {
     const time = sign === "+" ? this.currentTime + percent * this.duration : this.currentTime - percent * this.duration;
     this.gestureNextTime = tmg.clamp(0, time, this.duration);
     if (this.overTimeline) this.currentTime = this.gestureNextTime;
-    if (this.DOM.touchTimelineNotifier) this.DOM.touchTimelineNotifier.textContent = `${sign}${this.getTimeText(Math.abs(this.gestureNextTime - this.currentTime))} (${this.getTimeText(this.gestureNextTime, true)}) ${multiplier < 1 ? `x${multiplier}` : ""}`;
+    if (this.DOM.touchTimelineNotifier) this.DOM.touchTimelineNotifier.textContent = `${sign}${this.toTimeText(Math.abs(this.gestureNextTime - this.currentTime))} (${this.toTimeText(this.gestureNextTime, true)}) ${multiplier < 1 ? `x${multiplier}` : ""}`;
   }
   _handleTimelineKeyDown(e) {
     switch (e.key?.toLowerCase()) {
@@ -1945,25 +1947,25 @@ class T_M_G_Video_Controller {
     this.video.controls = false; // youtube did this too :)
     this.video.volume = 1; // just in case
     this.videoCurrentPlayedPosition = tmg.isValidNumber(this.video.duration) ? tmg.parseNumber(this.video.currentTime / this.video.duration) : this.video.currentTime / 60; // progress fallback, shouldn't take more than a min for duration to be available
-    if (this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.getTimeText(this.video.currentTime, true);
-    if (this.speedCheck && !this.video.paused) this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.getTimeText(this.video.currentTime, true));
+    if (this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(this.video.currentTime, true);
+    if (this.speedCheck && !this.video.paused) this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.toTimeText(this.video.currentTime, true));
     if (this.playlist && this.currentTime > 3) this.playlistCurrentTime = this.currentTime;
     if (Math.floor((this.settings.time.end || this.duration) - this.currentTime) <= this.settings.auto.next) this.autonextVideo();
     this.videoContainer.classList.remove("T_M_G-video-replay");
   }
-  getTimeText(t = this.video.currentTime, useMode = false, showMs = false) {
+  toTimeText(t = this.video.currentTime, useMode = false, showMs = false) {
     return !useMode || this.settings.time.mode !== "remaining" ? tmg.formatTime(t, this.settings.time.format, showMs) : `${tmg.formatTime(this.video.duration - t, this.settings.time.format, showMs, true)}`;
   }
   toggleTimeMode() {
     this.showOverlay();
     this.settings.time.mode = this.settings.time.mode !== "elapsed" ? "elapsed" : "remaining";
-    if (this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.getTimeText(this.video.currentTime, true);
+    if (this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(this.video.currentTime, true);
   }
   toggleTimeFormat() {
     this.showOverlay();
     this.settings.time.format = this.settings.time.format !== "digital" ? "digital" : "human";
-    if (this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.getTimeText(this.video.currentTime, true);
-    if (this.DOM.totalTimeElement) this.DOM.totalTimeElement.textContent = this.getTimeText(this.video.duration);
+    if (this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(this.video.currentTime, true);
+    if (this.DOM.totalTimeElement) this.DOM.totalTimeElement.textContent = this.toTimeText(this.video.duration);
   }
   skip(duration) {
     const notifier = duration > 0 ? this.DOM.fwdNotifier : this.DOM.bwdNotifier;
@@ -2074,7 +2076,7 @@ class T_M_G_Video_Controller {
     this.togglePlay(false);
     this.currentTime -= this.settings.playbackRate.fast / this.pfps;
     this.videoCurrentPlayedPosition = tmg.parseNumber(this.video.currentTime / this.video.duration);
-    this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.getTimeText(this.video.currentTime, true));
+    this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.toTimeText(this.video.currentTime, true));
   }
   rewindReset() {
     if (this.speedIntervalId) {
@@ -2155,7 +2157,7 @@ class T_M_G_Video_Controller {
       if (line.length) parts.push(line);
       parts.forEach((part) => {
         const cueLine = tmg.createEl("div", { className: "T_M_G-video-cue-line" });
-        const cueEl = tmg.createEl("span", { className: "T_M_G-video-cue", innerHTML: part.join(" "), });
+        const cueEl = tmg.createEl("span", { className: "T_M_G-video-cue", innerHTML: part.join(" ") });
         cueLine.appendChild(cueEl);
         cueWrapper.appendChild(cueLine);
       });
