@@ -402,8 +402,15 @@ function handleFiles(files) {
           playlist.push({
             src: url,
             media: { title: files[i].name, artist: "TMG Video Player" },
+            settings: { time: { previews: true } },
+          });
+          thumbnails[i].src = url;
+        });
+        if (!mP) {
+          video.addEventListener("tmgready", readyUI, { once: true });
+          mP = new tmg.Player({
+            playlist,
             settings: {
-              time: { previews: true },
               captions: {
                 font: {
                   size: { value: 400 },
@@ -416,11 +423,6 @@ function handleFiles(files) {
               },
             },
           });
-          thumbnails[i].src = url;
-        });
-        if (!mP) {
-          video.addEventListener("tmgready", readyUI, { once: true });
-          mP = new tmg.Player({ playlist });
           mP.build.playlist[0].settings.time.start = 2;
           mP.attach(video);
           video.addEventListener("loadedmetadata", dispatchPlayerReadyToast, { once: true });
