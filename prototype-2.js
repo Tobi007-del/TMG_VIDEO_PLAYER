@@ -2138,24 +2138,27 @@ class T_M_G_Video_Controller {
     if (!cue) return;
     const cueWrapper = tmg.createEl("div", { className: "T_M_G-video-cue-wrapper" });
     const maxChars = Math.floor(this.videoContainer.offsetWidth / this.cueCharW);
-    let line = [],
-      lineLen = 0,
-      parts = [];
-    cue.text.split(" ").forEach((word) => {
-      if (lineLen + word.length + 1 > maxChars) {
-        parts.push(line);
-        line = [];
-        lineLen = 0;
-      }
-      line.push(word);
-      lineLen += word.length + 1;
-    });
-    if (line.length) parts.push(line);
-    parts.forEach((part) => {
-      const cueLine = tmg.createEl("div", { className: "T_M_G-video-cue-line" });
-      const cueEl = tmg.createEl("span", { className: "T_M_G-video-cue", innerHTML: part.join(" ") });
-      cueLine.appendChild(cueEl);
-      cueWrapper.appendChild(cueLine);
+    const paragraphs = cue.text.replace(/<br\s*\/?>/gi, "\n").split(/\n/);
+    paragraphs.forEach((para) => {
+      let line = [],
+        lineLen = 0,
+        parts = [];
+      para.split(" ").forEach((word) => {
+        if (lineLen + word.length + 1 > maxChars) {
+          parts.push(line);
+          line = [];
+          lineLen = 0;
+        }
+        line.push(word);
+        lineLen += word.length + 1;
+      });
+      if (line.length) parts.push(line);
+      parts.forEach((part) => {
+        const cueLine = tmg.createEl("div", { className: "T_M_G-video-cue-line" });
+        const cueEl = tmg.createEl("span", { className: "T_M_G-video-cue", innerHTML: part.join(" "), });
+        cueLine.appendChild(cueEl);
+        cueWrapper.appendChild(cueLine);
+      });
     });
     this.DOM.cueContainer.appendChild(cueWrapper);
     this.videoCurrentCueContainerHeight = `${this.DOM.cueContainer.offsetHeight}px`;
