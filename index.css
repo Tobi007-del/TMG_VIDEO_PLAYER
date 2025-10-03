@@ -153,12 +153,8 @@ body:has(.dragging) {
   margin-bottom: 40px;
 }
 
-body:has(#video.stall) #clear-button {
-  display: none;
-}
-
-#video.stall {
-  display: none;
+#video-player-container:not(.loading):has(#video.stall) {
+  margin-bottom: 0px;
 }
 
 #video-player-container.loading:has(#video.stall) {
@@ -166,6 +162,14 @@ body:has(#video.stall) #clear-button {
   max-width: 700px;
   width: 90dvw;
   aspect-ratio: 16 / 9;
+}
+
+body:has(#video.stall) #clear-button {
+  display: none;
+}
+
+#video.stall {
+  display: none;
 }
 
 #video-player-container.loading::before {
@@ -240,7 +244,7 @@ body:has(#video.stall) #clear-button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0px 10px 20px 10px;
+  padding: 0px 15px 20px 15px;
   max-width: 500px;
   flex: 1 1 50%;
   gap: 30px;
@@ -361,7 +365,7 @@ body:has(#video.stall) #clear-button {
   flex-direction: column;
   align-items: center;
   color: var(--T_M_G-brand-accent-color);
-  padding: 10px 2.5px;
+  padding: 10px 2px;
   gap: 20px;
 }
 
