@@ -1846,7 +1846,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   left: 49%;
   z-index: -1;
   height: calc(var(--T_M_G-video-current-unit) / 1.75);
-  width: calc(var(--T_M_G-video-current-unit) / 1.175);
+  width: calc(var(--T_M_G-video-current-unit) / 1.275);
   background-color: var(--T_M_G-video-brand-color);
   scale: 0 1;
   transform-origin: left;
