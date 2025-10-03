@@ -71,7 +71,7 @@ let video = document.getElementById("video"),
 
 installButton.style.display = "none";
 if (!isWebkitDirectorySupported()) foldersDropBox.remove();
-if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load(), 2000); // let the UI breathe, don't suffocate it
+if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load()); // let the UI breathe, don't suffocate it
 
 window.addEventListener("load", () => {
   if ("navigator" in window) {
@@ -265,7 +265,7 @@ function handleFiles(files) {
               li.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load";
             },
           },
-          { captionsState: "loading" },
+          { captionState: "waiting" }
         );
         thumbnails.push(thumbnail);
         thumbnailContainer.appendChild(thumbnail);
@@ -286,12 +286,12 @@ function handleFiles(files) {
             if (!f) return;
             const ext = f.name.split(".").pop().toLowerCase();
             if (!["srt", "vtt"].includes(ext)) return Toast.warn("Only .srt and .vtt files are supported");
-            thumbnail.dataset.captionsState = "loading";
+            thumbnail.dataset.captionState = "loading";
             let txt = await f.text();
             if (ext === "srt") txt = srtToVtt(txt);
             thumbnail.playlistItem.tracks = [{ id: `${Date.now()}_${0}`, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
             if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = thumbnail.playlistItem.tracks;
-            thumbnail.dataset.captionsState = "filled";
+            thumbnail.dataset.captionState = "filled";
           },
         });
         const captionsBtn = tmg.createEl("button", {
@@ -303,14 +303,12 @@ function handleFiles(files) {
             <svg>
           `,
           onclick() {
-            if (thumbnail.dataset.captionsState === "empty") return captionsBtn.querySelector("input").click();
-            else if (thumbnail.dataset.captionsState === "loading") {
-              cancelJob(thumbnail.dataset.captionId);
-            } else {
+            if (thumbnail.dataset.captionState === "empty") return captionsBtn.querySelector("input").click();
+            else if (thumbnail.dataset.captionState === "filled") {
               thumbnail.playlistItem.tracks = [];
               if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = [];
-            }
-            thumbnail.dataset.captionsState = "empty";
+            } else if (!cancelJob(thumbnail.dataset.captionId)) return; // tries to cancel if waiting and returns if loading
+            thumbnail.dataset.captionState = "empty";
           },
         });
         captionsBtn.appendChild(captionsInput);
@@ -365,7 +363,7 @@ function handleFiles(files) {
               {
                 height: `${rect.height}px`,
                 width: `${rect.width}px`,
-              },
+              }
             );
             li.parentElement.insertBefore(placeholderItem, li.nextElementSibling);
             li.classList.add("dragging");
@@ -375,7 +373,7 @@ function handleFiles(files) {
             document.addEventListener("pointercancel", onPointerUp);
             dragLoop();
           },
-          { passive: false },
+          { passive: false }
         );
         function onPointerMove(e) {
           clientY = e.clientY;
@@ -391,8 +389,7 @@ function handleFiles(files) {
               if (clientY < SCROLL_MARGIN || clientY > window.innerHeight - SCROLL_MARGIN) {
                 if (autoScrollAccId === null) autoScrollAccId = setTimeout(() => (LINES_PER_SEC += 1), 2000);
                 else if (LINES_PER_SEC > 3) LINES_PER_SEC = Math.min(LINES_PER_SEC + 1, 10);
-                if (clientY < SCROLL_MARGIN)
-                  window.scrollBy(0, -scrollSpeed); // Scroll upward
+                if (clientY < SCROLL_MARGIN) window.scrollBy(0, -scrollSpeed); // Scroll upward
                 else if (clientY > window.innerHeight - SCROLL_MARGIN) window.scrollBy(0, scrollSpeed); // Scroll downward
               } else {
                 clearTimeout(autoScrollAccId);
@@ -414,7 +411,7 @@ function handleFiles(files) {
               if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
               else return closest;
             },
-            { offset: Number.NEGATIVE_INFINITY },
+            { offset: Number.NEGATIVE_INFINITY }
           ).element;
           if (afterLine) list.insertBefore(placeholderItem, afterLine);
           else list.appendChild(placeholderItem);
@@ -476,7 +473,7 @@ function handleFiles(files) {
               () => {
                 if (video.currentTime > 3) containers[mP.Controller.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.parseNumber(video.currentTime / video.duration));
               },
-              1000,
+              1000
             );
           };
           video.onplay = () => {
@@ -490,15 +487,18 @@ function handleFiles(files) {
         await Promise.all(
           playlist.map(async (item, i) => {
             const id = `${Date.now()}_${i}`;
-            thumbnails[i].setAttribute?.("data-caption-id", id);
-            const res = await queueJob(() => extractCaptions(files[i], id), id);
-            thumbnails[i].setAttribute?.("data-captions-state", res.success && item ? "filled" : "empty");
+            thumbnails[i]?.setAttribute("data-caption-id", id);
+            const res = await queueJob(async () => {
+              thumbnails[i]?.setAttribute("data-caption-state", "loading");
+              return await extractCaptions(files[i], id);
+            }, id);
+            thumbnails[i]?.setAttribute("data-caption-state", res.success && item ? "filled" : "empty");
             if (res.success && item) {
               item.tracks = [res.track];
               if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === item) mP.Controller.tracks = item.tracks;
               return { ok: true, item };
             } else return { ok: false, error: res.error };
-          }),
+          })
         );
       };
       deployVideos(files.map((file) => URL.createObjectURL(file)));
@@ -538,6 +538,7 @@ async function processQueue() {
 function cancelJob(id) {
   const job = queue.find((j) => j.id === id);
   if (job) job.cancelled = true;
+  return !!job?.cancelled;
 }
 
 async function extractCaptions(file, id) {

@@ -634,16 +634,18 @@ body:has(#video.stall) #clear-button {
   opacity: 0;
 }
 
-.content-line:has([data-captions-state="loading"]) .captions-btn::before {
+.content-line:has([data-caption-state="waiting"], [data-caption-state="loading"]) .captions-btn::before {
   --loader-size: 0.8rem;
   --loader-width: 1.75px;
   display: block;
   translate: -0.45px -0.25px;
-  border-color: gray white gray gray;
-
 }
 
-.content-line:has([data-captions-state="loading"]) .captions-btn::after {
+.content-line:has([data-caption-state="waiting"]) .captions-btn::before {
+  border-color: gray white gray gray;
+}
+
+.content-line:has([data-caption-state="waiting"]) .captions-btn::after {
   content: "\00D7";
   position: absolute;
   inset: 0;
@@ -653,20 +655,23 @@ body:has(#video.stall) #clear-button {
   color: gray;
 }
 
-.content-line:has([data-captions-state="empty"], [data-captions-state="filled"]) .captions-btn::after {
-  content: "+";
+.content-line:has([data-caption-state="empty"], [data-caption-state="filled"]) .captions-btn::after {
   position: absolute;
   top: -6.5px;
   right: -3px;
   font-weight: bold;
   font-size: 20px;
-  color: white;
   text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.85);
 }
 
-.content-line:has([data-captions-state="filled"]) .captions-btn::after {
+.content-line:has([data-caption-state="filled"]) .captions-btn::after {
   content: "\00D7";
   color: #f73839cc;
+}
+
+.content-line:has([data-caption-state="empty"]) .captions-btn::after {
+  content: "+";
+  color: white;
 }
 
 .captions-btn svg {
@@ -674,7 +679,7 @@ body:has(#video.stall) #clear-button {
   height: 21px;
 }
 
-.content-line:has([data-captions-state="loading"]) .captions-btn svg {
+.content-line:has([data-caption-state="waiting"], [data-caption-state="loading"]) .captions-btn svg {
   opacity: 0.15;
 }
 
@@ -682,7 +687,7 @@ body:has(#video.stall) #clear-button {
   fill: white;
 }
 
-.content-line:has([data-captions-state="empty"]) .captions-btn svg path {
+.content-line:has([data-caption-state="empty"]) .captions-btn svg path {
   fill: gray;
 }
 
