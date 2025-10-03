@@ -1137,7 +1137,6 @@ class T_M_G_Video_Controller {
     const groups = {
       fullscreenlock: () => this.setControlState(this.DOM.fullScreenLockBtn, { hidden: !(this.isMediaMobile && this.isModeActive("fullScreen")) }),
       fullscreenorientation: () => !this.isModeActive("fullScreen") && this.setControlState(this.DOM.fullScreenOrientationBtn, { hidden: true }),
-      screenshot: () => this.setControlsState(this.DOM.screenshotBtn, { hidden: tmg.queryMediaMobileStandalone() }),
       captions: () => this.setControlState(this.DOM.captionsBtn, { disabled: !this.video.textTracks[this.textTrackIndex] }),
       playbackrate: () => {
         if (this.DOM.playbackRateBtn) this.DOM.playbackRateBtn.textContent = `${this.playbackRate}x`;
@@ -3837,9 +3836,6 @@ class T_M_G {
     const isMobileDimensions = matchMedia("(max-width: 480px), (max-width: 940px) and (max-height: 480px) and (orientation: landscape)").matches,
       isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent);
     return strict ? isMobileDevice : isMobileDimensions;
-  }
-  static queryMediaMobileStandalone(strict) {
-    return tmg.queryMediaMobile(strict) && (window.matchMedia("(display-mode: standalone)").matches || navigator.standalone);
   }
   static queryFullScreen() {
     return !!(document.fullscreenElement || document.fullScreen || document.webkitIsFullScreen || document.mozFullScreen || document.msFullscreenElement);
