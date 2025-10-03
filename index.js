@@ -1,7 +1,7 @@
 import Toast from "./T007_toast.js";
 
 (async function registerServiceWorker() {
-  if (!("serviceWorker" in navigator)) return Toast.warn("Offline support is unavailable here");
+  if (!("serviceWorker" in navigator)) return Toast.warn("Offline support is unavailable");
   try {
     await navigator.serviceWorker.register("TVP_sw.js");
   } catch (error) {
@@ -245,24 +245,28 @@ function handleFiles(files) {
           `,
         });
         thumbnailContainer.appendChild(playbtn);
-        const thumbnail = tmg.createEl("video", {
-          className: "thumbnail",
-          preload: "metadata",
-          muted: true,
-          playsInline: true,
-          onloadedmetadata: ({ target }) => {
-            totalTime += tmg.parseNumber(target.duration);
-            if (tmg.parseNumber(target.duration) > 12) target.currentTime = 2;
-            document.getElementById("total-time").textContent = tmg.formatTime(totalTime);
-            li.querySelector(".file-duration span:last-child").innerHTML = `${tmg.formatTime(target.duration)}`;
+        const thumbnail = tmg.createEl(
+          "video",
+          {
+            className: "thumbnail",
+            preload: "metadata",
+            muted: true,
+            playsInline: true,
+            onloadedmetadata: ({ target }) => {
+              totalTime += tmg.parseNumber(target.duration);
+              if (tmg.parseNumber(target.duration) > 12) target.currentTime = 2;
+              document.getElementById("total-time").textContent = tmg.formatTime(totalTime);
+              li.querySelector(".file-duration span:last-child").innerHTML = `${tmg.formatTime(target.duration)}`;
+            },
+            onerror: ({ target }) => {
+              li.classList.add("error");
+              if (tmg.parseNumber(target.duration)) return;
+              li.querySelector(".file-duration span:last-child").classList.add("failed");
+              li.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load";
+            },
           },
-          onerror: ({ target }) => {
-            li.classList.add("error");
-            if (tmg.parseNumber(target.duration)) return;
-            li.querySelector(".file-duration span:last-child").classList.add("failed");
-            li.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load";
-          },
-        });
+          { captionsState: "loading" },
+        );
         thumbnails.push(thumbnail);
         thumbnailContainer.appendChild(thumbnail);
         const span = tmg.createEl("span", {
@@ -274,6 +278,64 @@ function handleFiles(files) {
         `,
         });
         li.appendChild(span);
+        const captionsInput = tmg.createEl("input", {
+          type: "file",
+          accept: ".srt, .vtt",
+          onchange: async (e) => {
+            const f = e.target.files[0];
+            if (!f) return;
+            const ext = f.name.split(".").pop().toLowerCase();
+            if (!["srt", "vtt"].includes(ext)) return Toast.warn("Only .srt and .vtt files are supported");
+            thumbnail.dataset.captionsState = "loading";
+            let txt = await f.text();
+            if (ext === "srt") txt = srtToVtt(txt);
+            thumbnail.playlistItem.tracks = [{ id: `${Date.now()}_${0}`, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
+            if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = thumbnail.playlistItem.tracks;
+            thumbnail.dataset.captionsState = "filled";
+          },
+        });
+        const captionsBtn = tmg.createEl("button", {
+          title: "Add Captions",
+          className: "captions-btn",
+          innerHTML: `
+            <svg viewBox="0 0 25 25" transform="scale(1.15)">
+              <path d="M18,11H16.5V10.5H14.5V13.5H16.5V13H18V14A1,1 0 0,1 17,15H14A1,1 0 0,1 13,14V10A1,1 0 0,1 14,9H17A1,1 0 0,1 18,10M11,11H9.5V10.5H7.5V13.5H9.5V13H11V14A1,1 0 0,1 10,15H7A1,1 0 0,1 6,14V10A1,1 0 0,1 7,9H10A1,1 0 0,1 11,10M19,4H5C3.89,4 3,4.89 3,6V18A2,2 0 0,0 5,20H19A2,2 0 0,0 21,18V6C21,4.89 20.1,4 19,4Z"/>
+            <svg>
+          `,
+          onclick() {
+            if (thumbnail.dataset.captionsState === "empty") return captionsBtn.querySelector("input").click();
+            else if (thumbnail.dataset.captionsState === "loading") {
+              cancelJob(thumbnail.dataset.captionId);
+            } else {
+              thumbnail.playlistItem.tracks = [];
+              if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = [];
+            }
+            thumbnail.dataset.captionsState = "empty";
+          },
+        });
+        captionsBtn.appendChild(captionsInput);
+        li.appendChild(captionsBtn);
+        const deleteBtn = tmg.createEl("button", {
+          title: "Remove video",
+          className: "delete-btn",
+          innerHTML: `
+            <svg width="20px" height="20px" viewBox="0 0 24 24" fill="none">
+              <path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="#0D0D0D"/>
+            </svg>
+          `,
+          onclick() {
+            URL.revokeObjectURL(thumbnail.src);
+            cancelJob(thumbnail.dataset.captionId);
+            li.remove();
+            if (numberOfFiles <= 1) return clearFiles();
+            else rebuildPlaylistFromUI();
+            numberOfFiles--;
+            numberOfBytes -= files[i].size;
+            totalTime -= tmg.parseNumber(thumbnail.duration);
+            updateUI();
+          },
+        });
+        li.appendChild(deleteBtn);
         let startY, clientY, offsetY, maxOffset, initialScrollY, dragPosY, lastTime;
         const dragHandle = tmg.createEl("span", {
           title: "Drag to reorder",
@@ -303,7 +365,7 @@ function handleFiles(files) {
               {
                 height: `${rect.height}px`,
                 width: `${rect.width}px`,
-              }
+              },
             );
             li.parentElement.insertBefore(placeholderItem, li.nextElementSibling);
             li.classList.add("dragging");
@@ -313,7 +375,7 @@ function handleFiles(files) {
             document.addEventListener("pointercancel", onPointerUp);
             dragLoop();
           },
-          { passive: false }
+          { passive: false },
         );
         function onPointerMove(e) {
           clientY = e.clientY;
@@ -329,7 +391,8 @@ function handleFiles(files) {
               if (clientY < SCROLL_MARGIN || clientY > window.innerHeight - SCROLL_MARGIN) {
                 if (autoScrollAccId === null) autoScrollAccId = setTimeout(() => (LINES_PER_SEC += 1), 2000);
                 else if (LINES_PER_SEC > 3) LINES_PER_SEC = Math.min(LINES_PER_SEC + 1, 10);
-                if (clientY < SCROLL_MARGIN) window.scrollBy(0, -scrollSpeed); // Scroll upward
+                if (clientY < SCROLL_MARGIN)
+                  window.scrollBy(0, -scrollSpeed); // Scroll upward
                 else if (clientY > window.innerHeight - SCROLL_MARGIN) window.scrollBy(0, scrollSpeed); // Scroll downward
               } else {
                 clearTimeout(autoScrollAccId);
@@ -351,7 +414,7 @@ function handleFiles(files) {
               if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
               else return closest;
             },
-            { offset: Number.NEGATIVE_INFINITY }
+            { offset: Number.NEGATIVE_INFINITY },
           ).element;
           if (afterLine) list.insertBefore(placeholderItem, afterLine);
           else list.appendChild(placeholderItem);
@@ -371,27 +434,6 @@ function handleFiles(files) {
           rebuildPlaylistFromUI();
         }
         li.appendChild(dragHandle);
-        const deleteBtn = tmg.createEl("button", {
-          title: "Remove video",
-          className: "delete-btn",
-          innerHTML: `
-            <svg width="20px" height="20px" viewBox="0 0 24 24" fill="none">
-              <path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="#0D0D0D"/>
-            </svg>
-          `,
-          onclick() {
-            URL.revokeObjectURL(thumbnail.src);
-            cancelJob(thumbnail.dataset.captionId);
-            li.remove();
-            if (numberOfFiles <= 1) return clearFiles();
-            else rebuildPlaylistFromUI();
-            numberOfFiles--;
-            numberOfBytes -= files[i].size;
-            totalTime -= tmg.parseNumber(thumbnail.duration);
-            updateUI();
-          },
-        });
-        li.appendChild(deleteBtn);
         fragment.appendChild(li);
       }
       list.appendChild(fragment);
@@ -399,12 +441,14 @@ function handleFiles(files) {
       const playlist = [];
       const deployVideos = (objectURLs) => {
         objectURLs.forEach((url, i) => {
-          playlist.push({
+          const item = {
             src: url,
             media: { title: files[i].name, artist: "TMG Video Player" },
             settings: { time: { previews: true } },
-          });
+          };
+          playlist.push(item);
           thumbnails[i].src = url;
+          thumbnails[i].playlistItem = item;
         });
         if (!mP) {
           video.addEventListener("tmgready", readyUI, { once: true });
@@ -432,7 +476,7 @@ function handleFiles(files) {
               () => {
                 if (video.currentTime > 3) containers[mP.Controller.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.parseNumber(video.currentTime / video.duration));
               },
-              1000
+              1000,
             );
           };
           video.onplay = () => {
@@ -448,16 +492,17 @@ function handleFiles(files) {
             const id = `${Date.now()}_${i}`;
             thumbnails[i].setAttribute?.("data-caption-id", id);
             const res = await queueJob(() => extractCaptions(files[i], id), id);
-            if (res.success && !res.cancelled && item) {
+            thumbnails[i].setAttribute?.("data-captions-state", res.success && item ? "filled" : "empty");
+            if (res.success && item) {
               item.tracks = [res.track];
               if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === item) mP.Controller.tracks = item.tracks;
               return { ok: true, item };
             } else return { ok: false, error: res.error };
-          })
+          }),
         );
       };
       deployVideos(files.map((file) => URL.createObjectURL(file)));
-      if (!tmg.queryMediaMobile()) deployCaptions();
+      deployCaptions();
     } else if (numberOfFiles < 1) defaultUI();
   } catch (error) {
     console.error(error);
@@ -498,6 +543,7 @@ function cancelJob(id) {
 async function extractCaptions(file, id) {
   try {
     console.log(`🎥 Processing file: '${file.name}'`);
+    if (tmg.queryMediaMobile()) throw new Error("Captions extraction unavailable on a mobile user agent");
     const inputName = `video${id}.mp4`;
     const outputName = `cue${id}.vtt`;
     if (!ffmpeg.isLoaded()) await ffmpeg.load();
@@ -643,4 +689,47 @@ function getMimeTypeFromExtension(filename) {
 function isWebkitDirectorySupported() {
   const input = tmg.createEl("input", { type: "file" });
   return "webkitdirectory" in input;
+}
+
+function srtToVtt(srt) {
+  // Normalize line endings and trim
+  let input = srt.replace(/\r\n?/g, "\n").trim();
+  // Split into cue blocks (blank separator)
+  const blocks = input.split(/\n{2,}/);
+  const vttLines = ["WEBVTT", ""]; // header + blank line
+  for (const block of blocks) {
+    const lines = block.split("\n");
+    let idx = 0;
+    // If first line is just a number (cue index), skip it
+    if (/^\d+$/.test(lines[0].trim())) {
+      idx = 1;
+    }
+    if (idx >= lines.length) {
+      continue; // malformed block
+    }
+    const timing = lines[idx].trim();
+    // Match times with optional ms, comma or dot
+    const m = timing.match(/(\d{1,2}:\d{2}:\d{2})(?:[.,](\d{1,3}))?\s*-->\s*(\d{1,2}:\d{2}:\d{2})(?:[.,](\d{1,3}))?/);
+    if (!m) {
+      // invalid timing line, skip block
+      continue;
+    }
+    const [, startHms, startMsRaw = "0", endHms, endMsRaw = "0"] = m;
+    const to3 = (msRaw) => {
+      let ms = msRaw;
+      ms = ms.padEnd(3, "0");
+      if (ms.length > 3) ms = ms.substring(0, 3);
+      return ms;
+    };
+    const startMs = to3(startMsRaw);
+    const endMs = to3(endMsRaw);
+    const vttTime = `${startHms}.${startMs} --> ${endHms}.${endMs}`;
+    vttLines.push(vttTime);
+    // The rest of lines in block are subtitle text
+    for (let t = idx + 1; t < lines.length; t++) {
+      vttLines.push(lines[t]);
+    }
+    vttLines.push(""); // blank line after cue
+  }
+  return vttLines.join("\n");
 }
