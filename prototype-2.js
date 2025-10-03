@@ -1086,7 +1086,7 @@ class T_M_G_Video_Controller {
     this.setControlsState();
     this.setCaptionsState();
     this.setPreviewsState();
-    this.pseudoVideo.src = this.video.currentSrc || this.video.src;
+    this.pseudoVideo.src = this.video.src || this.video.currentSrc;
   }
   setTitleState(title) {
     const t = (title ?? this.media?.title) || "";
