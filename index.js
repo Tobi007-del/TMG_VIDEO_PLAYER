@@ -265,7 +265,7 @@ function handleFiles(files) {
               li.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load";
             },
           },
-          { captionState: "waiting" }
+          { captionState: "waiting" },
         );
         thumbnails.push(thumbnail);
         thumbnailContainer.appendChild(thumbnail);
@@ -289,7 +289,7 @@ function handleFiles(files) {
             thumbnail.dataset.captionState = "loading";
             let txt = await f.text();
             if (ext === "srt") txt = srtToVtt(txt);
-            thumbnail.playlistItem.tracks = [{ id: `${Date.now()}_${0}`, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
+            thumbnail.playlistItem.tracks = [{ id: uid(), kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
             if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = thumbnail.playlistItem.tracks;
             thumbnail.dataset.captionState = "filled";
           },
@@ -302,15 +302,20 @@ function handleFiles(files) {
               <path d="M18,11H16.5V10.5H14.5V13.5H16.5V13H18V14A1,1 0 0,1 17,15H14A1,1 0 0,1 13,14V10A1,1 0 0,1 14,9H17A1,1 0 0,1 18,10M11,11H9.5V10.5H7.5V13.5H9.5V13H11V14A1,1 0 0,1 10,15H7A1,1 0 0,1 6,14V10A1,1 0 0,1 7,9H10A1,1 0 0,1 11,10M19,4H5C3.89,4 3,4.89 3,6V18A2,2 0 0,0 5,20H19A2,2 0 0,0 21,18V6C21,4.89 20.1,4 19,4Z"/>
             <svg>
           `,
-          onclick() {
+        });
+        tmg.onSafeClicks(
+          captionsBtn,
+          ({ target }) => {
+            if (target.matches("input")) return;
             if (thumbnail.dataset.captionState === "empty") return captionsBtn.querySelector("input").click();
             else if (thumbnail.dataset.captionState === "filled") {
               thumbnail.playlistItem.tracks = [];
               if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = [];
-            } else if (!cancelJob(thumbnail.dataset.captionId)) return; // tries to cancel if waiting and returns if loading
+            } else if (!cancelJob(thumbnail.dataset.captionId)) return; // cancels if waiting and returns if loading since current job is shifted from queue
             thumbnail.dataset.captionState = "empty";
           },
-        });
+          async () => thumbnail.dataset.captionState === "empty" && (await deployCaption(thumbnail.playlistItem, files[i], thumbnail, false)),
+        );
         captionsBtn.appendChild(captionsInput);
         li.appendChild(captionsBtn);
         const deleteBtn = tmg.createEl("button", {
@@ -363,7 +368,7 @@ function handleFiles(files) {
               {
                 height: `${rect.height}px`,
                 width: `${rect.width}px`,
-              }
+              },
             );
             li.parentElement.insertBefore(placeholderItem, li.nextElementSibling);
             li.classList.add("dragging");
@@ -373,7 +378,7 @@ function handleFiles(files) {
             document.addEventListener("pointercancel", onPointerUp);
             dragLoop();
           },
-          { passive: false }
+          { passive: false },
         );
         function onPointerMove(e) {
           clientY = e.clientY;
@@ -389,7 +394,8 @@ function handleFiles(files) {
               if (clientY < SCROLL_MARGIN || clientY > window.innerHeight - SCROLL_MARGIN) {
                 if (autoScrollAccId === null) autoScrollAccId = setTimeout(() => (LINES_PER_SEC += 1), 2000);
                 else if (LINES_PER_SEC > 3) LINES_PER_SEC = Math.min(LINES_PER_SEC + 1, 10);
-                if (clientY < SCROLL_MARGIN) window.scrollBy(0, -scrollSpeed); // Scroll upward
+                if (clientY < SCROLL_MARGIN)
+                  window.scrollBy(0, -scrollSpeed); // Scroll upward
                 else if (clientY > window.innerHeight - SCROLL_MARGIN) window.scrollBy(0, scrollSpeed); // Scroll downward
               } else {
                 clearTimeout(autoScrollAccId);
@@ -411,7 +417,7 @@ function handleFiles(files) {
               if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
               else return closest;
             },
-            { offset: Number.NEGATIVE_INFINITY }
+            { offset: Number.NEGATIVE_INFINITY },
           ).element;
           if (afterLine) list.insertBefore(placeholderItem, afterLine);
           else list.appendChild(placeholderItem);
@@ -473,7 +479,7 @@ function handleFiles(files) {
               () => {
                 if (video.currentTime > 3) containers[mP.Controller.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.parseNumber(video.currentTime / video.duration));
               },
-              1000
+              1000,
             );
           };
           video.onplay = () => {
@@ -484,22 +490,7 @@ function handleFiles(files) {
         } else mP.Controller.playlist = [...mP.Controller.playlist, ...playlist];
       };
       const deployCaptions = async () => {
-        await Promise.all(
-          playlist.map(async (item, i) => {
-            const id = `${Date.now()}_${i}`;
-            thumbnails[i]?.setAttribute("data-caption-id", id);
-            const res = await queueJob(async () => {
-              thumbnails[i]?.setAttribute("data-caption-state", "loading");
-              return await extractCaptions(files[i], id);
-            }, id);
-            thumbnails[i]?.setAttribute("data-caption-state", res.success && item ? "filled" : "empty");
-            if (res.success && item) {
-              item.tracks = [res.track];
-              if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === item) mP.Controller.tracks = item.tracks;
-              return { ok: true, item };
-            } else return { ok: false, error: res.error };
-          })
-        );
+        await Promise.all(playlist.map(async (item, i) => await deployCaption(item, files[i], thumbnails[i])));
       };
       deployVideos(files.map((file) => URL.createObjectURL(file)));
       deployCaptions();
@@ -513,9 +504,9 @@ function handleFiles(files) {
 const queue = [];
 let queueRunning = false;
 
-function queueJob(task, id) {
+function queueJob(task, id, cancelled, preTask) {
   return new Promise((resolve) => {
-    queue.push({ id, cancelled: false, task, resolve });
+    queue.push({ task, id, preTask, cancelled, resolve });
     processQueue();
   });
 }
@@ -530,6 +521,7 @@ async function processQueue() {
       job.resolve({ success: false, cancelled: true });
       continue;
     }
+    job.preTask?.();
     job.resolve(await job.task());
   }
   queueRunning = false;
@@ -541,10 +533,25 @@ function cancelJob(id) {
   return !!job?.cancelled;
 }
 
+async function deployCaption(item, file, thumbnail, autocancel = tmg.queryMediaMobile()) {
+  const id = uid();
+  thumbnail?.setAttribute("data-caption-id", id);
+  thumbnail?.setAttribute("data-caption-state", autocancel ? "empty" : "waiting");
+  const res = await queueJob(
+    async () => await extractCaptions(file, id),
+    id,
+    autocancel,
+    () => thumbnail?.setAttribute("data-caption-state", "loading"),
+  );
+  if (!res.cancelled) thumbnail?.setAttribute("data-caption-state", res.success ? "filled" : "empty");
+  if (!res.success || !item) return;
+  item.tracks = [res.track];
+  if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === item) mP.Controller.tracks = item.tracks;
+}
+
 async function extractCaptions(file, id) {
   try {
     console.log(`🎥 Processing file: '${file.name}'`);
-    if (tmg.queryMediaMobile()) throw new Error("Captions extraction unavailable on a mobile user agent");
     const inputName = `video${id}.mp4`;
     const outputName = `cue${id}.vtt`;
     if (!ffmpeg.isLoaded()) await ffmpeg.load();
@@ -733,4 +740,8 @@ function srtToVtt(srt) {
     vttLines.push(""); // blank line after cue
   }
   return vttLines.join("\n");
+}
+
+function uid(prefix = "tvp_") {
+  return `${prefix}${Date.now().toString(36)}_${performance.now().toString(36)}_${Math.random().toString(36)}`;
 }
