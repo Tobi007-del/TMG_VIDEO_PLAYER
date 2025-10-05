@@ -295,7 +295,7 @@ function handleFiles(files) {
           },
         });
         const captionsBtn = tmg.createEl("button", {
-          title: "Add Captions",
+          title: "(Toggle / DblClick→Load) Captions",
           className: "captions-btn",
           innerHTML: `
             <svg viewBox="0 0 25 25" transform="scale(1.15)">
@@ -319,7 +319,7 @@ function handleFiles(files) {
         captionsBtn.appendChild(captionsInput);
         li.appendChild(captionsBtn);
         const deleteBtn = tmg.createEl("button", {
-          title: "Remove video",
+          title: "Remove Video",
           className: "delete-btn",
           innerHTML: `
             <svg width="20px" height="20px" viewBox="0 0 24 24" fill="none">
@@ -341,7 +341,7 @@ function handleFiles(files) {
         li.appendChild(deleteBtn);
         let startY, clientY, offsetY, maxOffset, initialScrollY, dragPosY, lastTime;
         const dragHandle = tmg.createEl("span", {
-          title: "Drag to reorder",
+          title: "Drag to Reorder",
           className: "drag-handle",
           innerHTML: `
             <svg fill="#000000" height="20px" width="20px" viewBox="0 0 24 24">
