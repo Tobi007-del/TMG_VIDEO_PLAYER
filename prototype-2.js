@@ -1425,7 +1425,6 @@ class T_M_G_Video_Controller {
     spacer?.setAttribute("data-spacer", true);
   }
   svgSetup() {
-    let controlsSize = 25;
     [...this.DOM.svgs].forEach((svg) => {
       svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
       const title = svg.getAttribute("data-control-title");
@@ -2536,10 +2535,10 @@ class T_M_G_Video_Controller {
       this.inFullScreen = false;
       this.toggleMiniPlayerMode();
     }
-    await this.autoLockFullScreenOrientation();
+    this.isMediaMobile && (await this.autolockFullScreenOrientation());
     this.setControlsState("fullscreenlock");
   }
-  async autoLockFullScreenOrientation() {
+  async autolockFullScreenOrientation() {
     if (this.isModeActive("fullScreen")) {
       await screen.orientation?.lock?.(this.video.videoHeight > this.video.videoWidth ? "portrait" : "landscape");
       this.setControlState(this.DOM.fullScreenOrientationBtn, { hidden: false });
@@ -3789,14 +3788,15 @@ class T_M_G {
     new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (!node.tagName || !(node.matches("video:not(.T_M_G-media") || node.querySelector("video:not(.T_M_G-media)"))) return;
+          if (!node.tagName || !(node.matches("video:not(.T_M_G-media") || node.querySelector("video:not(.T_M_G-media)"))) continue;
           const nodes = [...(node.querySelector("video:not(.T_M_G-media)") ? node.querySelectorAll("video:not(.T_M_G-media)") : [node])];
           for (const node of nodes) {
-            tmg.VIDMutationObserver.observe(node, { attributes: true });
+            tmg.VIDMutationObserver.observe(node, { attributes: true, childList: true, subtree: true });
+            node.tmgcontrols = node.hasAttribute("tmgcontrols");
           }
         }
         for (const node of mutation.removedNodes) {
-          if (!node.tagName || !(node.matches("video.T_M_G-media") || node.querySelector("video.T_M_G-media")) || tmg.isInDOM(node)) return;
+          if (!node.tagName || !(node.matches("video.T_M_G-media") || node.querySelector("video.T_M_G-media")) || tmg.isInDOM(node)) continue;
           const nodes = [...(node.querySelector("video.T_M_G-media") ? node.querySelectorAll("video.T_M_G-media") : [node])];
           for (const node of nodes) {
             if (!node.tmgPlayer?.Controller?.mutatingDOM) node.tmgcontrols = false;
@@ -4164,8 +4164,7 @@ class T_M_G {
     let { objectFit, objectPosition } = getComputedStyle(elem);
     const bbox = elem.getBoundingClientRect();
     const object = getResourceDimensions(elem);
-    if (!object) return {};
-
+    if (!object || !objectFit || !objectPosition) return {};
     if (objectFit === "scale-down") objectFit = bbox.width < object.width || bbox.height < object.height ? "contain" : "none";
     if (objectFit === "none") {
       const { left, top } = parseObjectPosition(objectPosition, bbox, object);
@@ -4178,8 +4177,7 @@ class T_M_G {
       const { left, top } = parseObjectPosition(objectPosition, bbox, { width, height });
       return { left, top, width, height };
     } else if (objectFit === "fill") {
-      // Relative positioning is discarded with `object-fit: fill`,
-      // so we need to check here if it's relative or not
+      // Relative positioning is discarded with `object-fit: fill`, so we need to check here if it's relative or not
       const { left, top } = parseObjectPosition(objectPosition, bbox, object);
       const objPosArr = objectPosition.split(" ");
       return { left: objPosArr[0].endsWith("%") ? 0 : left, top: objPosArr[1].endsWith("%") ? 0 : top, width: bbox.width, height: bbox.height };
