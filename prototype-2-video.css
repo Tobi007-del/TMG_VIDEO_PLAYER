@@ -1862,7 +1862,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   transition: var(--T_M_G-video-motion-transition);
 }
 
-.T_M_G-video-container:is(.T_M_G-video-captions, .T_M_G-video-captions-preview) .T_M_G-video-cue-container:not(:empty, :has(:empty)) {
+.T_M_G-video-container:where(.T_M_G-video-captions, .T_M_G-video-captions-preview) .T_M_G-video-cue-container:not(:empty, :has(:empty)) {
   display: block;
 }
 
