@@ -2519,7 +2519,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 }
 
 .T_M_G-video-container.T_M_G-video-initial :is(.T_M_G-video-big-controls-wrapper, .T_M_G-video-side-controls-wrapper) > *:not(.T_M_G-video-control-initial-show),
-.T_M_G-video-container.T_M_G-video-initial :is(.T_M_G-video-settings, .T_M_G-video-cover-curtain, .T_M_G-video-timeline-container),
+.T_M_G-video-container.T_M_G-video-initial :is(.T_M_G-video-settings, .T_M_G-video-cover-curtain, .T_M_G-video-cue-container, .T_M_G-video-timeline-container),
 .T_M_G-video-container:is(.T_M_G-video-initial, .T_M_G-video-stall) :is(.T_M_G-video-play-notifier, .T_M_G-video-pause-notifier, .T_M_G-video-buffer, .T_M_G-video-big-play-pause-btn svg) {
   display: none;
 }

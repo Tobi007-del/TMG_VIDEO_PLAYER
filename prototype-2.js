@@ -1034,8 +1034,7 @@ class T_M_G_Video_Controller {
     this.retrieveDOM();
     this.observeResize();
     this.svgSetup();
-    this.setTitleState();
-    this.setControlsState();
+    this.setInitialStates();
     this.setVideoEventListeners();
     this.setControlsEventListeners();
     this[`toggle${tmg.capitalize(this.initialMode)}Mode`]?.();
@@ -1075,7 +1074,6 @@ class T_M_G_Video_Controller {
     this.updateBrightnessSettings();
     this.updatePlaybackRateSettings();
     this.updateCaptionsSettings();
-    this.setInitialStates();
     this.setContainersEventListeners();
     this.setSettingsViewEventListeners();
     this.observeIntersection();
