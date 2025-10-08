@@ -1052,10 +1052,10 @@ class T_M_G_Video_Controller {
   }
   removeInitialState() {
     if (!this.initialState) return;
+    this.initialState = false;
     this.togglePlay(true);
     this.stall();
     this.videoContainer.classList.remove("T_M_G-video-initial");
-    this.initialState = false;
     this.initControls();
     this.DOM.controlsContainer.removeEventListener("click", this._handleInitialStateClick);
   }
@@ -1797,7 +1797,7 @@ class T_M_G_Video_Controller {
   }
   async togglePlay(bool) {
     try {
-      typeof bool === "boolean" ? await this.video[bool ? "play" : "pause"]() : await this.video[this.video.paused ? "play" : "pause"]();
+      await this.video[(typeof bool === "boolean" ? bool : this.video.paused) ? "play" : "pause"]();
     } catch (e) {
       this.video.error ? this._handleLoadedError(e) : this.log(e, "error", "swallow");
     }

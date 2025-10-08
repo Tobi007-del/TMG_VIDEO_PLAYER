@@ -366,8 +366,7 @@
 .T_M_G-video-side-controls-wrapper,
 .T_M_G-video-title,
 .T_M_G-video-scrub-notifier-text {
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: auto hidden;
   scrollbar-width: none;
 }
 
@@ -375,11 +374,15 @@
   display: none;
 }
 
-.T_M_G-video-screen-locked-wrapper > p:is(:nth-child(2), :nth-child(3)),
-.T_M_G-video-time-and-duration-btn > *,
-.T_M_G-video-touch-vb-content,
-:is(.T_M_G-video-preview-container, .T_M_G-video-fwd-notifier, .T_M_G-video-bwd-notifier)::after {
+.T_M_G-video-screen-locked-wrapper,
+.T_M_G-video-top-controls-wrapper,
+.T_M_G-video-bottom-controls-wrapper,
+.T_M_G-video-touch-vb-notifier {
   text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.5);
+}
+
+:is(.T_M_G-video-top-controls-wrapper, .T_M_G-video-bottom-controls-wrapper, .T_M_G-video-touch-vb-notifier) svg {
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
 }
 
 .T_M_G-video-container svg {
@@ -958,10 +961,10 @@ body:where(:has(.T_M_G-video-floating-player)) {
 .T_M_G-video-volume-notifier-content,
 .T_M_G-video-brightness-notifier-content,
 .T_M_G-video-object-fit-notifier-content,
-.T_M_G-video-touch-vb-notifier {
+.T_M_G-video-touch-vb-content {
   font-size: calc(var(--T_M_G-video-current-unit) / 2);
 }
-.T_M_G-media-container:is([data-size-tier^="xx"], .T_M_G-video-mobile) :is(.T_M_G-video-playback-rate-notifier-content, .T_M_G-video-volume-notifier-content, .T_M_G-video-brightness-notifier-content, .T_M_G-video-object-fit-notifier-content, .T_M_G-video-touch-vb-notifier) {
+.T_M_G-media-container:is([data-size-tier^="xx"], .T_M_G-video-mobile) :is(.T_M_G-video-playback-rate-notifier-content, .T_M_G-video-volume-notifier-content, .T_M_G-video-brightness-notifier-content, .T_M_G-video-object-fit-notifier-content, .T_M_G-video-touch-vb-content) {
   font-size: calc(var(--T_M_G-video-current-unit) / 1.6);
 }
 .T_M_G-video-playback-rate-notifier,
@@ -1096,6 +1099,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 
 .T_M_G-video-title {
   position: relative;
+  padding-bottom: 2px;
   color: var(--T_M_G-video-text-color);
   font-size: calc(var(--T_M_G-video-current-unit) / 1.25);
   font-weight: 500;
@@ -2104,6 +2108,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   position: relative;
   align-items: center;
   padding: 0;
+  text-shadow: none;
   box-shadow: none;
 }
 
