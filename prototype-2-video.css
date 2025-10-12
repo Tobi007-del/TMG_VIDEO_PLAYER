@@ -623,7 +623,7 @@ body:has(.T_M_G-video-container.T_M_G-video-mini-player) .T_M_G-pseudo-video-con
   height: fit-content;
   z-index: 2147483647;
   transition: var(--T_M_G-video-motion-transition);
-  animation: T_M_G-mini-player-enter 0.45s cubic-bezier(0.25, 0.8, 0.25, 1);
+  animation: T_M_G-mini-player-enter var(--T_M_G-video-slow-transition-time) var(--T_M_G-video-bounce-timing);
 }
 
 .T_M_G-video-container.T_M_G-video-mini-player:active,
@@ -1453,7 +1453,6 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   flex-direction: column;
   border-bottom-left-radius: inherit;
   border-bottom-right-radius: inherit;
-  transition: background-color var(--T_M_G-video-motion-transition-time) ease;
 }
 
 .T_M_G-video-container:has(.T_M_G-video-timeline-container:last-child) .T_M_G-video-bottom-controls-wrapper {
@@ -1707,6 +1706,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 .T_M_G-video-container input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
+  transition: box-shadow var(--T_M_G-video-switch-transition-time) var(--T_M_G-video-bounce-timing);
 }
 
 .T_M_G-video-container input:active::-webkit-slider-thumb {
@@ -1718,6 +1718,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   -webkit-appearance: none;
   appearance: none;
   border: none;
+  transition: box-shadow var(--T_M_G-video-switch-transition-time) var(--T_M_G-video-bounce-timing);
 }
 
 .T_M_G-video-container input:active::-moz-slider-thumb {
@@ -2052,7 +2053,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   border-radius: 50%;
   transform: translateX(-50%) scale(var(--T_M_G-video-current-thumb-indicator-scale));
   cursor: grab;
-  transition: transform var(--T_M_G-video-switch-transition-time) var(--T_M_G-video-bounce-timing);
+  transition: transform var(--T_M_G-video-switch-transition-time) var(--T_M_G-video-bounce-timing), box-shadow var(--T_M_G-video-switch-transition-time) var(--T_M_G-video-bounce-timing);
 }
 
 .T_M_G-video-container.T_M_G-video-scrubbing .T_M_G-video-thumb-indicator {
