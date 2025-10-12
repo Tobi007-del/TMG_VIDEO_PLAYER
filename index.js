@@ -229,7 +229,7 @@ function handleFiles(files) {
         const li = tmg.createEl("li", { className: "content-line" }, { fileName: files[i].name });
         const thumbnailContainer = tmg.createEl("span", {
           className: "thumbnail-container",
-          onclick: () => mP.Controller.movePlaylistTo(mP.Controller.playlist.findIndex((vid) => vid.src === thumbnailContainer.querySelector("video").src)),
+          onclick: () => mP.Controller?.movePlaylistTo(mP.Controller.playlist.findIndex((vid) => vid.src === thumbnailContainer.querySelector("video").src)),
         });
         li.appendChild(thumbnailContainer);
         const playbtn = tmg.createEl("button", {
@@ -290,7 +290,7 @@ function handleFiles(files) {
             let txt = await f.text();
             if (ext === "srt") txt = srtToVtt(txt);
             thumbnail.playlistItem.tracks = [{ id: uid(), kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
-            if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = thumbnail.playlistItem.tracks;
+            if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = thumbnail.playlistItem.tracks;
             thumbnail.dataset.captionState = "filled";
           },
         });
@@ -310,7 +310,7 @@ function handleFiles(files) {
             if (thumbnail.dataset.captionState === "empty") return captionsBtn.querySelector("input").click();
             else if (thumbnail.dataset.captionState === "filled") {
               thumbnail.playlistItem.tracks = [];
-              if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = [];
+              if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = [];
             } else if (!cancelJob(thumbnail.dataset.captionId)) return; // cancels if waiting and returns if loading since current job is shifted from queue
             thumbnail.dataset.captionState = "empty";
           },
@@ -486,7 +486,7 @@ function handleFiles(files) {
             fileList.querySelectorAll(".content-line").forEach((li, i) => li.classList.toggle("playing", i === mP.Controller.currentPlaylistIndex));
             containers[mP.Controller.currentPlaylistIndex]?.classList.remove("paused");
           };
-          video.onpause = () => containers[mP.Controller.currentPlaylistIndex]?.classList.add("paused");
+          video.onpause = () => containers[mP.Controller?.currentPlaylistIndex]?.classList.add("paused");
         } else mP.Controller.playlist = [...mP.Controller.playlist, ...playlist];
       };
       const deployCaptions = async () => {
@@ -546,7 +546,7 @@ async function deployCaption(item, file, thumbnail, autocancel = tmg.queryMediaM
   if (!res.cancelled) thumbnail?.setAttribute("data-caption-state", res.success ? "filled" : "empty");
   if (!res.success || !item) return;
   item.tracks = [res.track];
-  if (mP.Controller.playlist[mP.Controller.currentPlaylistIndex] === item) mP.Controller.tracks = item.tracks;
+  if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex] === item) mP.Controller.tracks = item.tracks;
 }
 
 async function extractCaptions(file, id) {

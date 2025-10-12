@@ -92,7 +92,7 @@
   --T_M_G-video-focus-visible-color: var(--T_M_G-video-brand-accent-color);
   --T_M_G-video-focus-visible-outline: 2px solid var(--T_M_G-video-focus-visible-color);
   --T_M_G-video-disabled-color: gray;
-  --T_M_G-video-error-color: rgba(255, 0, 0, 0.8);
+  --T_M_G-video-error-color: rgba(255, 0, 0, 0.75);
   --T_M_G-video-background: black;
   --T_M_G-video-disabled-background: rgb(55, 55, 55);
   --T_M_G-video-ripple-color: rgb(from var(--T_M_G-video-theme-color) r g b / 0.3);
