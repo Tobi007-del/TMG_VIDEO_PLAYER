@@ -898,7 +898,7 @@ class T_M_G_Video_Controller {
       <p>Tap to Unlock</p>
     </div>
     <!-- Code injected by TMG ends -->
-    `
+    `,
     );
     this.queryDOM(".T_M_G-video-container-content").prepend(this.video);
   }
@@ -1564,7 +1564,7 @@ class T_M_G_Video_Controller {
     this.loaded = false;
     this.currentPlaylistIndex = index;
     const v = this.playlist[index];
-    this.media = v.media ? { ...this.media, ...v.media } : v.media ?? null;
+    this.media = v.media ? { ...this.media, ...v.media } : (v.media ?? null);
     this.setPosterState();
     this.settings.time.start = v.settings.time.start;
     this.settings.time.end = v.settings.time.end;
@@ -1712,9 +1712,8 @@ class T_M_G_Video_Controller {
     if (this.currentPlaylistIndex < this.playlist?.length - 1) set("nexttrack", this.nextVideo);
   }
   syncAspectRatio() {
-    if (!this.video.videoWidth || !this.video.videoHeight) return;
-    this.aspectRatio = this.video.videoWidth / this.video.videoHeight;
-    this.videoAspectRatio = `${this.video.videoWidth} / ${this.video.videoHeight}`;
+    this.aspectRatio = this.video.videoWidth && this.video.videoHeight ? this.video.videoWidth / this.video.videoHeight : 16 / 9;
+    this.videoAspectRatio = this.video.videoWidth && this.video.videoHeight ? `${this.video.videoWidth} / ${this.video.videoHeight}` : "16 / 9";
   }
   rotateObjectFit() {
     const fits = [
@@ -1835,7 +1834,8 @@ class T_M_G_Video_Controller {
     return !useMode || this.settings.time.mode !== "remaining" ? tmg.formatTime(t, this.settings.time.format, showMs) : `${tmg.formatTime(this.video.duration - t, this.settings.time.format, showMs, true)}`;
   }
   generateCanvasPreviews() {
-    (this.DOM.previewCanvas.width = this.DOM.previewCanvas.offsetWidth || this.DOM.previewCanvas.width), (this.DOM.previewCanvas.height = this.DOM.previewCanvas.offsetHeight || this.DOM.previewCanvas.height);
+    this.DOM.previewCanvas.width = this.DOM.previewCanvas.offsetWidth || this.DOM.previewCanvas.width;
+    this.DOM.previewCanvas.height = this.DOM.previewCanvas.offsetHeight || this.DOM.previewCanvas.height;
     if (!this.isMediaMobile) this.previewContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.previewCanvas.width, this.DOM.previewCanvas.height);
     if (this.isScrubbing) this.thumbnailContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.thumbnailCanvas.width, this.DOM.thumbnailCanvas.height);
   }
@@ -1850,7 +1850,6 @@ class T_M_G_Video_Controller {
       this.isMediaMobile && this.DOM.scrubNotifier?.classList.add("T_M_G-video-control-active");
     }, 150);
     this._handleTimelineInput(e);
-    this.generateCanvasPreviews();
     this.DOM.timelineContainer?.addEventListener("pointermove", this._handleTimelineInput);
     this.DOM.timelineContainer?.addEventListener("pointerup", this.stopTimeScrubbing);
   }
@@ -1891,14 +1890,15 @@ class T_M_G_Video_Controller {
           if (!this.isMediaMobile) this.DOM.previewImg.src = this.settings.time.previews.address.replace("$", Math.max(1, Math.floor((percent * this.duration) / this.settings.time.previews.spf)));
           if (this.isScrubbing) this.DOM.thumbnailImg.src = this.DOM.previewImg.src;
         } else if (this.settings.time.previews) this.pseudoVideo.currentTime = percent * this.duration;
-        let arrowPosition,
-          arrowPositionMin = ((this.isModeActive("theater") && !this.isModeActive("miniPlayer")) || this.isModeActive("fullScreen") || this.isModeActive("floatingPlayer")) && this.settings.time.previews && !this.isMediaMobile ? 10 : 16.5;
-        if (percent < previewImgMin) arrowPosition = `${Math.max(percent * rect.width, arrowPositionMin)}px`;
-        else if (percent > 1 - previewImgMin) arrowPosition = `${Math.min(this.DOM.previewContainer.offsetWidth / 2 + percent * rect.width - this.DOM.previewContainer.offsetLeft, this.DOM.previewContainer.offsetWidth - arrowPositionMin)}px`;
+        let arrowBW = tmg.parseCSSUnit(getComputedStyle(this.DOM.previewContainer, "::before").borderWidth),
+          arrowPosition,
+          arrowPositionMin = Math.max(arrowBW / 5, tmg.parseCSSUnit(getComputedStyle(this.DOM.previewContainer).borderRadius) / 2);
+        if (percent < previewImgMin) arrowPosition = `${Math.max(percent * rect.width, arrowPositionMin + arrowBW / 2 + 1)}px`;
+        else if (percent > 1 - previewImgMin) arrowPosition = `${Math.min(this.DOM.previewContainer.offsetWidth / 2 + percent * rect.width - this.DOM.previewContainer.offsetLeft, this.DOM.previewContainer.offsetWidth - arrowPositionMin - arrowBW - 1)}px`;
         else arrowPosition = "50%";
         this.videoCurrentPreviewImgArrowPosition = arrowPosition;
       },
-      20
+      20,
     );
   }
   _handleGestureTimelineInput({ percent, sign, multiplier }) {
@@ -2471,7 +2471,7 @@ class T_M_G_Video_Controller {
             this.inFullScreen = false;
             this._handleFullScreenChange();
           },
-          { once: true }
+          { once: true },
         );
       }
       this.inFullScreen = true;
@@ -2853,7 +2853,7 @@ class T_M_G_Video_Controller {
           multiplier = 1 - mY / (height * 0.5);
         this._handleGestureTimelineInput({ percent, sign, multiplier });
       },
-      20
+      20,
     );
   }
   _handleGestureTouchYMove(e) {
@@ -2871,7 +2871,7 @@ class T_M_G_Video_Controller {
         this.lastGestureTouchY = y;
         this.gestureTouchZone?.x === "right" ? this._handleGestureVolumeSliderInput({ percent, sign }) : this._handleGestureBrightnessSliderInput({ percent, sign });
       },
-      20
+      20,
     );
   }
   _handleGestureTouchEnd() {
@@ -2933,7 +2933,7 @@ class T_M_G_Video_Controller {
           this.fastPlay(this.speedDirection);
         }
       },
-      100
+      100,
     );
   }
   _handleSpeedPointerUp() {
@@ -3071,7 +3071,7 @@ class T_M_G_Video_Controller {
             break;
         }
       },
-      10
+      10,
     );
   }
   _handleKeyUp(e) {
@@ -3172,7 +3172,7 @@ class T_M_G_Video_Controller {
           else e.target.appendChild(this.dragging);
           this.updateSideControls(e);
         },
-        20
+        20,
       );
     }
   }
@@ -3191,7 +3191,7 @@ class T_M_G_Video_Controller {
         if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
         else return closest;
       },
-      { offset: -Infinity }
+      { offset: -Infinity },
     ).element;
   }
 }
@@ -3658,7 +3658,7 @@ class T_M_G {
       document.addEventListener(e, () => {
         tmg._isDocTransient = true;
         tmg.startAudioManager();
-      })
+      }),
     );
     for (const medium of document.querySelectorAll("video")) {
       tmg.VIDMutationObserver.observe(medium, { attributes: true, childList: true, subtree: true });
@@ -3680,7 +3680,7 @@ class T_M_G {
           target.classList.contains("T_M_G-media") ? target.tmgPlayer?.Controller?._handleMediaIntersectionChange(isIntersecting) : target.querySelector(".T_M_G-media")?.tmgPlayer?.Controller?._handleMediaParentIntersectionChange(isIntersecting);
         }
       },
-      { root: null, rootMargin: "0px", threshold: 0.3 }
+      { root: null, rootMargin: "0px", threshold: 0.3 },
     );
   static resizeObserver =
     typeof window !== "undefined" &&
@@ -3887,8 +3887,10 @@ class T_M_G {
   }
   static isValidNumber = (number) => !isNaN(number ?? NaN) && number !== Infinity;
   static clamp = (min = 0, amount, max = Infinity) => Math.min(Math.max(amount, min), max);
+  static remToPx = (val) => parseFloat(getComputedStyle(document.documentElement).fontSize * val);
   static parseNumber = (number, fallback = 0) => (tmg.isValidNumber(number) ? number : fallback);
-  static parseCSSTime = (time) => (time.endsWith("ms") ? Number(time.replace("ms", "")) : Number(time.replace("s", "")) * 1000);
+  static parseCSSTime = (time) => (time.endsWith("ms") ? parseFloat(time) : parseFloat(time) * 1000);
+  static parseCSSUnit = (val) => (val.endsWith("px") ? parseFloat(val) : tmg.remToPx(parseFloat(val)));
   static assignDef(target, source = {}, key) {
     if (source[key] !== undefined) target[key] = source[key];
   }
@@ -4013,7 +4015,7 @@ class T_M_G {
         clearTimeout(el._clickTimeoutId);
         el._clickTimeoutId = setTimeout(() => onClick(e), 300);
       }),
-      options
+      options,
     );
     el.addEventListener(
       "dblclick",
@@ -4021,7 +4023,7 @@ class T_M_G {
         clearTimeout(el._clickTimeoutId);
         onDblClick(e);
       }),
-      options
+      options,
     ); // just to smoothe out browser perks with tiny logic, nothing special :)
   }
   static removeSafeClicks(el) {
