@@ -700,7 +700,7 @@ class T_M_G_Video_Controller {
               <path d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.5,12.43 16.5,12.21 16.5,12Z" />
             </svg>
           </button>
-          <input class="T_M_G-video-volume-slider T_M_G-video-vb-slider" type="range" min="0" max="100" step="1">
+          <span class="T_M_G-video-volume-slider-wrapper T_M_G-video-vb-slider-wrapper"><input class="T_M_G-video-volume-slider T_M_G-video-vb-slider" type="range" min="0" max="100" step="1"></span>
         </div>
       `
         : null,
@@ -721,7 +721,7 @@ class T_M_G_Video_Controller {
               </path>
             </svg>                  
           </button>
-          <input class="T_M_G-video-brightness-slider T_M_G-video-vb-slider" type="range" min="0" max="100" step="1">
+          <span class="T_M_G-video-brightness-slider-wrapper T_M_G-video-vb-slider-wrapper"><input class="T_M_G-video-brightness-slider T_M_G-video-vb-slider" type="range" min="0" max="100" step="1"></span>
         </div>         
       `
         : null,
@@ -898,7 +898,7 @@ class T_M_G_Video_Controller {
       <p>Tap to Unlock</p>
     </div>
     <!-- Code injected by TMG ends -->
-    `,
+    `
     );
     this.queryDOM(".T_M_G-video-container-content").prepend(this.video);
   }
@@ -1564,7 +1564,7 @@ class T_M_G_Video_Controller {
     this.loaded = false;
     this.currentPlaylistIndex = index;
     const v = this.playlist[index];
-    this.media = v.media ? { ...this.media, ...v.media } : (v.media ?? null);
+    this.media = v.media ? { ...this.media, ...v.media } : v.media ?? null;
     this.setPosterState();
     this.settings.time.start = v.settings.time.start;
     this.settings.time.end = v.settings.time.end;
@@ -1835,6 +1835,7 @@ class T_M_G_Video_Controller {
     return !useMode || this.settings.time.mode !== "remaining" ? tmg.formatTime(t, this.settings.time.format, showMs) : `${tmg.formatTime(this.video.duration - t, this.settings.time.format, showMs, true)}`;
   }
   generateCanvasPreviews() {
+    (this.DOM.previewCanvas.width = this.DOM.previewCanvas.offsetWidth || this.DOM.previewCanvas.width), (this.DOM.previewCanvas.height = this.DOM.previewCanvas.offsetHeight || this.DOM.previewCanvas.height);
     if (!this.isMediaMobile) this.previewContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.previewCanvas.width, this.DOM.previewCanvas.height);
     if (this.isScrubbing) this.thumbnailContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.thumbnailCanvas.width, this.DOM.thumbnailCanvas.height);
   }
@@ -1897,7 +1898,7 @@ class T_M_G_Video_Controller {
         else arrowPosition = "50%";
         this.videoCurrentPreviewImgArrowPosition = arrowPosition;
       },
-      20,
+      20
     );
   }
   _handleGestureTimelineInput({ percent, sign, multiplier }) {
@@ -2040,22 +2041,24 @@ class T_M_G_Video_Controller {
     this.wasPaused = this.video.paused;
     this.lastPlaybackRate = this.playbackRate;
     this.DOM.playbackRateNotifier?.classList.add("T_M_G-video-control-active");
-    setTimeout(pos === "backwards" && this.settings.beta?.rewind ? this.rewind : this.fastForward);
+    setTimeout(pos === "backwards" && this.settings.beta?.rewind ? this.rewind : this.fastForward, this.settings.playbackRate.fast);
   }
-  fastForward() {
-    this.playbackRate = this.settings.playbackRate.fast;
+  fastForward(rate = this.settings.playbackRate.fast) {
+    this.playbackRate = rate;
+    this.DOM.playbackRateNotifier?.classList.remove("T_M_G-video-rewind");
     this.togglePlay(true);
   }
-  rewind() {
+  rewind(rate = this.settings.playbackRate.fast) {
     this.playbackRate = 1;
-    if (this.DOM.playbackRateNotifierText) this.DOM.playbackRateNotifierText.textContent = `${this.settings.playbackRate.fast}x`;
+    this.rewindPlaybackRate = rate;
+    if (this.DOM.playbackRateNotifierText) this.DOM.playbackRateNotifierText.textContent = `${rate}x`;
     this.DOM.playbackRateNotifier?.classList.add("T_M_G-video-rewind");
     this.video.addEventListener("play", this.rewindReset);
     this.speedIntervalId = setInterval(this.rewindVideo, this.pframeDelay);
   }
   rewindVideo() {
     this.togglePlay(false);
-    this.currentTime -= this.settings.playbackRate.fast / this.pfps;
+    this.currentTime -= this.rewindPlaybackRate / this.pfps;
     this.videoCurrentPlayedPosition = tmg.parseNumber(this.video.currentTime / this.video.duration);
     this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.toTimeText(this.video.currentTime, true));
   }
@@ -2270,9 +2273,9 @@ class T_M_G_Video_Controller {
     const vPercent = (v - 0) / (this.settings.volume.max - 0);
     this.videoContainer.setAttribute("data-volume-level", vLevel);
     if (this.DOM.volumeSlider) this.DOM.volumeSlider.value = v;
-    this.DOM.volumeSlider?.setAttribute("data-volume", v);
+    this.DOM.volumeSlider?.parentElement.setAttribute("data-volume", v);
     if (this.DOM.touchVolumeContent) this.DOM.touchVolumeContent.textContent = v + "%";
-    this.videoCurrentVolumeTooltipPosition = `${12 + vPercent * 77}%`;
+    this.videoCurrentVolumeTooltipPosition = `${10.5 + vPercent * 79.5}%`;
     if (this.settings.volume.max > 100) {
       if (v <= 100) {
         this.videoCurrentVolumeSliderPosition = (v - 0) / (100 - 0);
@@ -2384,9 +2387,9 @@ class T_M_G_Video_Controller {
     const bPercent = (b - 0) / (this.settings.brightness.max - 0);
     this.videoContainer.setAttribute("data-brightness-level", bLevel);
     if (this.DOM.brightnessSlider) this.DOM.brightnessSlider.value = b;
-    this.DOM.brightnessSlider?.setAttribute("data-brightness", b);
+    this.DOM.brightnessSlider?.parentElement.setAttribute("data-brightness", b);
     if (this.DOM.touchBrightnessContent) this.DOM.touchBrightnessContent.textContent = b + "%";
-    this.videoCurrentBrightnessTooltipPosition = `${12 + bPercent * 77}%`;
+    this.videoCurrentBrightnessTooltipPosition = `${10.5 + bPercent * 79.5}%`;
     if (this.settings.brightness.max > 100) {
       if (b <= 100) {
         this.videoCurrentBrightnessSliderPosition = (b - 0) / (100 - 0);
@@ -2468,7 +2471,7 @@ class T_M_G_Video_Controller {
             this.inFullScreen = false;
             this._handleFullScreenChange();
           },
-          { once: true },
+          { once: true }
         );
       }
       this.inFullScreen = true;
@@ -2850,7 +2853,7 @@ class T_M_G_Video_Controller {
           multiplier = 1 - mY / (height * 0.5);
         this._handleGestureTimelineInput({ percent, sign, multiplier });
       },
-      20,
+      20
     );
   }
   _handleGestureTouchYMove(e) {
@@ -2868,7 +2871,7 @@ class T_M_G_Video_Controller {
         this.lastGestureTouchY = y;
         this.gestureTouchZone?.x === "right" ? this._handleGestureVolumeSliderInput({ percent, sign }) : this._handleGestureBrightnessSliderInput({ percent, sign });
       },
-      20,
+      20
     );
   }
   _handleGestureTouchEnd() {
@@ -2930,7 +2933,7 @@ class T_M_G_Video_Controller {
           this.fastPlay(this.speedDirection);
         }
       },
-      100,
+      100
     );
   }
   _handleSpeedPointerUp() {
@@ -3068,7 +3071,7 @@ class T_M_G_Video_Controller {
             break;
         }
       },
-      10,
+      10
     );
   }
   _handleKeyUp(e) {
@@ -3169,7 +3172,7 @@ class T_M_G_Video_Controller {
           else e.target.appendChild(this.dragging);
           this.updateSideControls(e);
         },
-        20,
+        20
       );
     }
   }
@@ -3188,7 +3191,7 @@ class T_M_G_Video_Controller {
         if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
         else return closest;
       },
-      { offset: -Infinity },
+      { offset: -Infinity }
     ).element;
   }
 }
@@ -3655,7 +3658,7 @@ class T_M_G {
       document.addEventListener(e, () => {
         tmg._isDocTransient = true;
         tmg.startAudioManager();
-      }),
+      })
     );
     for (const medium of document.querySelectorAll("video")) {
       tmg.VIDMutationObserver.observe(medium, { attributes: true, childList: true, subtree: true });
@@ -3677,7 +3680,7 @@ class T_M_G {
           target.classList.contains("T_M_G-media") ? target.tmgPlayer?.Controller?._handleMediaIntersectionChange(isIntersecting) : target.querySelector(".T_M_G-media")?.tmgPlayer?.Controller?._handleMediaParentIntersectionChange(isIntersecting);
         }
       },
-      { root: null, rootMargin: "0px", threshold: 0.3 },
+      { root: null, rootMargin: "0px", threshold: 0.3 }
     );
   static resizeObserver =
     typeof window !== "undefined" &&
@@ -4010,7 +4013,7 @@ class T_M_G {
         clearTimeout(el._clickTimeoutId);
         el._clickTimeoutId = setTimeout(() => onClick(e), 300);
       }),
-      options,
+      options
     );
     el.addEventListener(
       "dblclick",
@@ -4018,7 +4021,7 @@ class T_M_G {
         clearTimeout(el._clickTimeoutId);
         onDblClick(e);
       }),
-      options,
+      options
     ); // just to smoothe out browser perks with tiny logic, nothing special :)
   }
   static removeSafeClicks(el) {
@@ -4056,10 +4059,9 @@ class T_M_G {
       const { left, top } = parseObjectPosition(objectPosition, bbox, { width, height });
       return { left, top, width, height };
     } else if (objectFit === "fill") {
-      // Relative positioning is discarded with `object-fit: fill`, so we need to check here if it's relative or not
       const { left, top } = parseObjectPosition(objectPosition, bbox, object);
       const objPosArr = objectPosition.split(" ");
-      return { left: objPosArr[0].endsWith("%") ? 0 : left, top: objPosArr[1].endsWith("%") ? 0 : top, width: bbox.width, height: bbox.height };
+      return { left: objPosArr[0].endsWith("%") ? 0 : left, top: objPosArr[1].endsWith("%") ? 0 : top, width: bbox.width, height: bbox.height }; // Relative positioning is discarded with `object-fit: fill`, so we need to check here if it's relative or not
     } else if (objectFit === "cover") {
       const minRatio = Math.min(bbox.width / object.width, bbox.height / object.height);
       let width = object.width * minRatio;

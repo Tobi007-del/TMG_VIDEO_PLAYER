@@ -470,7 +470,7 @@ function handleFiles(files) {
               },
             },
           });
-          mP.build.playlist[0].settings.time.start = 2;
+          if (video.duration > 12) mP.build.playlist[0].settings.time.start = 2;
           mP.attach(video);
           video.addEventListener("loadedmetadata", dispatchPlayerReadyToast, { once: true });
           video.ontimeupdate = () => {
