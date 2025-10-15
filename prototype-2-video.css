@@ -762,7 +762,7 @@ body:where(:has(.T_M_G-video-floating-player)) {
 
 .T_M_G-video-container.T_M_G-video-settings-view .T_M_G-video-settings {
   opacity: 1;
-  visibility: visible;
+  pointer-events: all;
 }
 
 .T_M_G-video-container.T_M_G-video-settings-view .T_M_G-video-container-content video {
@@ -818,8 +818,8 @@ body:where(:has(.T_M_G-video-floating-player)) {
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
   opacity: 0;
-  visibility: hidden;
-  transition: opacity var(--T_M_G-video-settings-view-transition-time) var(--T_M_G-video-bounce-timing), visibility var(--T_M_G-video-settings-view-transition-time) var(--T_M_G-video-bounce-timing);
+  pointer-events: none;
+  transition: opacity var(--T_M_G-video-settings-view-transition-time) var(--T_M_G-video-bounce-timing);
 }
 
 .T_M_G-video-settings-content {
@@ -881,15 +881,15 @@ body:where(:has(.T_M_G-video-floating-player)) {
   align-items: center;
   gap: calc(var(--T_M_G-video-current-unit) / 3.5);
   opacity: 0;
-  visibility: hidden;
+  pointer-events: none;
   transform: translateY(calc(var(--T_M_G-video-current-unit) * 5));
-  transition: opacity var(--T_M_G-video-switch-transition-time) ease, visibility var(--T_M_G-video-switch-transition-time) ease, transform var(--T_M_G-video-switch-transition-time) ease;
+  transition: opacity var(--T_M_G-video-switch-transition-time) ease;
 }
 
 .T_M_G-video-container.T_M_G-video-locked:is(.T_M_G-video-locked-overlay, :has(:focus-visible)) .T_M_G-video-screen-locked-wrapper {
   transform: translateY(0);
   opacity: 1;
-  visibility: visible;
+  pointer-events: all;
 }
 
 .T_M_G-video-screen-locked-btn {
