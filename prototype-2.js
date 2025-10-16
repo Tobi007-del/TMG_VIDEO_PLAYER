@@ -1260,7 +1260,7 @@ class T_M_G_Video_Controller {
     // notifiers event listeners
     if (this.settings.status.ui.notifiers) new tmg.Notifier(this);
     // pseudo event listeners
-    this.pseudoVideo.addEventListener("timeupdate", this.generateCanvasPreviews);
+    this.pseudoVideo.addEventListener("timeupdate", this.syncCanvasPreviews);
     this.queryDOM(".T_M_G-video-picture-in-picture-icon-wrapper", true).addEventListener("click", this.togglePictureInPictureMode);
   }
   setDragEventListeners() {
@@ -1376,15 +1376,14 @@ class T_M_G_Video_Controller {
       this.videoCurrentContainerWidth = `${w}px`;
       this.videoCurrentContainerHeight = `${h}px`;
       this.videoContainer.dataset.sizeTier = tier;
-      const { width = w, height = h } = tmg.getRenderedBox(this.video);
-      this.DOM.thumbnailCanvas.height = this.DOM.thumbnailImg.height = height + 1;
-      this.DOM.thumbnailCanvas.width = this.DOM.thumbnailImg.width = width + 1;
+      this.syncThumbnailDimensions();
       this.resetCueCharWidth();
       this.previewCaptions("");
       repeat && requestAnimationFrame(this._handleMediaParentResize);
     } else {
-      const { tier } = getTier(this.pseudoVideoContainer);
+      const { tier, repeat } = getTier(this.pseudoVideoContainer);
       this.pseudoVideoContainer.dataset.sizeTier = tier;
+      repeat && requestAnimationFrame(() => this._handleMediaParentResize(true));
     }
   }
   _handleSideControlsWrapperResize = (wrapper) => this.updateSideControls({ target: wrapper });
@@ -1723,10 +1722,11 @@ class T_M_G_Video_Controller {
     ];
     const i = fits.findIndex((f) => f.value === this.videoObjectFit);
     const nextFit = fits[(i + 1) % fits.length];
+    this.fire(`objectfit${nextFit.value}`);
     this.videoObjectFit = nextFit.value;
     this.videoContainer.setAttribute("data-object-fit", nextFit.value);
     if (this.DOM.objectFitNotifierContent) this.DOM.objectFitNotifierContent.textContent = nextFit.name;
-    this.fire(`objectfit${nextFit.value}`);
+    this.syncThumbnailDimensions();
   }
   isModeActive(mode) {
     switch (mode) {
@@ -1833,11 +1833,16 @@ class T_M_G_Video_Controller {
   toTimeText(t = this.video.currentTime, useMode = false, showMs = false) {
     return !useMode || this.settings.time.mode !== "remaining" ? tmg.formatTime(t, this.settings.time.format, showMs) : `${tmg.formatTime(this.video.duration - t, this.settings.time.format, showMs, true)}`;
   }
-  generateCanvasPreviews() {
+  syncCanvasPreviews() {
     this.DOM.previewCanvas.width = this.DOM.previewCanvas.offsetWidth || this.DOM.previewCanvas.width;
     this.DOM.previewCanvas.height = this.DOM.previewCanvas.offsetHeight || this.DOM.previewCanvas.height;
     if (!this.isMediaMobile) this.previewContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.previewCanvas.width, this.DOM.previewCanvas.height);
     if (this.isScrubbing) this.thumbnailContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.thumbnailCanvas.width, this.DOM.thumbnailCanvas.height);
+  }
+  syncThumbnailDimensions() {
+    const { width = this.videoContainer.offsetWidth, height = this.videoContainer.offsetHeight } = tmg.getRenderedBox(this.video);
+    this.DOM.thumbnailCanvas.height = this.DOM.thumbnailImg.height = height + 1;
+    this.DOM.thumbnailCanvas.width = this.DOM.thumbnailImg.width = width + 1;
   }
   _handleTimelinePointerDown(e) {
     if (this.isScrubbing) return;
@@ -1849,6 +1854,7 @@ class T_M_G_Video_Controller {
       this.videoContainer.classList.add("T_M_G-video-scrubbing");
       this.isMediaMobile && this.DOM.scrubNotifier?.classList.add("T_M_G-video-control-active");
     }, 150);
+    this.syncThumbnailDimensions();
     this._handleTimelineInput(e);
     this.DOM.timelineContainer?.addEventListener("pointermove", this._handleTimelineInput);
     this.DOM.timelineContainer?.addEventListener("pointerup", this.stopTimeScrubbing);
@@ -1879,24 +1885,20 @@ class T_M_G_Video_Controller {
         const rect = this.DOM.timelineContainer?.getBoundingClientRect(),
           percent = tmg.clamp(0, x - rect.left, rect.width) / rect.width,
           previewImgMin = this.DOM.previewContainer.offsetWidth / 2 / rect.width;
-        this.videoCurrentPreviewPosition = percent;
-        this.videoCurrentPreviewImgPosition = tmg.clamp(previewImgMin, percent, 1 - previewImgMin);
         this.DOM.previewContainer?.setAttribute("data-preview-time", this.toTimeText(percent * this.video.duration, true));
         if (this.isScrubbing) {
           this.videoCurrentPlayedPosition = percent;
           this.delayOverlay();
         }
+        this.videoCurrentPreviewPosition = percent;
+        this.videoCurrentPreviewImgPosition = tmg.clamp(previewImgMin, percent, 1 - previewImgMin);
+        let arrowBW = tmg.parseCSSUnit(getComputedStyle(this.DOM.previewContainer, "::before").borderWidth),
+          arrowPositionMin = Math.max(arrowBW / 5, tmg.parseCSSUnit(getComputedStyle(this.DOM.previewContainer).borderRadius) / 2);
+        this.videoCurrentPreviewImgArrowPosition = percent < previewImgMin ? `${Math.max(percent * rect.width, arrowPositionMin + arrowBW / 2 + 1)}px` : percent > 1 - previewImgMin ? `${Math.min(this.DOM.previewContainer.offsetWidth / 2 + percent * rect.width - this.DOM.previewContainer.offsetLeft, this.DOM.previewContainer.offsetWidth - arrowPositionMin - arrowBW - 1)}px` : "50%";
         if (this.settings.status.ui.previews) {
           if (!this.isMediaMobile) this.DOM.previewImg.src = this.settings.time.previews.address.replace("$", Math.max(1, Math.floor((percent * this.duration) / this.settings.time.previews.spf)));
           if (this.isScrubbing) this.DOM.thumbnailImg.src = this.DOM.previewImg.src;
         } else if (this.settings.time.previews) this.pseudoVideo.currentTime = percent * this.duration;
-        let arrowBW = tmg.parseCSSUnit(getComputedStyle(this.DOM.previewContainer, "::before").borderWidth),
-          arrowPosition,
-          arrowPositionMin = Math.max(arrowBW / 5, tmg.parseCSSUnit(getComputedStyle(this.DOM.previewContainer).borderRadius) / 2);
-        if (percent < previewImgMin) arrowPosition = `${Math.max(percent * rect.width, arrowPositionMin + arrowBW / 2 + 1)}px`;
-        else if (percent > 1 - previewImgMin) arrowPosition = `${Math.min(this.DOM.previewContainer.offsetWidth / 2 + percent * rect.width - this.DOM.previewContainer.offsetLeft, this.DOM.previewContainer.offsetWidth - arrowPositionMin - arrowBW - 1)}px`;
-        else arrowPosition = "50%";
-        this.videoCurrentPreviewImgArrowPosition = arrowPosition;
       },
       20,
     );

@@ -1424,11 +1424,14 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   cursor: auto;
 }
 
-.T_M_G-video-container.T_M_G-video-mini-player .T_M_G-video-container-content {
+.T_M_G-video-container.T_M_G-video-mini-player :is(.T_M_G-video-container-content, .T_M_G-video-settings),
+.T_M_G-video-thumb-indicator,
+.T_M_G-video-vb-slider,
+.T_M_G-video-cue-container {
   cursor: grab;
 }
 
-.T_M_G-video-container.T_M_G-video-mini-player .T_M_G-video-container-content:active,
+.T_M_G-video-container.T_M_G-video-mini-player:active :is(.T_M_G-video-container-content, .T_M_G-video-settings),
 :is(.T_M_G-video-timeline-container, .T_M_G-video-vb-slider, .T_M_G-video-cue-container):active {
   cursor: grabbing;
 }
@@ -1752,7 +1755,6 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 
 .T_M_G-video-vb-slider {
   --T_M_G-video-current-slider-gradient-dir: to right;
-  cursor: grab;
 }
 
 .T_M_G-video-container.T_M_G-video-volume-boost :is(.T_M_G-video-volume-slider, .T_M_G-video-touch-volume-slider),
@@ -1883,7 +1885,6 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   overflow-y: auto;
   background: rgb(from var(--T_M_G-video-captions-window-color) r g b / var(--T_M_G-video-captions-window-opacity));
   touch-action: none;
-  cursor: grab;
   will-change: left, bottom;
   transition: var(--T_M_G-video-motion-transition);
 }
@@ -2035,7 +2036,6 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   background: var(--T_M_G-video-seek-thumb-background);
   border-radius: 50%;
   transform: translateX(-50%) scale(var(--T_M_G-video-current-thumb-indicator-scale));
-  cursor: grab;
   transition: transform var(--T_M_G-video-switch-transition-time) var(--T_M_G-video-bounce-timing), box-shadow var(--T_M_G-video-switch-transition-time) var(--T_M_G-video-bounce-timing);
 }
 
