@@ -1322,6 +1322,7 @@ class T_M_G_Video_Controller {
   _handleSettingsKeyUp(e) {
     const action = this.keyEventAllowed(e);
     if (action === false) return;
+    else if (action) this.showOverlay();
     switch (action) {
       case "settings":
         this.leaveSettingsView();
@@ -1793,7 +1794,7 @@ class T_M_G_Video_Controller {
   }
   _handleBufferStart() {
     this.buffering = true;
-    this.showOverlay();
+    (this.isMediaMobile || this.isModeActive("miniPlayer") || this.isModeActive("floatingPlayer")) && this.showOverlay();
     this.videoContainer.classList.add("T_M_G-video-buffering");
   }
   _handleBufferStop() {
@@ -1817,7 +1818,6 @@ class T_M_G_Video_Controller {
   }
   _handlePause() {
     this.videoContainer.classList.add("T_M_G-video-paused");
-    this.showOverlay();
     if (this.buffering) this._handleBufferStop();
   }
   _handleEnded = () => this.videoContainer.classList.add("T_M_G-video-replay");
@@ -1939,13 +1939,11 @@ class T_M_G_Video_Controller {
     this.videoContainer.classList.remove("T_M_G-video-replay");
   }
   toggleTimeMode() {
-    this.showOverlay();
     this.settings.time.mode = this.settings.time.mode !== "elapsed" ? "elapsed" : "remaining";
     if (this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(this.video.currentTime, true);
     this.DOM.previewContainer?.setAttribute("data-preview-time", this.toTimeText(Number(this.videoCurrentPreviewPosition) * this.video.duration, true));
   }
   toggleTimeFormat() {
-    this.showOverlay();
     this.settings.time.format = this.settings.time.format !== "digital" ? "digital" : "human";
     if (this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(this.video.currentTime, true);
     if (this.DOM.totalTimeElement) this.DOM.totalTimeElement.textContent = this.toTimeText(this.video.duration);
@@ -2524,13 +2522,11 @@ class T_M_G_Video_Controller {
     this.setMediaSession();
     tmg._pictureInPictureActive = true;
   }
-  _handleLeavePictureInPicture() {
+  async _handleLeavePictureInPicture() {
     tmg._pictureInPictureActive = false;
-    // the video takes a while before it enters back into the player so a timeout is used to prevent the user from seeing the default ui
-    setTimeout(() => {
-      this.videoContainer.classList.remove("T_M_G-video-picture-in-picture");
-      this.toggleMiniPlayerMode();
-    }, 180);
+    await tmg.mockAsync(180); // the video takes a while before it enters back into the player so a timeout is used to prevent the user from seeing the default ui
+    this.videoContainer.classList.remove("T_M_G-video-picture-in-picture");
+    this.toggleMiniPlayerMode();
     this.delayOverlay();
   }
   toggleFloatingPlayer() {
@@ -2588,24 +2584,24 @@ class T_M_G_Video_Controller {
     if ((!active && !this.isModeActive("pictureInPicture") && !this.isModeActive("floatingPlayer") && !this.inFullScreen && !this.parentIntersecting && window.innerWidth >= this.miniPlayerMinWindowWidth && !this.video.paused) || (bool === true && !active)) {
       this.activatePseudoMode();
       this.videoContainer.classList.add("T_M_G-video-mini-player", "T_M_G-video-progress-bar");
-      this.videoContainer.addEventListener("mousedown", this.moveMiniPlayer);
-      this.videoContainer.addEventListener("touchstart", this.moveMiniPlayer, { passive: false });
+      this.videoContainer.addEventListener("mousedown", this._handleMiniPlayerDragStart);
+      this.videoContainer.addEventListener("touchstart", this._handleMiniPlayerDragStart, { passive: false });
     } else if ((active && this.parentIntersecting) || (active && window.innerWidth < this.miniPlayerMinWindowWidth) || (bool === false && active)) {
       if (behavior && tmg.isInWindowView(this.pseudoVideoContainer)) this.pseudoVideoContainer.scrollIntoView({ behavior, block: "center", inline: "center" });
       this.deactivatePseudoMode();
       this.videoContainer.classList.remove("T_M_G-video-mini-player");
       this.videoContainer.classList.toggle("T_M_G-video-progress-bar", this.settings.time.progressBar ?? this.isMediaMobile);
-      this.videoContainer.removeEventListener("mousedown", this.moveMiniPlayer);
-      this.videoContainer.removeEventListener("touchstart", this.moveMiniPlayer, { passive: false });
+      this.videoContainer.removeEventListener("mousedown", this._handleMiniPlayerDragStart);
+      this.videoContainer.removeEventListener("touchstart", this._handleMiniPlayerDragStart, { passive: false });
     }
   }
-  moveMiniPlayer({ target }) {
+  _handleMiniPlayerDragStart({ target }) {
     if (!this.isModeActive("miniPlayer") || this.DOM.topControlsWrapper.contains(target) || this.DOM.bottomControlsWrapper.contains(target) || this.DOM.cueContainer?.contains(target)) return;
     document.addEventListener("mousemove", this._handleMiniPlayerDragging);
-    document.addEventListener("mouseup", this.emptyMiniPlayerListeners);
-    document.addEventListener("mouseleave", this.emptyMiniPlayerListeners);
+    document.addEventListener("mouseup", this._handleMiniPlayerDragEnd);
+    document.addEventListener("mouseleave", this._handleMiniPlayerDragEnd);
     document.addEventListener("touchmove", this._handleMiniPlayerDragging, { passive: false });
-    document.addEventListener("touchend", this.emptyMiniPlayerListeners, { passive: false });
+    document.addEventListener("touchend", this._handleMiniPlayerDragEnd, { passive: false });
   }
   _handleMiniPlayerDragging(e) {
     if (e.touches?.length > 1) return;
@@ -2623,15 +2619,14 @@ class T_M_G_Video_Controller {
       this.videoCurrentMiniPlayerY = `${(posY / wh) * 100}%`;
     });
   }
-  emptyMiniPlayerListeners() {
+  _handleMiniPlayerDragEnd() {
     this.cancelRAFLoop("miniPlayerDragging");
     this.videoContainer.classList.remove("T_M_G-video-player-dragging");
-    this.showOverlay();
     document.removeEventListener("mousemove", this._handleMiniPlayerDragging);
-    document.removeEventListener("mouseup", this.emptyMiniPlayerListeners);
-    document.removeEventListener("mouseleave", this.emptyMiniPlayerListeners);
+    document.removeEventListener("mouseup", this._handleMiniPlayerDragEnd);
+    document.removeEventListener("mouseleave", this._handleMiniPlayerDragEnd);
     document.removeEventListener("touchmove", this._handleMiniPlayerDragging, { passive: false });
-    document.removeEventListener("touchend", this.emptyMiniPlayerListeners, { passive: false });
+    document.removeEventListener("touchend", this._handleMiniPlayerDragEnd, { passive: false });
   }
   _handleAnyClick() {
     this.delayOverlay();
@@ -2666,7 +2661,7 @@ class T_M_G_Video_Controller {
       if (detail == 1) return;
     }
     if (pos === "center") {
-      this.isMediaMobile || this.isModeActive("miniPlayer") ? this.togglePlay() : this.toggleFullScreenMode();
+      this.isMediaMobile ? this.togglePlay() : this.toggleFullScreenMode();
       return;
     } else {
       if (this.skipPersist && detail == 2) return;
@@ -2703,7 +2698,7 @@ class T_M_G_Video_Controller {
     if (this.shouldRemoveOverlay()) this.overlayDelayId = setTimeout(this.removeOverlay, this.settings.overlayDelay);
   }
   removeOverlay = (manner) => (manner === "force" || this.shouldRemoveOverlay()) && this.videoContainer.classList.remove("T_M_G-video-overlay");
-  shouldRemoveOverlay = () => !this.video.paused && !this.buffering && !this.isModeActive("pictureInPicture");
+  shouldRemoveOverlay = () => (this.isMediaMobile ? !this.video.paused && !this.buffering : true) && !this.isModeActive("pictureInPicture");
   showLockedOverlay() {
     this.videoContainer.classList.add("T_M_G-video-locked-overlay");
     this.delayLockedOverlay();
@@ -2981,6 +2976,7 @@ class T_M_G_Video_Controller {
   _handleKeyDown(e) {
     const action = this.keyEventAllowed(e);
     if (action === false) return;
+    else if (action) this.showOverlay();
     this.throttle(
       "keyDown",
       () => {
@@ -3079,6 +3075,7 @@ class T_M_G_Video_Controller {
   _handleKeyUp(e) {
     const action = this.keyEventAllowed(e);
     if (action === false) return;
+    else if (action) this.showOverlay();
     switch (action) {
       case "capture":
         this.exportVideoFrame(e.altKey);
@@ -3105,7 +3102,7 @@ class T_M_G_Video_Controller {
         this.togglePictureInPictureMode();
         break;
       case "theater":
-        if (!this.isMediaMobile && !this.inFullScreen && !this.isModeActive("miniPlayer") && !this.isModeActive("floatingPlayer")) this.toggleTheaterMode();
+        if (!this.inFullScreen && !this.isMediaMobile && !this.isModeActive("miniPlayer") && !this.isModeActive("floatingPlayer")) this.toggleTheaterMode();
         break;
       case "fullScreen":
         this.toggleFullScreenMode();
@@ -3135,6 +3132,7 @@ class T_M_G_Video_Controller {
   }
   _handlePlayTriggerUp(e) {
     const action = this.keyEventAllowed(e);
+    if (action) this.showOverlay();
     switch (action) {
       case " ": // -w
       case "playPause":
@@ -3156,7 +3154,6 @@ class T_M_G_Video_Controller {
   }
   _handleDrag = () => this.delayOverlay();
   _handleDragEnd({ target }) {
-    this.showOverlay();
     target.classList.remove("T_M_G-video-control-dragging");
     this.dragging = null;
     this.settings.controlPanel = { top: Array.from(this.DOM.tRightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId), bottom: [...Array.from(this.DOM.bLeftSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId), "spacer", ...Array.from(this.DOM.bRightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId)] };
