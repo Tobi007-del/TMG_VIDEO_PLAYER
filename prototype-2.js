@@ -898,7 +898,7 @@ class T_M_G_Video_Controller {
       <p>Tap to Unlock</p>
     </div>
     <!-- Code injected by TMG ends -->
-    `,
+    `
     );
     this.queryDOM(".T_M_G-video-container-content").prepend(this.video);
   }
@@ -1564,7 +1564,7 @@ class T_M_G_Video_Controller {
     this.loaded = false;
     this.currentPlaylistIndex = index;
     const v = this.playlist[index];
-    this.media = v.media ? { ...this.media, ...v.media } : (v.media ?? null);
+    this.media = v.media ? { ...this.media, ...v.media } : v.media ?? null;
     this.setPosterState();
     this.settings.time.start = v.settings.time.start;
     this.settings.time.end = v.settings.time.end;
@@ -1794,7 +1794,7 @@ class T_M_G_Video_Controller {
   }
   _handleBufferStart() {
     this.buffering = true;
-    (this.isMediaMobile || this.isModeActive("miniPlayer") || this.isModeActive("floatingPlayer")) && this.showOverlay();
+    this.isMediaMobile && this.showOverlay();
     this.videoContainer.classList.add("T_M_G-video-buffering");
   }
   _handleBufferStop() {
@@ -1811,6 +1811,7 @@ class T_M_G_Video_Controller {
     this.videoContainer.classList.remove("T_M_G-video-paused");
     this.delayOverlay();
     this.setMediaSession();
+    this.toggleMiniPlayerMode();
     this.video.requestVideoFrameCallback?.(this._handleFrameUpdate);
     if (!this.loaded || !this.video.currentSrc) return;
     this.loaded = true;
@@ -1900,7 +1901,7 @@ class T_M_G_Video_Controller {
           if (this.isScrubbing) this.DOM.thumbnailImg.src = this.DOM.previewImg.src;
         } else if (this.settings.time.previews) this.pseudoVideo.currentTime = percent * this.duration;
       },
-      20,
+      20
     );
   }
   _handleGestureTimelineInput({ percent, sign, multiplier }) {
@@ -2471,7 +2472,7 @@ class T_M_G_Video_Controller {
             this.inFullScreen = false;
             this._handleFullScreenChange();
           },
-          { once: true },
+          { once: true }
         );
       }
       this.inFullScreen = true;
@@ -2578,10 +2579,10 @@ class T_M_G_Video_Controller {
     this.toggleMiniPlayerMode(false);
   }
   toggleMiniPlayerMode(bool, behavior) {
+    // this is a smart behavioural implementation rather than just a toggler
     if (!this.settings.modes.miniPlayer) return;
-    // mini player has an actual behavior :)
     const active = this.isModeActive("miniPlayer");
-    if ((!active && !this.isModeActive("pictureInPicture") && !this.isModeActive("floatingPlayer") && !this.inFullScreen && !this.parentIntersecting && window.innerWidth >= this.miniPlayerMinWindowWidth && !this.video.paused) || (bool === true && !active)) {
+    if ((!active && !this.isModeActive("pictureInPicture") && !this.inFloatingPlayer && !this.inFullScreen && !this.parentIntersecting && window.innerWidth >= this.miniPlayerMinWindowWidth && !this.video.paused) || (bool === true && !active)) {
       this.activatePseudoMode();
       this.videoContainer.classList.add("T_M_G-video-mini-player", "T_M_G-video-progress-bar");
       this.videoContainer.addEventListener("mousedown", this._handleMiniPlayerDragStart);
@@ -2683,7 +2684,7 @@ class T_M_G_Video_Controller {
     this.skipPersistPosition = null;
   }
   _handleHoverPointerActive({ target }) {
-    if (!(this.isMediaMobile && !this.isModeActive("miniPlayer"))) this.showOverlay();
+    if (!this.isMediaMobile) this.showOverlay();
     if (this.DOM.tRightSideControlsWrapper.contains(target) || this.DOM.bottomControlsWrapper.contains(target)) clearTimeout(this.overlayDelayId);
   }
   _handleHoverPointerOut = () => setTimeout(() => !this.isMediaMobile && !this.videoContainer.matches(":hover") && this.removeOverlay());
@@ -2850,7 +2851,7 @@ class T_M_G_Video_Controller {
           multiplier = 1 - mY / (height * 0.5);
         this._handleGestureTimelineInput({ percent, sign, multiplier });
       },
-      20,
+      20
     );
   }
   _handleGestureTouchYMove(e) {
@@ -2868,7 +2869,7 @@ class T_M_G_Video_Controller {
         this.lastGestureTouchY = y;
         this.gestureTouchZone?.x === "right" ? this._handleGestureVolumeSliderInput({ percent, sign }) : this._handleGestureBrightnessSliderInput({ percent, sign });
       },
-      20,
+      20
     );
   }
   _handleGestureTouchEnd() {
@@ -2930,7 +2931,7 @@ class T_M_G_Video_Controller {
           this.fastPlay(this.speedDirection);
         }
       },
-      100,
+      100
     );
   }
   _handleSpeedPointerUp() {
@@ -3069,7 +3070,7 @@ class T_M_G_Video_Controller {
             break;
         }
       },
-      10,
+      10
     );
   }
   _handleKeyUp(e) {
@@ -3171,7 +3172,7 @@ class T_M_G_Video_Controller {
           else e.target.appendChild(this.dragging);
           this.updateSideControls(e);
         },
-        20,
+        20
       );
     }
   }
@@ -3190,7 +3191,7 @@ class T_M_G_Video_Controller {
         if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
         else return closest;
       },
-      { offset: -Infinity },
+      { offset: -Infinity }
     ).element;
   }
 }
@@ -3657,7 +3658,7 @@ class T_M_G {
       document.addEventListener(e, () => {
         tmg._isDocTransient = true;
         tmg.startAudioManager();
-      }),
+      })
     );
     for (const medium of document.querySelectorAll("video")) {
       tmg.VIDMutationObserver.observe(medium, { attributes: true, childList: true, subtree: true });
@@ -3679,7 +3680,7 @@ class T_M_G {
           target.classList.contains("T_M_G-media") ? target.tmgPlayer?.Controller?._handleMediaIntersectionChange(isIntersecting) : target.querySelector(".T_M_G-media")?.tmgPlayer?.Controller?._handleMediaParentIntersectionChange(isIntersecting);
         }
       },
-      { root: null, rootMargin: "0px", threshold: 0.3 },
+      { root: null, rootMargin: "0px", threshold: 0.3 }
     );
   static resizeObserver =
     typeof window !== "undefined" &&
@@ -4014,7 +4015,7 @@ class T_M_G {
         clearTimeout(el._clickTimeoutId);
         el._clickTimeoutId = setTimeout(() => onClick(e), 300);
       }),
-      options,
+      options
     );
     el.addEventListener(
       "dblclick",
@@ -4022,7 +4023,7 @@ class T_M_G {
         clearTimeout(el._clickTimeoutId);
         onDblClick(e);
       }),
-      options,
+      options
     ); // just to smoothe out browser perks with tiny logic, nothing special :)
   }
   static removeSafeClicks(el) {
