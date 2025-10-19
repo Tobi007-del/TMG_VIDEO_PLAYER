@@ -11,7 +11,6 @@
 }
 
 :root {
-  --T_M_G-brand-color: rgb(226, 110, 2);
   --T_M_G-brand-light-color: hsl(from var(--T_M_G-brand-color) h s calc(l + 40));
   --T_M_G-brand-accent-color: rgb(244, 143, 177);
   --max-turn: 0.235turn;
@@ -154,6 +153,8 @@ body:has(.dragging) {
 }
 
 body .T_M_G-media-container {
+  --T_M_G-video-brand-color: var(--T_M_G-brand-color);
+  --T_M_G-video-brand-complement-color: rgb(from var(--T_M_G-video-brand-color) r g b / 0.4);
   --T_M_G-video-current-mini-player-x: calc((var(--T_M_G-video-current-container-width) / 2) + 7.5px);
   --T_M_G-video-current-mini-player-y: calc((var(--T_M_G-video-current-container-height) / 2) + 7.5px);
 }
