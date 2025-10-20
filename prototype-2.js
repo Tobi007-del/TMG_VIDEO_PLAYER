@@ -134,12 +134,18 @@ class T_M_G_Video_Controller {
     }
   }
   fire = (eventName, el = this.DOM.notifiersContainer, detail = null, bubbles = true, cancellable = true) => el?.dispatchEvent(new CustomEvent(eventName, { detail, bubbles, cancellable }));
-  throttle(key, fn, delay = 10) {
-    const now = performance.now();
-    const last = this.throttleMap.get(key) || 0;
-    if (now - last < delay) return;
-    this.throttleMap.set(key, now);
-    fn();
+  throttle(key, fn, delay = 30, strict = true) {
+    if (strict) {
+      const now = performance.now();
+      const last = this.throttleMap.get(key) || 0;
+      if (now - last < delay) return;
+      this.throttleMap.set(key, now);
+      return fn();
+    }
+    if (this.throttleMap.has(key)) return;
+    const id = setTimeout(() => this.throttleMap.delete(key), delay); // uses timeout so code runs when sync thread is free
+    this.throttleMap.set(key, id);
+    return fn();
   }
   RAFLoop(key, fn) {
     this.rafLoopFnMap.set(key, fn);
@@ -895,7 +901,7 @@ class T_M_G_Video_Controller {
       <p>Tap to Unlock</p>
     </div>
     <!-- Code injected by TMG ends -->
-    `,
+    `
     );
     this.queryDOM(".T_M_G-video-container-content").prepend(this.video);
   }
@@ -1561,7 +1567,7 @@ class T_M_G_Video_Controller {
     this.loaded = false;
     this.currentPlaylistIndex = index;
     const v = this.playlist[index];
-    this.media = v.media ? { ...this.media, ...v.media } : (v.media ?? null);
+    this.media = v.media ? { ...this.media, ...v.media } : v.media ?? null;
     this.setPosterState();
     this.settings.time.start = v.settings.time.start;
     this.settings.time.end = v.settings.time.end;
@@ -1898,7 +1904,7 @@ class T_M_G_Video_Controller {
           if (this.isScrubbing) this.DOM.thumbnailImg.src = this.DOM.previewImg.src;
         } else if (this.settings.time.previews) this.pseudoVideo.currentTime = percent * this.duration;
       },
-      30,
+      30
     );
   }
   _handleGestureTimelineInput({ percent, sign, multiplier }) {
@@ -1989,7 +1995,7 @@ class T_M_G_Video_Controller {
       fps = diff > 0 ? (diff / (now - (this.stats?.now ?? now))) * 1000 : 30,
       droppedFrames = (this.stats?.droppedFrames ?? 0) + (diff > 1 ? diff - 1 : 0);
     this.stats = { ...m, now, fps, droppedFrames };
-    // this.throttle("statsLogging", () => this.log(` STATS FOR NERDS: \n Now: ${now} ms\n Media Time: ${m.mediaTime} s\n Expected Display Time: ${m.expectedDisplayTime} ms\n Presented Frames: ${m.presentedFrames}\n Dropped Frames (detected): ${droppedFrames}\n FPS (real-time): ${fps}\n Processing Duration: ${m.processingDuration} ms\n Capture Time: ${m.captureTime}\n Width: ${m.width}\n Height: ${m.height}\n Painted Frames: ${m.paintedFrames}\n`), 1000);
+    // this.throttle("statsLogging", () => this.log(` STATS FOR NERDS: \n Now: ${now} ms\n Media Time: ${m.mediaTime} s\n Expected Display Time: ${m.expectedDisplayTime} ms\n Presented Frames: ${m.presentedFrames}\n Dropped Frames (detected): ${droppedFrames}\n FPS (real-time): ${fps}\n Processing Duration: ${m.processingDuration} ms\n Capture Time: ${m.captureTime}\n Width: ${m.width}\n Height: ${m.height}\n Painted Frames: ${m.paintedFrames}\n`), 1000, false);
     this.video.requestVideoFrameCallback(this._handleFrameUpdate);
   }
   moveVideoFrame(dir = "forwards") {
@@ -2468,7 +2474,7 @@ class T_M_G_Video_Controller {
             this.inFullScreen = false;
             this._handleFullScreenChange();
           },
-          { once: true },
+          { once: true }
         );
       }
       this.inFullScreen = true;
@@ -2695,7 +2701,7 @@ class T_M_G_Video_Controller {
     if (this.shouldRemoveOverlay()) this.overlayDelayId = setTimeout(this.removeOverlay, this.settings.overlay.delay);
   }
   removeOverlay = (manner) => (manner === "force" || this.shouldRemoveOverlay()) && this.videoContainer.classList.remove("T_M_G-video-overlay");
-  shouldRemoveOverlay = () => this.settings.overlay.behavior !== "persistent" && !this.isModeActive("pictureInPicture") && (this.isMediaMobile ? !this.video.paused && !this.buffering : this.settings.overlay.behavior === "auto" ? !this.video.paused : true);
+  shouldRemoveOverlay = () => this.settings.overlay.behavior !== "persistent" && !this.isModeActive("pictureInPicture") && (this.isMediaMobile ? !this.video.paused && !this.buffering : this.settings.overlay.behavior === "strict" ? true : !this.video.paused);
   showLockedOverlay() {
     this.videoContainer.classList.add("T_M_G-video-locked-overlay");
     this.delayLockedOverlay();
@@ -2847,7 +2853,7 @@ class T_M_G_Video_Controller {
           multiplier = 1 - mY / (height * 0.5);
         this._handleGestureTimelineInput({ percent, sign, multiplier });
       },
-      30,
+      30
     );
   }
   _handleGestureTouchYMove(e) {
@@ -2865,7 +2871,7 @@ class T_M_G_Video_Controller {
         this.lastGestureTouchY = y;
         this.gestureTouchZone?.x === "right" ? this._handleGestureVolumeSliderInput({ percent, sign }) : this._handleGestureBrightnessSliderInput({ percent, sign });
       },
-      30,
+      30
     );
   }
   _handleGestureTouchEnd() {
@@ -2927,7 +2933,7 @@ class T_M_G_Video_Controller {
           this.fastPlay(this.speedDirection);
         }
       },
-      150,
+      200
     );
   }
   _handleSpeedPointerUp() {
@@ -3066,7 +3072,7 @@ class T_M_G_Video_Controller {
             break;
         }
       },
-      50,
+      50
     );
   }
   _handleKeyUp(e) {
@@ -3168,7 +3174,8 @@ class T_M_G_Video_Controller {
           else e.target.appendChild(this.dragging);
           this.updateSideControls(e);
         },
-        30,
+        20,
+        false
       );
     }
   }
@@ -3187,7 +3194,7 @@ class T_M_G_Video_Controller {
         if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
         else return closest;
       },
-      { offset: -Infinity },
+      { offset: -Infinity }
     ).element;
   }
 }
@@ -3653,7 +3660,7 @@ class T_M_G {
       document.addEventListener(e, () => {
         tmg._isDocTransient = true;
         tmg.startAudioManager();
-      }),
+      })
     );
     for (const medium of document.querySelectorAll("video")) {
       tmg.VIDMutationObserver.observe(medium, { attributes: true, childList: true, subtree: true });
@@ -3675,7 +3682,7 @@ class T_M_G {
           target.classList.contains("T_M_G-media") ? target.tmgPlayer?.Controller?._handleMediaIntersectionChange(isIntersecting) : target.querySelector(".T_M_G-media")?.tmgPlayer?.Controller?._handleMediaParentIntersectionChange(isIntersecting);
         }
       },
-      { root: null, rootMargin: "0px", threshold: 0.3 },
+      { root: null, rootMargin: "0px", threshold: 0.3 }
     );
   static resizeObserver =
     typeof window !== "undefined" &&
@@ -4012,7 +4019,7 @@ class T_M_G {
         clearTimeout(el._clickTimeoutId);
         el._clickTimeoutId = setTimeout(() => onClick(e), 300);
       }),
-      options,
+      options
     );
     el.addEventListener(
       "dblclick",
@@ -4020,7 +4027,7 @@ class T_M_G {
         clearTimeout(el._clickTimeoutId);
         onDblClick(e);
       }),
-      options,
+      options
     ); // just to smoothe out browser perks with tiny logic, nothing special :)
   }
   static removeSafeClicks(el) {
