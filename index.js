@@ -126,6 +126,7 @@ clearBtn.addEventListener("click", clearFiles);
   dropBox.addEventListener("drop", async function handleDrop(e) {
     e.preventDefault();
     const dtItems = [...(e.dataTransfer.items || [])];
+    if (dtItems.length > 0) initUI();
     const traverseFileTree = async (item) => {
       return new Promise((resolve) => {
         if (item.isFile) item.file(resolve, () => resolve([]));
@@ -153,7 +154,7 @@ clearBtn.addEventListener("click", clearFiles);
     const videoFiles = flatFiles.filter((file) => (file.type || getMimeTypeFromExtension(file.name)).startsWith("video/"));
     const rejectedCount = flatFiles.length - videoFiles.length;
     if (rejectedCount > 0) Toast.warn(`You dropped ${rejectedCount} unsupported file${rejectedCount > 1 ? "s" : ""}. Only video files are supported.`);
-    if (videoFiles.length > 0) handleFiles(videoFiles);
+    handleFiles(videoFiles);
     videosDropBox.classList.remove("active");
     foldersDropBox.classList.remove("active");
   });
