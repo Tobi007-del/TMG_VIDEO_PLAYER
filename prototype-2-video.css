@@ -1108,7 +1108,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   flex: 1 100 auto;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--T_M_G-video-current-unit) / 6);
+  gap: calc(var(--T_M_G-video-current-unit) / 7.5);
   min-width: 25%;
   color: var(--T_M_G-video-text-color);
   font-weight: 500;
@@ -1137,7 +1137,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 }
 
 .T_M_G-video-artist {
-  font-size: calc(var(--T_M_G-video-current-unit) / 2.05);
+  font-size: calc(var(--T_M_G-video-current-unit) / 1.9);
   opacity: 0.6;
 }
 

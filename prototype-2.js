@@ -1305,12 +1305,12 @@ class T_M_G_Video_Controller {
   toggleSettingsView = () => (!this.isModeActive("settings") ? this.enterSettingsView() : this.leaveSettingsView());
   enterSettingsView() {
     if (this.isModeActive("settings")) return;
-    this.DOM.settingsCloseBtn.focus();
     this.wasPaused = this.video.paused;
     this.togglePlay(false);
     this.videoContainer.classList.add("T_M_G-video-settings-view");
     this.DOM.videoSettings.removeAttribute("inert");
     this.DOM.videoContainerContent.setAttribute("inert", "");
+    this.DOM.settingsCloseBtn.focus();
     window.addEventListener("keyup", this._handleSettingsKeyUp);
     this.floatingPlayer?.addEventListener("keyup", this._handleSettingsKeyUp);
     this.removeKeyEventListeners();
@@ -1318,10 +1318,10 @@ class T_M_G_Video_Controller {
   leaveSettingsView() {
     if (!this.isModeActive("settings")) return;
     setTimeout(this.togglePlay, tmg.parseCSSTime(this.videoSettingsViewTransitionTime), !this.wasPaused);
-    this.DOM.settingsCloseBtn.blur();
     this.videoContainer.classList.remove("T_M_G-video-settings-view");
     this.DOM.videoSettings.setAttribute("inert", "");
     this.DOM.videoContainerContent.removeAttribute("inert");
+    this.DOM.settingsCloseBtn.blur();
     window.removeEventListener("keyup", this._handleSettingsKeyUp);
     this.floatingPlayer?.removeEventListener("keyup", this._handleSettingsKeyUp);
     this.setKeyEventListeners();
