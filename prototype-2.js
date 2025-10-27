@@ -270,8 +270,13 @@ class T_M_G_Video_Controller {
         </div>      
       `,
       videotitle: `
-        <div class="T_M_G-video-title-wrapper">
-          <p class="T_M_G-video-title" tabindex="-1"></p>
+        <div class="T_M_G-video-title-wrapper-cover">
+          <div class="T_M_G-video-title-wrapper">
+            <p class="T_M_G-video-title" tabindex="-1"></p>
+          </div>
+          <div class="T_M_G-video-artist-wrapper">
+            <p class="T_M_G-video-artist" tabindex="-1"></p>
+          </div>
         </div>    
       `,
       videobuffer: `
@@ -297,12 +302,12 @@ class T_M_G_Video_Controller {
       `,
       playpausenotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-play-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-play-notifier">
           <svg viewBox="0 0 25 25" class="T_M_G-video-play-notifier-icon">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
           </svg>
         </div>
-        <div class="T_M_G-video-notifiers T_M_G-video-pause-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-pause-notifier">
           <svg viewBox="0 0 25 25" class="T_M_G-video-pause-notifier-icon">
             <path d="M14,19H18V5H14M6,19H10V5H6V19Z" />
           </svg>
@@ -311,13 +316,13 @@ class T_M_G_Video_Controller {
         : null,
       prevnextnotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-prev-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-prev-notifier">
           <svg viewBox="0 0 25 25" class="T_M_G-video-prev-icon">
             <rect x="4" y="5.14" width="2.5" height="14" transform="translate(2.1,0)"/>
             <path d="M17,5.14V19.14L6,12.14L17,5.14Z" transform="translate(2.5,0)" />
           </svg>
         </div>
-        <div class="T_M_G-video-notifiers T_M_G-video-next-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-next-notifier">
           <svg viewBox="0 0 25 25" class="T_M_G-video-next-icon">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" transform="translate(-2.5,0)" />
             <rect x="19" y="5.14" width="2.5" height="14" transform="translate(-2.5,0)"/>
@@ -327,7 +332,7 @@ class T_M_G_Video_Controller {
         : null,
       captionsnotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-captions-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-captions-notifier">
           <svg viewBox="0 0 25 25" class="T_M_G-video-subtitles-icon">
             <path transform="scale(0.5)" d="M44,6H4A2,2,0,0,0,2,8V40a2,2,0,0,0,2,2H44a2,2,0,0,0,2-2V8A2,2,0,0,0,44,6ZM12,26h4a2,2,0,0,1,0,4H12a2,2,0,0,1,0-4ZM26,36H12a2,2,0,0,1,0-4H26a2,2,0,0,1,0,4Zm10,0H32a2,2,0,0,1,0-4h4a2,2,0,0,1,0,4Zm0-6H22a2,2,0,0,1,0-4H36a2,2,0,0,1,0,4Z" />
           </svg>
@@ -339,7 +344,7 @@ class T_M_G_Video_Controller {
         : null,
       capturenotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-capture-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-capture-notifier">
           <svg viewBox="0 0 24 24" class="T_M_G-video-capture-icon">
             <path fill-rule="evenodd" d="M6.937 5.845c.07-.098.15-.219.25-.381l.295-.486C8.31 3.622 8.913 3 10 3h4c1.087 0 1.69.622 2.518 1.978l.295.486c.1.162.18.283.25.381q.071.098.12.155H20a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h2.816q.05-.057.121-.155M4 8a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-3c-.664 0-1.112-.364-1.56-.987a8 8 0 0 1-.329-.499c-.062-.1-.27-.445-.3-.492C14.36 5.282 14.088 5 14 5h-4c-.087 0-.36.282-.812 1.022-.029.047-.237.391-.3.492a8 8 0 0 1-.327.5C8.112 7.635 7.664 8 7 8zm15 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2m-7 7a5 5 0 1 1 0-10 5 5 0 0 1 0 10m0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
           </svg>
@@ -348,7 +353,7 @@ class T_M_G_Video_Controller {
         : null,
       playbackratenotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-playback-rate-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-playback-rate-notifier">
           <svg viewBox="0 0 30 24">
             <path d="M22,5.14V19.14L11,12.14L22,5.14Z" />
             <path d="M11,5.14V19.14L0,12.14L11,5.14Z" />
@@ -359,14 +364,14 @@ class T_M_G_Video_Controller {
             <path d="M19,5.14V19.14L30,12.14L19,5.14Z" />
           </svg>
         </div>
-        <div class="T_M_G-video-notifiers T_M_G-video-playback-rate-notifier-content"></div>
-        <div class="T_M_G-video-notifiers T_M_G-video-playback-rate-up-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-playback-rate-notifier-content"></div>
+        <div class="T_M_G-video-notifier T_M_G-video-playback-rate-up-notifier">
           <svg viewBox="0 0 30 24">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" transform="translate(-2.5, 0)" />
             <path d="M19,5.14V19.14L30,12.14L19,5.14Z" transform="translate(-2.5, 0)" />
           </svg>  
         </div>
-        <div class="T_M_G-video-notifiers T_M_G-video-playback-rate-down-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-playback-rate-down-notifier">
           <svg viewBox="0 0 30 24">
             <path d="M22,5.14V19.14L11,12.14L22,5.14Z" transform="translate(2.5, 0)" />
             <path d="M11,5.14V19.14L0,12.14L11,5.14Z" transform="translate(2.5, 0)" />
@@ -376,18 +381,18 @@ class T_M_G_Video_Controller {
         : null,
       volumenotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-volume-notifier-content"></div>
-        <div class="T_M_G-video-notifiers T_M_G-video-volume-up-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-volume-notifier-content"></div>
+        <div class="T_M_G-video-notifier T_M_G-video-volume-up-notifier">
           <svg viewBox="0 0 25 25" class="T_M_G-video-volume-up-notifier-icon" >
             <path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.84 14,18.7V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z" />
           </svg>  
         </div>
-        <div class="T_M_G-video-notifiers T_M_G-video-volume-down-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-volume-down-notifier">
           <svg viewBox="0 0 25 25" class="T_M_G-video-volume-down-notifier-icon">
             <path d="M5,9V15H9L14,20V4L9,9M18.5,12C18.5,10.23 17.5,8.71 16,7.97V16C17.5,15.29 18.5,13.76 18.5,12Z" />
           </svg>
         </div>
-        <div class="T_M_G-video-notifiers T_M_G-video-volume-muted-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-volume-muted-notifier">
           <svg viewBox="0 0 25 25" class="T_M_G-video-volume-muted-notifier-icon">
             <path d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.5,12.43 16.5,12.21 16.5,12Z" />
           </svg>
@@ -396,20 +401,20 @@ class T_M_G_Video_Controller {
         : null,
       brightnessnotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-brightness-notifier-content"></div>
-        <div class="T_M_G-video-notifiers T_M_G-video-brightness-up-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-brightness-notifier-content"></div>
+        <div class="T_M_G-video-notifier T_M_G-video-brightness-up-notifier">
           <svg viewBox="0 0 25 25" class="T_M_G-video-brightness-up-icon">
             <path transform="scale(1.05) translate(1.5, 1.5)"  d="M10 14.858a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6-5h3a1 1 0 0 1 0 2h-3a1 1 0 0 1 0-2zm-6 6a1 1 0 0 1 1 1v3a1 1 0 0 1-2 0v-3a1 1 0 0 1 1-1zm0-15a1 1 0 0 1 1 1v3a1 1 0 0 1-2 0v-3a1 1 0 0 1 1-1zm-9 9h3a1 1 0 1 1 0 2H1a1 1 0 0 1 0-2zm13.95 4.535l2.121 2.122a1 1 0 0 1-1.414 1.414l-2.121-2.121a1 1 0 0 1 1.414-1.415zm-8.486 0a1 1 0 0 1 0 1.415l-2.12 2.12a1 1 0 1 1-1.415-1.413l2.121-2.122a1 1 0 0 1 1.414 0zM17.071 3.787a1 1 0 0 1 0 1.414L14.95 7.322a1 1 0 0 1-1.414-1.414l2.12-2.121a1 1 0 0 1 1.415 0zm-12.728 0l2.121 2.121A1 1 0 1 1 5.05 7.322L2.93 5.201a1 1 0 0 1 1.414-1.414z">
             </path>
           </svg>
         </div>
-        <div class="T_M_G-video-notifiers T_M_G-video-brightness-down-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-brightness-down-notifier">
           <svg viewBox="0 0 25 25" class="T_M_G-video-brightness-down-icon">
             <path transform="scale(1.05) translate(3.25, 3.25)" d="M8 12.858a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6-5h1a1 1 0 0 1 0 2h-1a1 1 0 0 1 0-2zm-6 6a1 1 0 0 1 1 1v1a1 1 0 0 1-2 0v-1a1 1 0 0 1 1-1zm0-13a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1zm-7 7h1a1 1 0 1 1 0 2H1a1 1 0 1 1 0-2zm11.95 4.535l.707.708a1 1 0 1 1-1.414 1.414l-.707-.707a1 1 0 0 1 1.414-1.415zm-8.486 0a1 1 0 0 1 0 1.415l-.707.707A1 1 0 0 1 2.343 13.1l.707-.708a1 1 0 0 1 1.414 0zm9.193-9.192a1 1 0 0 1 0 1.414l-.707.707a1 1 0 0 1-1.414-1.414l.707-.707a1 1 0 0 1 1.414 0zm-9.9 0l.707.707A1 1 0 1 1 3.05 5.322l-.707-.707a1 1 0 0 1 1.414-1.414z">
             </path>
           </svg>
         </div>
-        <div class="T_M_G-video-notifiers T_M_G-video-brightness-dark-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-brightness-dark-notifier">
           <svg viewBox="0 0 25 25" class="T_M_G-video-brightness-dark-icon">
             <path transform="scale(1.2) translate(2, 2.5)" d="M12 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM8.5 2.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zm0 11a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zm5-5a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm-11 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9.743-4.036a.5.5 0 1 1-.707-.707.5.5 0 0 1 .707.707zm-7.779 7.779a.5.5 0 1 1-.707-.707.5.5 0 0 1 .707.707zm7.072 0a.5.5 0 1 1 .707-.707.5.5 0 0 1-.707.707zM3.757 4.464a.5.5 0 1 1 .707-.707.5.5 0 0 1-.707.707z">
             </path>
@@ -419,8 +424,8 @@ class T_M_G_Video_Controller {
         : null,
       objectfitnotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-object-fit-notifier-content"></div>
-        <div class="T_M_G-video-notifiers T_M_G-video-object-fit-contain-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-object-fit-notifier-content"></div>
+        <div class="T_M_G-video-notifier T_M_G-video-object-fit-contain-notifier">
           <svg viewBox="0 0 16 16" style="scale: 0.78;">
             <rect width="16" height="16" rx="4" ry="4" fill="none" stroke-width="2.25" stroke="currentColor"/>
             <g stroke-width="1" stroke="currentColor" transform="translate(3,3) scale(0.6)">
@@ -431,7 +436,7 @@ class T_M_G_Video_Controller {
             </g>
           </svg>
         </div>
-        <div class="T_M_G-video-notifiers T_M_G-video-object-fit-cover-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-object-fit-cover-notifier">
           <svg viewBox="0 0 16 16" style="scale: 0.78;">
             <rect width="16" height="16" rx="4" ry="4" fill="none" stroke-width="2.25" stroke="currentColor"/>
             <g stroke-width="1" stroke="currentColor" transform="translate(3,3) scale(0.6)">
@@ -440,7 +445,7 @@ class T_M_G_Video_Controller {
             </g>
           </svg>
         </div>
-        <div class="T_M_G-video-notifiers T_M_G-video-object-fit-fill-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-object-fit-fill-notifier">
           <svg viewBox="0 0 16 16" style="scale: 0.78;">
             <rect x="4" y="4" width="8" height="8" rx="1" ry="1" fill="none" stroke-width="1.5" stroke="currentColor"/>
             <g stroke-width="1" stroke="currentColor" transform="translate(3, 3) scale(0.65)">  
@@ -453,7 +458,7 @@ class T_M_G_Video_Controller {
         : null,
       fwdnotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-fwd-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-fwd-notifier">
           <svg viewBox="0 0 25 25">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
           </svg>
@@ -468,7 +473,7 @@ class T_M_G_Video_Controller {
         : null,
       bwdnotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-bwd-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-bwd-notifier">
           <svg viewBox="0 0 25 25">          
             <path d="M17,5.14V19.14L6,12.14L17,5.14Z" />
           </svg>
@@ -483,7 +488,7 @@ class T_M_G_Video_Controller {
         : null,
       scrubnotifier: ui.notifiers
         ? `
-      <div class="T_M_G-video-notifiers T_M_G-video-scrub-notifier">
+      <div class="T_M_G-video-notifier T_M_G-video-scrub-notifier">
         <span>
           <svg viewBox="0 0 25 25">          
             <path d="M17,5.14V19.14L6,12.14L17,5.14Z" />
@@ -495,9 +500,7 @@ class T_M_G_Video_Controller {
             <path d="M17,5.14V19.14L6,12.14L17,5.14Z" />
           </svg>
         </span>
-        <div class="T_M_G-video-scrub-notifier-content">
-          <p class="T_M_G-video-scrub-notifier-text" tabindex="-1">Double tap left or right to skip ${this.settings.time.skip} seconds</p>
-        </div>
+        <p class="T_M_G-video-scrub-notifier-text" tabindex="-1">Double tap left or right to skip ${this.settings.time.skip} seconds</p>
         <span>
           <svg viewBox="0 0 25 25">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
@@ -514,12 +517,12 @@ class T_M_G_Video_Controller {
         : null,
       touchtimelinenotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-touch-timeline-notifier T_M_G-video-touch-notifier"></div>
+        <div class="T_M_G-video-notifier T_M_G-video-touch-timeline-notifier T_M_G-video-touch-notifier"></div>
       `
         : null,
       touchvolumenotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-touch-volume-notifier T_M_G-video-touch-vb-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-touch-volume-notifier T_M_G-video-touch-vb-notifier">
           <span class="T_M_G-video-touch-volume-content T_M_G-video-touch-vb-content">0</span>
           <div class="T_M_G-video-touch-volume-slider T_M_G-video-touch-vb-slider"></div>
           <span>
@@ -540,7 +543,7 @@ class T_M_G_Video_Controller {
         : null,
       touchbrightnessnotifier: ui.notifiers
         ? `
-        <div class="T_M_G-video-notifiers T_M_G-video-touch-brightness-notifier T_M_G-video-touch-vb-notifier">
+        <div class="T_M_G-video-notifier T_M_G-video-touch-brightness-notifier T_M_G-video-touch-vb-notifier">
           <span class="T_M_G-video-touch-brightness-content T_M_G-video-touch-vb-content">0</span>
           <div class="T_M_G-video-touch-brightness-slider T_M_G-video-touch-vb-slider"></div>
           <span>
@@ -901,7 +904,7 @@ class T_M_G_Video_Controller {
       <p>Tap to Unlock</p>
     </div>
     <!-- Code injected by TMG ends -->
-    `
+    `,
     );
     this.queryDOM(".T_M_G-video-container-content").prepend(this.video);
   }
@@ -971,6 +974,7 @@ class T_M_G_Video_Controller {
       pictureInPictureWrapper: this.queryDOM(".T_M_G-video-picture-in-picture-wrapper"),
       pictureInPictureActiveIconWrapper: this.queryDOM(".T_M_G-video-picture-in-picture-icon-wrapper"),
       videoTitle: this.queryDOM(".T_M_G-video-title"),
+      videoArtist: this.queryDOM(".T_M_G-video-artist"),
       thumbnailImg: this.queryDOM("img.T_M_G-video-thumbnail"),
       thumbnailCanvas: this.queryDOM("canvas.T_M_G-video-thumbnail"),
       videoBuffer: this.queryDOM(".T_M_G-video-buffer"),
@@ -982,7 +986,6 @@ class T_M_G_Video_Controller {
       brightnessNotifierContent: ui.notifiers ? this.queryDOM(".T_M_G-video-brightness-notifier-content") : null,
       objectFitNotifierContent: ui.notifiers ? this.queryDOM(".T_M_G-video-object-fit-notifier-content") : null,
       scrubNotifier: ui.notifiers ? this.queryDOM(".T_M_G-video-scrub-notifier") : null,
-      scrubNotifierText: ui.notifiers ? this.queryDOM(".T_M_G-video-scrub-notifier-text") : null,
       fwdNotifier: ui.notifiers ? this.queryDOM(".T_M_G-video-fwd-notifier") : null,
       bwdNotifier: ui.notifiers ? this.queryDOM(".T_M_G-video-bwd-notifier") : null,
       touchTimelineNotifier: ui.notifiers ? this.queryDOM(".T_M_G-video-touch-timeline-notifier") : null,
@@ -1085,8 +1088,9 @@ class T_M_G_Video_Controller {
     this.setPreviewsState();
     this.pseudoVideo.src = this.video.src || this.video.currentSrc;
   }
-  setTitleState(title) {
+  setTitleState(title, artist) {
     if (this.DOM.videoTitle) this.DOM.videoTitle.textContent = this.DOM.videoTitle.dataset.videoTitle = (title ?? this.media?.title) || "";
+    if (this.DOM.videoArtist) this.DOM.videoArtist.textContent = (artist ?? this.media?.artist) || "";
   }
   setPosterState() {
     if (this.media?.artwork && this.media.artwork[0]?.src !== this.video.poster) this.video.poster = this.media.artwork[0].src;
@@ -1335,9 +1339,7 @@ class T_M_G_Video_Controller {
   observeResize() {
     this._handleMediaParentResize();
     tmg.initScrollAssist(this.DOM.videoTitle, { pxPerSecond: 60 });
-    tmg.initScrollAssist(this.DOM.scrubNotifierText, {
-      pxPerSecond: 60,
-    });
+    tmg.initScrollAssist(this.DOM.videoArtist, { pxPerSecond: 30 });
     [this.DOM.tRightSideControlsWrapper, this.DOM.bLeftSideControlsWrapper, this.DOM.bRightSideControlsWrapper].forEach((el) => {
       this._handleSideControlsWrapperResize(el);
       tmg.initScrollAssist(el, { pxPerSecond: 60 });
@@ -1347,9 +1349,7 @@ class T_M_G_Video_Controller {
   }
   unobserveResize() {
     tmg.removeScrollAssist(this.DOM.videoTitle);
-    tmg.removeScrollAssist(this.DOM.scrubNotifierText, {
-      pxPerSecond: 60,
-    });
+    tmg.removeScrollAssist(this.DOM.videoArtist);
     [this.DOM.tRightSideControlsWrapper, this.DOM.bLeftSideControlsWrapper, this.DOM.bRightSideControlsWrapper].forEach((el) => {
       tmg.removeScrollAssist(el);
       el && tmg.resizeObserver.unobserve(el);
@@ -1567,7 +1567,7 @@ class T_M_G_Video_Controller {
     this.loaded = false;
     this.currentPlaylistIndex = index;
     const v = this.playlist[index];
-    this.media = v.media ? { ...this.media, ...v.media } : v.media ?? null;
+    this.media = v.media ? { ...this.media, ...v.media } : (v.media ?? null);
     this.setPosterState();
     this.settings.time.start = v.settings.time.start;
     this.settings.time.end = v.settings.time.end;
@@ -1635,7 +1635,7 @@ class T_M_G_Video_Controller {
         cleanUpToast();
         this.nextVideo();
       },
-      cleanUpToastWhenNeeded = () => !(this.currentTime === this.duration) && cleanUpToast(),
+      cleanUpToastWhenNeeded = () => !this.video.ended && cleanUpToast(),
       autoCleanUpToast = () => {
         if (Math.floor((this.settings.time.end || this.duration) - this.currentTime) > this.settings.auto.next) cleanUpToast();
       },
@@ -1822,7 +1822,7 @@ class T_M_G_Video_Controller {
   }
   _handlePause() {
     this.videoContainer.classList.add("T_M_G-video-paused");
-    if (this.buffering) this._handleBufferStop();
+    this._handleBufferStop();
   }
   _handleEnded = () => this.videoContainer.classList.add("T_M_G-video-replay");
   get duration() {
@@ -1857,7 +1857,7 @@ class T_M_G_Video_Controller {
       this.togglePlay(false);
       this.videoContainer.classList.add("T_M_G-video-scrubbing");
       this.isMediaMobile && this.DOM.scrubNotifier?.classList.add("T_M_G-video-control-active");
-    }, 150);
+    }, 100);
     this.syncThumbnailDimensions();
     this._handleTimelineInput(e);
     this.DOM.timelineContainer?.addEventListener("pointermove", this._handleTimelineInput);
@@ -1904,7 +1904,7 @@ class T_M_G_Video_Controller {
           if (this.isScrubbing) this.DOM.thumbnailImg.src = this.DOM.previewImg.src;
         } else if (this.settings.time.previews) this.pseudoVideo.currentTime = percent * this.duration;
       },
-      30
+      30,
     );
   }
   _handleGestureTimelineInput({ percent, sign, multiplier }) {
@@ -2474,7 +2474,7 @@ class T_M_G_Video_Controller {
             this.inFullScreen = false;
             this._handleFullScreenChange();
           },
-          { once: true }
+          { once: true },
         );
       }
       this.inFullScreen = true;
@@ -2497,8 +2497,8 @@ class T_M_G_Video_Controller {
       this.inFullScreen = false;
       this.toggleMiniPlayerMode();
     }
-    this.isMediaMobile && (await this.autolockFullScreenOrientation());
     this.setControlsState("fullscreenlock");
+    this.isMediaMobile && (await this.autolockFullScreenOrientation());
   }
   async autolockFullScreenOrientation() {
     if (this.isModeActive("fullScreen")) {
@@ -2638,7 +2638,7 @@ class T_M_G_Video_Controller {
   _handleClick({ target }) {
     if (target !== this.DOM.controlsContainer) return;
     if (this.speedCheck && this.playTriggerCounter < 1) return;
-    if (this.isMediaMobile && !this.buffering && !this.isModeActive("pictureInPicture")) this.videoContainer.classList.toggle("T_M_G-video-overlay");
+    if (this.isMediaMobile && !this.buffering && !this.video.ended && !this.isModeActive("pictureInPicture")) this.videoContainer.classList.toggle("T_M_G-video-overlay");
     if (this.isMediaMobile || this.isModeActive("miniPlayer")) return;
     this.togglePlay();
     this.video.paused ? this.fire("videopause") : this.fire("videoplay");
@@ -2701,7 +2701,7 @@ class T_M_G_Video_Controller {
     if (this.shouldRemoveOverlay()) this.overlayDelayId = setTimeout(this.removeOverlay, this.settings.overlay.delay);
   }
   removeOverlay = (manner) => (manner === "force" || this.shouldRemoveOverlay()) && this.videoContainer.classList.remove("T_M_G-video-overlay");
-  shouldRemoveOverlay = () => this.settings.overlay.behavior !== "persistent" && !this.isModeActive("pictureInPicture") && (this.isMediaMobile ? !this.video.paused && !this.buffering : this.settings.overlay.behavior === "strict" ? true : !this.video.paused);
+  shouldRemoveOverlay = () => this.settings.overlay.behavior !== "persistent" && !this.isModeActive("pictureInPicture") && (this.isMediaMobile ? !this.video.paused && !this.buffering && !this.video.ended : this.settings.overlay.behavior === "strict" ? true : !this.video.paused);
   showLockedOverlay() {
     this.videoContainer.classList.add("T_M_G-video-locked-overlay");
     this.delayLockedOverlay();
@@ -2853,7 +2853,7 @@ class T_M_G_Video_Controller {
           multiplier = 1 - mY / (height * 0.5);
         this._handleGestureTimelineInput({ percent, sign, multiplier });
       },
-      30
+      30,
     );
   }
   _handleGestureTouchYMove(e) {
@@ -2871,7 +2871,7 @@ class T_M_G_Video_Controller {
         this.lastGestureTouchY = y;
         this.gestureTouchZone?.x === "right" ? this._handleGestureVolumeSliderInput({ percent, sign }) : this._handleGestureBrightnessSliderInput({ percent, sign });
       },
-      30
+      30,
     );
   }
   _handleGestureTouchEnd() {
@@ -2933,7 +2933,7 @@ class T_M_G_Video_Controller {
           this.fastPlay(this.speedDirection);
         }
       },
-      200
+      200,
     );
   }
   _handleSpeedPointerUp() {
@@ -3072,7 +3072,7 @@ class T_M_G_Video_Controller {
             break;
         }
       },
-      50
+      50,
     );
   }
   _handleKeyUp(e) {
@@ -3175,7 +3175,7 @@ class T_M_G_Video_Controller {
           this.updateSideControls(e);
         },
         20,
-        false
+        false,
       );
     }
   }
@@ -3194,7 +3194,7 @@ class T_M_G_Video_Controller {
         if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
         else return closest;
       },
-      { offset: -Infinity }
+      { offset: -Infinity },
     ).element;
   }
 }
@@ -3660,7 +3660,7 @@ class T_M_G {
       document.addEventListener(e, () => {
         tmg._isDocTransient = true;
         tmg.startAudioManager();
-      })
+      }),
     );
     for (const medium of document.querySelectorAll("video")) {
       tmg.VIDMutationObserver.observe(medium, { attributes: true, childList: true, subtree: true });
@@ -3682,7 +3682,7 @@ class T_M_G {
           target.classList.contains("T_M_G-media") ? target.tmgPlayer?.Controller?._handleMediaIntersectionChange(isIntersecting) : target.querySelector(".T_M_G-media")?.tmgPlayer?.Controller?._handleMediaParentIntersectionChange(isIntersecting);
         }
       },
-      { root: null, rootMargin: "0px", threshold: 0.3 }
+      { root: null, rootMargin: "0px", threshold: 0.3 },
     );
   static resizeObserver =
     typeof window !== "undefined" &&
@@ -4019,7 +4019,7 @@ class T_M_G {
         clearTimeout(el._clickTimeoutId);
         el._clickTimeoutId = setTimeout(() => onClick(e), 300);
       }),
-      options
+      options,
     );
     el.addEventListener(
       "dblclick",
@@ -4027,7 +4027,7 @@ class T_M_G {
         clearTimeout(el._clickTimeoutId);
         onDblClick(e);
       }),
-      options
+      options,
     ); // just to smoothe out browser perks with tiny logic, nothing special :)
   }
   static removeSafeClicks(el) {
