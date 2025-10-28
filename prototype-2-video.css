@@ -818,7 +818,7 @@ body:where(:has(.T_M_G-video-floating-player)) {
 }
 .T_M_G-video-screen-locked-wrapper > p:nth-child(3) {
   font-size: calc(var(--T_M_G-video-current-unit) / 2.2);
-  opacity: 0.6;
+  color: rgb(from currentColor r g b / 0.6);
 }
 /* setting controls stack */
 .T_M_G-video-thumbnail {
@@ -1003,7 +1003,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 }
 .T_M_G-video-artist {
   font-size: calc(var(--T_M_G-video-current-unit) / 1.9);
-  opacity: 0.6;
+  color: rgb(from currentColor r g b / 0.6);
 }
 .T_M_G-video-container.T_M_G-video-mini-player .T_M_G-video-title {
   font-size: calc(var(--T_M_G-video-current-unit) / 1.45);
@@ -1015,7 +1015,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   z-index: -1;
   color: transparent;
   -webkit-text-stroke: 0.15px var(--T_M_G-video-brand-color);
-  transform: translate(calc(var(--T_M_G-video-current-unit)/20), calc(var(--T_M_G-video-current-unit)/20));
+  transform: translate(calc(var(--T_M_G-video-current-unit) / 20), calc(var(--T_M_G-video-current-unit) / 20));
 }
 .T_M_G-video-container.T_M_G-video-mini-player .T_M_G-video-top-controls-wrapper .T_M_G-video-side-controls-wrapper-cover {
   flex-grow: 0;
