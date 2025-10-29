@@ -341,7 +341,7 @@ function handleFiles(files) {
           },
         });
         li.appendChild(deleteBtn);
-        let startY, clientY, offsetY, maxOffset, initialScrollY, dragPosY, lastTime;
+        let clientY, offsetY, maxOffset, initialScrollY, dragPosY, lastTime;
         const dragHandle = tmg.createEl("span", {
           title: "Drag to Reorder",
           className: "drag-handle",
@@ -357,7 +357,6 @@ function handleFiles(files) {
             navigator.vibrate?.([50]);
             const rect = li.getBoundingClientRect(),
               listRect = list.getBoundingClientRect();
-            startY = rect.top - offsetY;
             clientY = e.clientY;
             offsetY = listRect.top;
             maxOffset = listRect.height;
@@ -374,7 +373,7 @@ function handleFiles(files) {
             );
             li.parentElement.insertBefore(placeholderItem, li.nextElementSibling);
             li.classList.add("dragging");
-            li.style.cssText = `position:absolute;top:${startY}px;z-index:999;`;
+            li.style.cssText = `position:absolute;z-index:999;`;
             document.addEventListener("pointermove", onPointerMove);
             document.addEventListener("pointerup", onPointerUp);
             document.addEventListener("pointercancel", onPointerUp);
