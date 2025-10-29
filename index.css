@@ -91,12 +91,18 @@ body::before {
   width: 100%;
   height: 100lvh;
   z-index: -1;
-  background: conic-gradient(from var(--turn) at 50% -10%, #0b1012e8 10deg, #0b1012e8 calc((360deg - var(--degree)) / 2), rgba(27, 38, 74, 0.751), #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2), #0b1012e8 350deg), center/cover url("./assets/images/lone-tree.jpg"), #0b1012;
+  background:
+    conic-gradient(from var(--turn) at 50% -10%, #0b1012e8 10deg, #0b1012e8 calc((360deg - var(--degree)) / 2), rgba(27, 38, 74, 0.751), #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2), #0b1012e8 350deg),
+    center/cover url("./assets/images/lone-tree.jpg"),
+    #0b1012;
   animation: rotateLight 30s linear infinite;
 }
 
 body.light::before {
-  background: conic-gradient(from var(--turn) at 50% -10%, #0b1012e8 10deg, #0b1012e8 calc((360deg - var(--degree)) / 2), #5c80f755, #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2), #0b1012e8 350deg), center/cover url("./assets/images/lone-tree.jpg"), #0b1012;
+  background:
+    conic-gradient(from var(--turn) at 50% -10%, #0b1012e8 10deg, #0b1012e8 calc((360deg - var(--degree)) / 2), #5c80f755, #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2), #0b1012e8 350deg),
+    center/cover url("./assets/images/lone-tree.jpg"),
+    #0b1012;
 }
 
 body.offline .offline-notice {
@@ -197,7 +203,9 @@ body:has(#video.stall) #clear-button {
   border-width: var(--loader-width);
   border-color: var(--T_M_G-brand-color) gray var(--T_M_G-brand-color) var(--T_M_G-brand-color);
   rotate: 0;
-  animation: spin 800ms linear infinite, switch 800ms infinite ease forwards;
+  animation:
+    spin 800ms linear infinite,
+    switch 800ms infinite ease forwards;
 }
 
 @media (max-width: 780px) {
