@@ -2,10 +2,14 @@ if (window) window.t007 ??= {};
 
 const Toast = (function t007Toast() {
   const base = (body, options = {}) => new T007_Toast({ ...options, body });
-  base.info = (body, options = {}) => base(body, { ...options, type: "info" });
-  base.error = (body, options = {}) => base(body, { ...options, type: "error" });
-  base.success = (body, options = {}) => base(body, { ...options, type: "success" });
-  base.warn = (body, options = {}) => base(body, { ...options, type: "warning" });
+  ["info", "success", "warn", "error"].forEach(
+    (action) =>
+      (base[action] = (body, options = {}) =>
+        base(body, {
+          ...options,
+          type: action === "warn" ? "warning" : action,
+        }))
+  );
   return base;
 })();
 export default Toast;

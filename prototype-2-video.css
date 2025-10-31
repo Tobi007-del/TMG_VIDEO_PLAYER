@@ -76,7 +76,7 @@
 :where(:root, .T_M_G-media-container) {
   --T_M_G-video-text-color: var(--T_M_G-video-theme-accent-color);
   --T_M_G-video-brand-color: rgb(226, 110, 2);
-  --T_M_G-video-brand-accent-color: hsl(from var(--T_M_G-video-brand-color) calc(h - 40) s calc(l + 10));
+  --T_M_G-video-brand-accent-color: hsl(from var(--T_M_G-video-brand-color) calc(h - 25) s calc(l + 12.5));
   --T_M_G-video-brand-complement-color: rgb(from black r g b / 0.4);
   --T_M_G-video-theme-color: white;
   --T_M_G-video-theme-accent-color: hsl(from var(--T_M_G-video-theme-color) h s calc(l - 5));

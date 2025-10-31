@@ -10,13 +10,13 @@ typeof window !== "undefined" ? console.log("%cTMG Media Player Available", "col
 class T_M_G_Media_Notifier {
   constructor(self) {
     this.self = self;
-    tmg.NOTIFIER_EVENTS.forEach((eventName) => this.self.DOM.notifiersContainer?.addEventListener(eventName, this));
     this.resetNotifiers = this.resetNotifiers.bind(this);
     [...(this.self.DOM.notifiersContainer?.children ?? [])].forEach((n) => n.addEventListener("animationend", () => this.resetNotifiers("", true)));
+    tmg.NOTIFIER_EVENTS.forEach((eventName) => this.self.DOM.notifiersContainer?.addEventListener(eventName, this));
   }
-  handleEvent({ type: eventName }, active = this.self.settings.notifiers) {
-    active && this.resetNotifiers();
-    active && this.self.RAFLoop("notifying", () => this.resetNotifiers(eventName));
+  handleEvent({ type: eventName }) {
+    this.resetNotifiers();
+    this.self.RAFLoop("notifying", () => this.resetNotifiers(eventName));
   }
   resetNotifiers(n = "", flush = false) {
     this.self.DOM.notifiersContainer?.setAttribute("data-notify", n);
@@ -70,7 +70,7 @@ class T_M_G_Video_Controller {
     setTimeout(() => (this.mutatingDOM = false));
     this.initSettingsManager();
     this.initPlayer();
-    this.fire("tmgready", this.video, { loaded: true });
+    this.fire("tmgready", { loaded: true });
   }
   get src() {
     return this.video.src;
@@ -94,23 +94,6 @@ class T_M_G_Video_Controller {
     tmg.removeTracks(this.video);
     value?.length && tmg.addTracks(value, this.video);
   }
-  log(mssg, type, action) {
-    if (!this.debug) return;
-    const options = { rootElement: this.videoContainer, tag: mssg, position: "bottom-left", showProgress: false };
-    switch (type) {
-      case "error":
-        const body = (action === "swallow" ? false : (typeof mssg === "string" && mssg) || mssg?.message) || "Something went wrong";
-        action === "swallow" ? t007.toast(body, { ...options, tag: body }) : t007.toast.error(body, { ...options, tag: body });
-        action === "swallow" ? console.warn(`TMG swallowed a controller error:`, mssg) : console.error(mssg);
-        break;
-      case "warn":
-        t007.toast.warn(mssg, options);
-        console.warn(mssg);
-        break;
-      default:
-        console.log(mssg);
-    }
-  }
   bindMethods() {
     let proto = Object.getPrototypeOf(this);
     while (proto && proto !== Object.prototype) {
@@ -131,7 +114,29 @@ class T_M_G_Video_Controller {
       proto = Object.getPrototypeOf(proto);
     }
   }
-  fire = (eventName, el = this.DOM.notifiersContainer, detail = null, bubbles = true, cancellable = true) => el?.dispatchEvent(new CustomEvent(eventName, { detail, bubbles, cancellable }));
+  log(mssg, type, action) {
+    if (!this.debug) return;
+    switch (type) {
+      case "error":
+        const body = (action === "swallow" ? false : (typeof mssg === "string" && mssg) || mssg?.message) || "Something went wrong";
+        action === "swallow" ? this.toast?.(body, { tag: body }) : this.toast?.error(body, { tag: body });
+        action === "swallow" ? console.warn(`TMG swallowed a Controller error:`, mssg) : console.error(`TMG Controller error:`, mssg);
+        break;
+      case "warn":
+        this.toast?.warn(mssg, { tag: mssg });
+        console.warn(`TMG Controller warning:`, mssg);
+        break;
+      default:
+        console.log(`TMG Controller log:`, mssg);
+    }
+  }
+  fire = (eventName, detail = null, el = this.video, bubbles = true, cancellable = true) => el?.dispatchEvent(new CustomEvent(eventName, { detail, bubbles, cancellable }));
+  notify = (event) => this.settings.notifiers && this.fire(event, null, this.DOM.notifiersContainer);
+  get toast() {
+    const base = (body, options = {}) => t007.toast(body, { rootElement: this.videoContainer, ...(tmg.isObj(this.settings.toasts) ? this.settings.toasts : {}), ...options });
+    ["info", "success", "warn", "error"].forEach((action) => (base[action] = (body, options = {}) => base(body, { ...options, type: action === "warn" ? "warning" : action })));
+    return this.settings.toasts ? base : null;
+  }
   throttle(key, fn, delay = 30, strict = true) {
     if (strict) {
       const now = performance.now();
@@ -1437,18 +1442,14 @@ class T_M_G_Video_Controller {
     return { blob, url: URL.createObjectURL(blob) };
   }
   async exportVideoFrame(monochrome) {
-    this.fire("capture");
-    if (!this.loaded) return t007.toast.warn("Video should be loaded before a frame capture", { rootElement: this.videoContainer, tag: "Vlfc", position: "bottom-left", showProgress: false });
+    this.notify("capture");
     const filename = `${this.media?.title ?? "Video"}${monochrome === true ? `_black&white` : ""}_at_'${tmg.formatTime(this.video.currentTime, "human", true)}'.png`.replace(/\s/g, "_"),
       frame = await this.getVideoFrame(this.currentTime, monochrome === true);
     const link = frame?.url && tmg.createEl("a", { href: frame?.url, download: filename });
     frame?.url &&
-      t007.toast.success(`Video frame captured at '${this.toTimeText(this.video.currentTime)}'`, {
-        rootElement: this.videoContainer,
+      this.toast?.success(`Video frame captured at '${this.toTimeText(this.video.currentTime)}'`, {
         image: frame?.url,
         tag: filename,
-        position: "bottom-left",
-        showProgress: false,
         onClose: () => URL.revokeObjectURL(link.href),
       });
     link?.click?.();
@@ -1594,7 +1595,7 @@ class T_M_G_Video_Controller {
     this.canAutoMovePlaylist = false;
     const count = Math.floor((this.settings.time.end || this.duration) - this.currentTime);
     const v = this.playlist[this.currentPlaylistIndex + 1];
-    const nextVideoToast = t007.toast("", { rootElement: this.videoContainer, autoClose: count * 1000, position: "bottom-right", onClose: (timeElapsed) => timeElapsed && cleanUp(true, false) && this.nextVideo(), onTimeUpdate: (time) => (this.queryDOM(".T_M_G-video-playlist-next-video-countdown").textContent = Math.round((count * 1000 - time) / 1000)) });
+    const nextVideoToast = this.toast?.("", { autoClose: count * 1000, showProgress: true, position: "bottom-right", onClose: (timeElapsed) => timeElapsed && cleanUp(true, false) && this.nextVideo(), onTimeUpdate: (time) => (this.queryDOM(".T_M_G-video-playlist-next-video-countdown").textContent = Math.round((count * 1000 - time) / 1000)) });
     nextVideoToast.toastElement.querySelector(".t007-toast-image-wrapper").remove();
     nextVideoToast.toastElement.querySelector(".t007-toast-body").remove();
     nextVideoToast.toastElement.insertAdjacentHTML(
@@ -1655,7 +1656,7 @@ class T_M_G_Video_Controller {
     ];
     const i = fits.findIndex((f) => f.value === this.videoObjectFit);
     const nextFit = fits[(i + 1) % fits.length];
-    this.fire(`objectfit${nextFit.value}`);
+    this.notify(`objectfit${nextFit.value}`);
     this.videoObjectFit = nextFit.value;
     this.videoContainer.setAttribute("data-object-fit", nextFit.value);
     if (this.DOM.objectFitNotifierContent) this.DOM.objectFitNotifierContent.textContent = nextFit.name;
@@ -1926,7 +1927,7 @@ class T_M_G_Video_Controller {
       droppedFrames = (this.stats?.droppedFrames ?? 0) + (diff > 1 ? diff - 1 : 0);
     this.stats = { ...m, now, fps, droppedFrames };
     // this.throttle("statsLogging", () => this.log(` STATS FOR NERDS: \n Now: ${now} ms\n Media Time: ${m.mediaTime} s\n Expected Display Time: ${m.expectedDisplayTime} ms\n Presented Frames: ${m.presentedFrames}\n Dropped Frames (detected): ${droppedFrames}\n FPS (real-time): ${fps}\n Processing Duration: ${m.processingDuration} ms\n Capture Time: ${m.captureTime}\n Width: ${m.width}\n Height: ${m.height}\n Painted Frames: ${m.paintedFrames}\n`), 1000, false);
-    this.video.requestVideoFrameCallback(this._handleFrameUpdate);
+    this.video.requestVideoFrameCallback?.(this._handleFrameUpdate);
   }
   moveVideoFrame(dir = "forwards") {
     this.video.paused && this.throttle("frameStepping", () => (this.currentTime = tmg.clamp(0, Math.round(this.currentTime * this.pfps) + (dir === "backwards" ? -1 : 1), Math.floor(this.duration * this.pfps)) / this.pfps), this.pframeDelay);
@@ -1954,11 +1955,11 @@ class T_M_G_Video_Controller {
     switch (sign) {
       case "-":
         if (rate > this.settings.playbackRate.min) this.playbackRate -= rate % value ? rate % value : value;
-        this.fire("playbackratedown");
+        this.notify("playbackratedown");
         break;
       default:
         if (rate < this.settings.playbackRate.max) this.playbackRate += rate % value ? rate % value : value;
-        this.fire("playbackrateup");
+        this.notify("playbackrateup");
         break;
     }
   }
@@ -1996,7 +1997,7 @@ class T_M_G_Video_Controller {
   }
   rewindReset() {
     if (this.speedIntervalId) {
-      this.fire("videopause");
+      this.notify("videopause");
       this.togglePlay(false);
       clearInterval(this.speedIntervalId);
       this.speedIntervalId = null;
@@ -2227,14 +2228,14 @@ class T_M_G_Video_Controller {
       case "-":
         if (volume > this.settings.volume.min) volume -= volume % value ? volume % value : value;
         if (volume === 0) {
-          this.fire("volumemuted");
+          this.notify("volumemuted");
           break;
         }
-        this.fire("volumedown");
+        this.notify("volumedown");
         break;
       default:
         if (volume < this.settings.volume.max) volume += volume % value ? value - (volume % value) : value;
-        this.fire("volumeup");
+        this.notify("volumeup");
         break;
     }
     if (this.shouldSetLastVolume) {
@@ -2342,14 +2343,14 @@ class T_M_G_Video_Controller {
       case "-":
         if (brightness > this.settings.brightness.min) brightness -= brightness % value ? brightness % value : value;
         if (brightness === 0) {
-          this.fire("brightnessdark");
+          this.notify("brightnessdark");
           break;
         }
-        this.fire("brightnessdown");
+        this.notify("brightnessdown");
         break;
       default:
         if (brightness < this.settings.brightness.max) brightness += brightness % value ? value - (brightness % value) : value;
-        this.fire("brightnessup");
+        this.notify("brightnessup");
         break;
     }
     if (this.shouldSetLastBrightness) {
@@ -2434,7 +2435,7 @@ class T_M_G_Video_Controller {
     if (!this.settings.modes.pictureInPicture) return;
     if (this.inFullScreen) await this.toggleFullScreenMode();
     if (this.settings.beta.floatingPlayer && window.documentPictureInPicture) return this.toggleFloatingPlayer();
-    !this.isUIActive("pictureInPicture") ? this.video.requestPictureInPicture() : document.exitPictureInPicture();
+    !this.isUIActive("pictureInPicture") ? await this.video.requestPictureInPicture() : await document.exitPictureInPicture();
   }
   _handleEnterPictureInPicture() {
     this.videoContainer.classList.add("T_M_G-video-picture-in-picture");
@@ -2445,7 +2446,7 @@ class T_M_G_Video_Controller {
   }
   async _handleLeavePictureInPicture() {
     tmg._pictureInPictureActive = false;
-    await tmg.mockAsync(180); // the video takes a while before it enters back into the player so a timeout is used to prevent the user from seeing the default ui
+    await tmg.mockAsync(180); // takes a while before video returns, timeout used to hide the default ui
     this.videoContainer.classList.remove("T_M_G-video-picture-in-picture");
     this.toggleMiniPlayerMode();
     this.delayOverlay();
@@ -2466,7 +2467,7 @@ class T_M_G_Video_Controller {
     for (const sheet of document.styleSheets) {
       try {
         for (const cssRule of sheet.cssRules) {
-          if (cssRule.selectorText?.includes(":root") || cssRule.cssText.includes("T_M_G")) cssText += cssRule.cssText;
+          if (cssRule.selectorText?.includes(":root") || cssRule.cssText.includes("T_M_G") || cssRule.cssText.includes("t007")) cssText += cssRule.cssText;
         }
       } catch {
         continue;
@@ -2558,7 +2559,7 @@ class T_M_G_Video_Controller {
     if (this.isMediaMobile && !this.buffering && !this.video.ended && !this.isUIActive("pictureInPicture") ? true : !this.isUIActive("overlay")) this.settings.overlay.behavior !== "persistent" && this.videoContainer.classList.toggle("T_M_G-video-overlay");
     if (this.isMediaMobile || this.isUIActive("miniPlayer")) return;
     this.togglePlay();
-    this.video.paused ? this.fire("videopause") : this.fire("videoplay");
+    this.video.paused ? this.notify("videopause") : this.notify("videoplay");
   }
   _handleLockScreenClick() {
     if (!this.locked) return;
@@ -2845,6 +2846,7 @@ class T_M_G_Video_Controller {
         }
       },
       200,
+      false,
     );
   }
   _handleSpeedPointerUp() {
@@ -2903,21 +2905,21 @@ class T_M_G_Video_Controller {
             break;
           case "prev":
             this.previousVideo();
-            this.fire("videoprev");
+            this.notify("videoprev");
             break;
           case "next":
             this.nextVideo();
-            this.fire("videonext");
+            this.notify("videonext");
             break;
           case "skipBwd":
             this.deactivateSkipPersist();
             this.skip(-this.settings.time.skip);
-            this.fire("bwd");
+            this.notify("bwd");
             break;
           case "skipFwd":
             this.deactivateSkipPersist();
             this.skip(this.settings.time.skip);
-            this.fire("fwd");
+            this.notify("fwd");
             break;
           case "stepBwd":
             this.moveVideoFrame("backwards");
@@ -2974,12 +2976,12 @@ class T_M_G_Video_Controller {
           case "arrowleft": // -w
             this.deactivateSkipPersist();
             e.shiftKey ? this.skip(-10) : this.skip(-5);
-            this.fire("bwd");
+            this.notify("bwd");
             break;
           case "arrowright": // -w
             this.deactivateSkipPersist();
             e.shiftKey ? this.skip(10) : this.skip(5);
-            this.fire("fwd");
+            this.notify("fwd");
             break;
         }
       },
@@ -3002,15 +3004,15 @@ class T_M_G_Video_Controller {
         break;
       case "mute":
         this.toggleMute("auto");
-        this.volume === 0 ? this.fire("volumemuted") : this.fire("volumeup");
+        this.volume === 0 ? this.notify("volumemuted") : this.notify("volumeup");
         break;
       case "dark":
         this.toggleDark("auto");
-        this.brightness === 0 ? this.fire("brightnessdark") : this.fire("brightnessup");
+        this.brightness === 0 ? this.notify("brightnessdark") : this.notify("brightnessup");
         break;
       case "captions":
         this.toggleCaptions();
-        if (this.video.textTracks[this.textTrackIndex]) this.fire("captions");
+        if (this.video.textTracks[this.textTrackIndex]) this.notify("captions");
         break;
       case "pictureInPicture":
         this.togglePictureInPictureMode();
@@ -3053,7 +3055,7 @@ class T_M_G_Video_Controller {
         e.stopImmediatePropagation();
         if (this.playTriggerCounter === 1) {
           this.togglePlay();
-          this.video.paused ? this.fire("videopause") : this.fire("videoplay");
+          this.video.paused ? this.notify("videopause") : this.notify("videoplay");
         }
       default:
         if (this.speedCheck && this.playTriggerCounter > 1 && !this.speedPointerCheck) this.slowDown();
@@ -3440,6 +3442,7 @@ class T_M_G {
       playbackRate: { min: 0.25, max: 8, value: null, skip: 0.25, fast: 2 },
       playsInline: true,
       time: { linePosition: "top", progressBar: null, previews: false, mode: "elapsed", format: "digital", start: null, end: null, skip: 10 },
+      toasts: { position: "bottom-left", showProgress: false },
       volume: { min: 0, max: 300, value: null, skip: 5 },
     },
   };
