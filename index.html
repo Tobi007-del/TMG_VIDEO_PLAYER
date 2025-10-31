@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -188,13 +188,15 @@
     </div>
     <p class="offline-notice">You're offline</p>
     <script>
-      window.TMG_VIDEO_CSS_SRC = "prototype-2-video.css";
+      window.TMG_VIDEO_CSS_SRC = "https://tobi007-del.github.io/TMG_MEDIA_PROTOTYPE/prototype-2/prototype-2-video.css";
       window.TMG_VIDEO_ALT_IMG_SRC = "assets/icons/movie-tape.png";
-      window.T007_TOAST_CSS_SRC = "T007_toast.css";
+      window.T007_TOAST_JS_SRC = "https://tobi007-del.github.io/T007_T00LS/T007_toast_library/T007_toast.js";
+      window.T007_TOAST_CSS_SRC = "https://tobi007-del.github.io/T007_T00LS/T007_toast_library/T007_toast.css";
     </script>
-    <script src="prototype-2.js"></script>
+    <script type="module" src="https://tobi007-del.github.io/T007_T00LS/T007_toast_library/T007_toast.js"></script>
+    <script src="https://tobi007-del.github.io/TMG_MEDIA_PROTOTYPE/prototype-2/prototype-2.js"></script>
     <script src="assets/ffmpeg/ffmpeg.min.js"></script>
-    <script type="module" src="index.js"></script>
+    <script src="index.js"></script>
     <script>
       let index = 0,
         interval = 1000;
@@ -207,13 +209,10 @@
         star.style.animation = "";
       };
       for (const star of document.getElementsByClassName("magic-star")) {
-        setTimeout(
-          () => {
-            animate(star);
-            setInterval(animate, 1000, star);
-          },
-          index++ * (interval / 3),
-        );
+        setTimeout(() => {
+          animate(star);
+          setInterval(animate, 1000, star);
+        }, index++ * (interval / 3));
       }
     </script>
   </body>

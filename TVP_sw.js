@@ -1,5 +1,5 @@
 const cacheName = "TVP_offline_cache_v1.0.0";
-const precachedResources = ["assets/images/lone-tree.jpg", "assets/icons/movie-tape.png", "index.html", "index.css", "index.js", "prototype-2.js", "prototype-2-video.css", "assets/icons/tmg-icon.jpeg", "assets/icons/tmg-icon.png", "T007_toast.js", "T007_toast.css", "assets/ffmpeg/ffmpeg.min.js", "assets/ffmpeg/ffmpeg-core.js", "assets/ffmpeg/ffmpeg-core.wasm", "assets/ffmpeg/ffmpeg-core.worker.js"];
+const precachedResources = ["assets/images/lone-tree.jpg", "assets/icons/movie-tape.png", "index.html", "index.css", "index.js", "https://tobi007-del.github.io/TMG_MEDIA_PROTOTYPE/prototype-2/prototype-2.js", "https://tobi007-del.github.io/TMG_MEDIA_PROTOTYPE/prototype-2/prototype-2-video.css", "assets/icons/tmg-icon.jpeg", "assets/icons/tmg-icon.png", "https://tobi007-del.github.io/T007_T00LS/T007_toast_library/T007_toast.js", "https://tobi007-del.github.io/T007_T00LS/T007_toast_library/T007_toast.css", "assets/ffmpeg/ffmpeg.min.js", "assets/ffmpeg/ffmpeg-core.js", "assets/ffmpeg/ffmpeg-core.wasm", "assets/ffmpeg/ffmpeg-core.worker.js"];
 
 async function precache() {
   const cache = await caches.open(cacheName);
@@ -58,5 +58,5 @@ self.addEventListener("activate", (event) => {
 });
 
 addEventListener("fetch", (event) => {
-  if (isCacheable(event.request)) event.respondWith(cacheFirstWithRefresh(event.request));
+  if (isCacheable(event.request)) event.respondWith(networkFirst(event.request));
 });

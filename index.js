@@ -1,5 +1,3 @@
-import Toast from "./T007_toast.js";
-
 (async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return Toast.warn("Offline support is unavailable");
   try {
