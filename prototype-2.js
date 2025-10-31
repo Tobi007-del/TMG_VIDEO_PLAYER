@@ -100,11 +100,11 @@ class T_M_G_Video_Controller {
     switch (type) {
       case "error":
         const body = (action === "swallow" ? false : (typeof mssg === "string" && mssg) || mssg?.message) || "Something went wrong";
-        action === "swallow" ? t007.toast(body, options) : t007.toast.error(body, options);
+        action === "swallow" ? t007.toast(body, { ...options, tag: body }) : t007.toast.error(body, { ...options, tag: body });
         action === "swallow" ? console.warn(`TMG swallowed a controller error:`, mssg) : console.error(mssg);
         break;
       case "warn":
-        t007.toast.warn(mssg, { rootElement: this.videoContainer, tag: mssg, position: "bottom-left" });
+        t007.toast.warn(mssg, options);
         console.warn(mssg);
         break;
       default:
