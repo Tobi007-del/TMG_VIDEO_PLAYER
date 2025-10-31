@@ -17,7 +17,10 @@
   --loader-size: 75px;
   --loader-width: 4px;
   --degree: 180deg;
-  /* lib variables */
+}
+
+/* lib variables */
+.t007-toast-container {
   --T_M_G-video-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --t007-toast-type-color: var(--T_M_G-brand-color);
   --t007-toast-progress-background: linear-gradient(to left, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-brand-light-color));
