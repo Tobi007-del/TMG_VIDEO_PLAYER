@@ -1594,7 +1594,7 @@ class T_M_G_Video_Controller {
     this.canAutoMovePlaylist = false;
     const count = Math.floor((this.settings.time.end || this.duration) - this.currentTime);
     const v = this.playlist[this.currentPlaylistIndex + 1];
-    const nextVideoToast = t007.toast("", { rootElement: this.videoContainer, autoClose: count * 1000, position: "bottom-right", onClose: (manual) => manual && cleanUp(true, false) && this.nextVideo(), onTimeUpdate: (time) => (this.queryDOM(".T_M_G-video-playlist-next-video-countdown").textContent = Math.round((count * 1000 - time) / 1000)) });
+    const nextVideoToast = t007.toast("", { rootElement: this.videoContainer, autoClose: count * 1000, position: "bottom-right", onClose: (timeElapsed) => timeElapsed && cleanUp(true, false) && this.nextVideo(), onTimeUpdate: (time) => (this.queryDOM(".T_M_G-video-playlist-next-video-countdown").textContent = Math.round((count * 1000 - time) / 1000)) });
     nextVideoToast.toastElement.querySelector(".t007-toast-image-wrapper").remove();
     nextVideoToast.toastElement.querySelector(".t007-toast-body").remove();
     nextVideoToast.toastElement.insertAdjacentHTML(
@@ -2516,7 +2516,7 @@ class T_M_G_Video_Controller {
     }
   }
   _handleMiniPlayerDragStart({ target }) {
-    if (!this.isUIActive("miniPlayer") || this.DOM.topControlsWrapper.contains(target) || this.DOM.bottomControlsWrapper.contains(target) || this.DOM.cueContainer?.contains(target)) return;
+    if (!this.isUIActive("miniPlayer") || this.DOM.topControlsWrapper.contains(target) || this.DOM.bottomControlsWrapper.contains(target) || this.DOM.cueContainer?.contains(target) || target.closest("[class$='toast-container']")) return;
     document.addEventListener("mousemove", this._handleMiniPlayerDragging);
     document.addEventListener("mouseup", this._handleMiniPlayerDragEnd);
     document.addEventListener("mouseleave", this._handleMiniPlayerDragEnd);

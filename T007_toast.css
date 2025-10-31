@@ -298,7 +298,7 @@
   line-height: var(--t007-toast-icon-line-height);
 }
 
-.t007-toast-icon > svg {
+.t007-toast .t007-toast-icon > svg {
   width: var(--t007-toast-icon-width);
   height: var(--t007-toast-icon-height);
 }
