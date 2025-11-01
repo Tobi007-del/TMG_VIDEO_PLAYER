@@ -222,8 +222,8 @@ class T007_Toast {
    * @param {boolean} value
    */
   set dragToClose(value) {
+    this.toastElement.dataset.pointerType = this.#pointerType = value;
     if (value) {
-      this.#pointerType = value;
       this.toastElement.addEventListener("pointerdown", this.handleToastPointerStart, { passive: false });
       this.toastElement.addEventListener("pointerup", this.handleToastPointerUp);
     } else {
@@ -343,7 +343,7 @@ if (typeof window !== "undefined") {
     onTimeUpdate: t007.TOAST_DEFAULT_OPTIONS?.onTimeUpdate ?? function () {},
     closeButton: t007.TOAST_DEFAULT_OPTIONS?.closeButton ?? true,
     closeOnClick: t007.TOAST_DEFAULT_OPTIONS?.closeOnClick ?? false,
-    dragToClose: t007.TOAST_DEFAULT_OPTIONS?.dragToClose ?? true,
+    dragToClose: t007.TOAST_DEFAULT_OPTIONS?.dragToClose ?? true, // mouse, pen, touch
     dragToClosePercent: t007.TOAST_DEFAULT_OPTIONS?.dragToClosePercent ?? 40,
     dragToCloseDir: t007.TOAST_DEFAULT_OPTIONS?.dragToCloseDir ?? "x",
     showProgress: t007.TOAST_DEFAULT_OPTIONS?.showProgress ?? true,

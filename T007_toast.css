@@ -181,6 +181,14 @@
   animation-name: t007-x-slide-bounce-out;
 }
 
+.t007-toast:is([data-pointer-type="mouse"], [data-pointer-type="true"]) {
+  cursor: grab;
+}
+
+.t007-toast:is([data-pointer-type="mouse"], [data-pointer-type="true"]):active{
+  cursor: grabbing;
+}
+
 .t007-toast.t007-toast-show {
   animation-name: t007-x-slide-bounce-in;
 }
