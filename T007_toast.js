@@ -69,27 +69,25 @@ class T007_Toast {
     }
     this.#autoClose = value;
     this.#timeVisible = 0;
-
     let lastTime;
-    const func = (time) => {
+    const loop = (time) => {
       if (this.#shouldUnPause) {
         lastTime = null;
         this.#shouldUnPause = false;
       }
       if (lastTime == null) {
         lastTime = time;
-        return (this.#autoCloseInterval = requestAnimationFrame(func));
+        return (this.#autoCloseInterval = requestAnimationFrame(loop));
       }
       if (!this.#isPaused) {
         this.#timeVisible += time - lastTime;
         this.onTimeUpdate?.(this.#timeVisible);
         if (this.#timeVisible >= this.#autoClose) return this.remove("smooth", true);
       }
-
       lastTime = time;
-      this.#autoCloseInterval = requestAnimationFrame(func);
+      this.#autoCloseInterval = requestAnimationFrame(loop);
     };
-    this.#autoCloseInterval = requestAnimationFrame(func);
+    this.#autoCloseInterval = requestAnimationFrame(loop);
   }
 
   /**
@@ -114,16 +112,16 @@ class T007_Toast {
     let defaultIcon = "";
     switch (type) {
       case "info":
-        defaultIcon = `<svg class="no-css-fill" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#3498db"/><path fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 10v6"/><circle cx="12" cy="7" r="1.5" fill="#fff"/></svg>`;
+        defaultIcon = `<svg class="no-css-fill" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#3498db"/><path fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 10v6"/><circle cx="12" cy="7" r="1.5" fill="#fff"/></svg>`;
         break;
       case "success":
-        defaultIcon = `<svg class="no-css-fill" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#27ae60"/><path fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 12l3 3l6-6"/></svg>`;
+        defaultIcon = `<svg class="no-css-fill" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#27ae60"/><path fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 12l3 3l6-6"/></svg>`;
         break;
       case "error":
-        defaultIcon = `<svg class="no-css-fill" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e74c3c"/><path fill="#fff" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 8l8 8M16 8l-8 8"/></svg>`;
+        defaultIcon = `<svg class="no-css-fill" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e74c3c"/><path fill="#fff" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 8l8 8M16 8l-8 8"/></svg>`;
         break;
       case "warning":
-        defaultIcon = `<svg class="no-css-fill" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#f1c40f" stroke="#f39c12" stroke-width="2" stroke-linejoin="round" d="M12 3L2.5 20.5A2 2 0 0 0 4.5 23h15a2 2 0 0 0 2-2.5L12 3z"/><circle cx="12" cy="17" r="1.5" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 8v6"/></svg>`;
+        defaultIcon = `<svg class="no-css-fill" width="24" height="24" viewBox="0 0 24 24"><path fill="#f1c40f" stroke="#f39c12" stroke-width="2" stroke-linejoin="round" d="M12 3L2.5 20.5A2 2 0 0 0 4.5 23h15a2 2 0 0 0 2-2.5L12 3z"/><circle cx="12" cy="17" r="1.5" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 8v6"/></svg>`;
         break;
       default:
         defaultIcon = "";
@@ -239,7 +237,7 @@ class T007_Toast {
     if (typeof this.#pointerType === "string" && e.pointerType !== this.#pointerType) return;
     if (e.touches?.length > 1) return;
     e.stopImmediatePropagation();
-    !e.target.matches("button", "[href]", "input", "select", "textarea", '[tabindex]:not([tabindex="-1"])') && this.toastElement.setPointerCapture(e.pointerId);
+    !e.target?.matches('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') && this.toastElement.setPointerCapture(e.pointerId);
     this.#pointerStartX = this.dragToCloseDir.includes("x") ? (e.clientX ?? e.targetTouches[0]?.clientX) : 0;
     this.#pointerStartY = this.dragToCloseDir.includes("x") ? (e.clientY ?? e.targetTouches[0]?.clientY) : 0;
     this.#pointerTicker = false;
