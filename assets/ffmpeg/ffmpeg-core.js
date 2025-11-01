@@ -68,7 +68,7 @@ var createFFmpegCore = (function () {
       }
       global.Worker = xa.Worker;
     } else if (ma)
-      "undefined" != typeof read &&
+      ("undefined" != typeof read &&
         (ra = function (a) {
           return read(a);
         }),
@@ -83,9 +83,9 @@ var createFFmpegCore = (function () {
           (ja = function (a) {
             quit(a);
           }),
-        "undefined" !== typeof print && ("undefined" === typeof console && (console = {}), (console.log = print), (console.warn = console.error = "undefined" !== typeof printErr ? printErr : print));
+        "undefined" !== typeof print && ("undefined" === typeof console && (console = {}), (console.log = print), (console.warn = console.error = "undefined" !== typeof printErr ? printErr : print)));
     else if (ka || la)
-      la ? (pa = self.location.href) : "undefined" !== typeof document && document.currentScript && (pa = document.currentScript.src),
+      (la ? (pa = self.location.href) : "undefined" !== typeof document && document.currentScript && (pa = document.currentScript.src),
         _scriptDir && (pa = _scriptDir),
         0 !== pa.indexOf("blob:") ? (pa = pa.substr(0, pa.lastIndexOf("/") + 1)) : (pa = ""),
         h
@@ -114,7 +114,7 @@ var createFFmpegCore = (function () {
                 b.responseType = "arraybuffer";
                 b.send(null);
                 return new Uint8Array(b.response);
-              }));
+              })));
     h && "undefined" === typeof performance && (global.performance = require("perf_hooks").performance);
     var ya = f.print || console.log.bind(console),
       u = f.printErr || console.warn.bind(console);
@@ -261,7 +261,7 @@ var createFFmpegCore = (function () {
       G,
       Sa,
       Ta = f.INITIAL_MEMORY || 2146435072;
-    if (l) (Ca = f.wasmMemory), (oa = f.buffer);
+    if (l) ((Ca = f.wasmMemory), (oa = f.buffer));
     else if (f.wasmMemory) Ca = f.wasmMemory;
     else if (((Ca = new WebAssembly.Memory({ initial: Ta / 65536, maximum: Ta / 65536, shared: !0 })), !(Ca.buffer instanceof SharedArrayBuffer))) throw (u("requested a shared WebAssembly.Memory but the returned buffer is not a SharedArrayBuffer, indicating that while the browser has SharedArrayBuffer it does not have WebAssembly threads support - you may need to set a flag"), h && console.log("(on node you may need: --experimental-wasm-threads --experimental-wasm-bulk-memory and also use a recent version)"), Error("bad memory"));
     Ca && (oa = Ca.buffer);
@@ -474,7 +474,7 @@ var createFFmpegCore = (function () {
           c.terminate();
         }
         M.Gf = [];
-        for (a = 0; a < M.Kf.length; ++a) (c = M.Kf[a]), (b = c.yf), M.Pg(b), c.terminate();
+        for (a = 0; a < M.Kf.length; ++a) ((c = M.Kf[a]), (b = c.yf), M.Pg(b), c.terminate());
         M.Kf = [];
       },
       Pg: function (a) {
@@ -521,7 +521,7 @@ var createFFmpegCore = (function () {
             M.Kf.splice(M.Kf.indexOf(c.worker), 1);
             c.worker.yf = void 0;
           } else if ("cancelThread" === e) ub(d.thread);
-          else if ("loaded" === e) (a.loaded = !0), b && b(a), a.og && (a.og(), delete a.og);
+          else if ("loaded" === e) ((a.loaded = !0), b && b(a), a.og && (a.og(), delete a.og));
           else if ("print" === e) ya("Thread " + d.threadId + ": " + d.text);
           else if ("printErr" === e) u("Thread " + d.threadId + ": " + d.text);
           else if ("alert" === e) alert("Thread " + d.threadId + ": " + d.text);
@@ -589,7 +589,7 @@ var createFFmpegCore = (function () {
     function Gb(a, b) {
       if (0 === a) a = Date.now();
       else if (1 === a || 4 === a) a = Db();
-      else return Eb(28), -1;
+      else return (Eb(28), -1);
       E[b >> 2] = (a / 1e3) | 0;
       E[(b + 4) >> 2] = ((a % 1e3) * 1e6) | 0;
       return 0;
@@ -672,7 +672,7 @@ var createFFmpegCore = (function () {
         a.split("/").filter(function (d) {
           return !!d;
         }),
-        !b,
+        !b
       ).join("/")) ||
         b ||
         (a = ".");
@@ -728,7 +728,7 @@ var createFFmpegCore = (function () {
         a.split("/").filter(function (d) {
           return !!d;
         }),
-        !b,
+        !b
       ).join("/");
       return (b ? "/" : "") + a || ".";
     }
@@ -862,7 +862,7 @@ var createFFmpegCore = (function () {
         },
         Ji: function (a, b) {
           if (a.gf != b)
-            if (0 == b) (a.bf = null), (a.gf = 0);
+            if (0 == b) ((a.bf = null), (a.gf = 0));
             else {
               if (!a.bf || a.bf.subarray) {
                 var c = a.bf;
@@ -953,9 +953,9 @@ var createFFmpegCore = (function () {
             a = a.node;
             a.timestamp = Date.now();
             if (b.subarray && (!a.bf || a.bf.subarray)) {
-              if (g) return (a.bf = b.subarray(c, c + d)), (a.gf = d);
-              if (0 === a.gf && 0 === e) return (a.bf = b.slice(c, c + d)), (a.gf = d);
-              if (e + d <= a.gf) return a.bf.set(b.subarray(c, c + d), e), d;
+              if (g) return ((a.bf = b.subarray(c, c + d)), (a.gf = d));
+              if (0 === a.gf && 0 === e) return ((a.bf = b.slice(c, c + d)), (a.gf = d));
+              if (e + d <= a.gf) return (a.bf.set(b.subarray(c, c + d), e), d);
             }
             P.sh(a, e + d);
             if (a.bf.subarray && b.subarray) a.bf.set(b.subarray(c, c + d), e);
@@ -984,7 +984,7 @@ var createFFmpegCore = (function () {
               c = b;
               if (!c) throw new O.af(48);
               y.set(a, c);
-            } else (d = !1), (c = a.byteOffset);
+            } else ((d = !1), (c = a.byteOffset));
             return { Hi: c, Jg: d };
           },
           Xf: function (a, b, c, d, e) {
@@ -1046,7 +1046,7 @@ var createFFmpegCore = (function () {
             a.split("/").filter(function (k) {
               return !!k;
             }),
-            !1,
+            !1
           );
           var e = O.root;
           c = "/";
@@ -1062,7 +1062,7 @@ var createFFmpegCore = (function () {
         },
         If: function (a) {
           for (var b; ; ) {
-            if (O.wg(a)) return (a = a.jf.Eh), b ? ("/" !== a[a.length - 1] ? a + "/" + b : a + b) : a;
+            if (O.wg(a)) return ((a = a.jf.Eh), b ? ("/" !== a[a.length - 1] ? a + "/" + b : a + b) : a);
             b = b ? a.name + "/" + b : a.name;
             a = a.parent;
           }
@@ -1156,7 +1156,7 @@ var createFFmpegCore = (function () {
         },
         Yg: function (a, b) {
           try {
-            return O.Bf(a, b), 20;
+            return (O.Bf(a, b), 20);
           } catch (c) {}
           return O.Jf(a, "wx");
         },
@@ -1249,7 +1249,7 @@ var createFFmpegCore = (function () {
           }
           function d(k) {
             if (k) {
-              if (!d.gi) return (d.gi = !0), c(k);
+              if (!d.gi) return ((d.gi = !0), c(k));
             } else ++g >= e.length && c(null);
           }
           "function" === typeof a && ((b = a), (a = !1));
@@ -1511,7 +1511,7 @@ var createFFmpegCore = (function () {
           if (b & 64)
             if (g) {
               if (b & 128) throw new O.af(20);
-            } else (g = O.Ff(a, c, 0)), (k = !0);
+            } else ((g = O.Ff(a, c, 0)), (k = !0));
           if (!g) throw new O.af(44);
           O.hg(g.mode) && (b &= -513);
           if (b & 65536 && !O.kf(g.mode)) throw new O.af(54);
@@ -1698,7 +1698,7 @@ var createFFmpegCore = (function () {
               },
             },
             {},
-            "/proc/self/fd",
+            "/proc/self/fd"
           );
         },
         fi: function () {
@@ -1771,7 +1771,7 @@ var createFFmpegCore = (function () {
           } catch (e) {}
           var d = { wg: !1, exists: !1, error: 0, name: null, path: null, object: null, Ci: !1, Ei: null, Di: null };
           try {
-            (c = O.ff(a, { parent: !0 })), (d.Ci = !0), (d.Ei = c.path), (d.Di = c.node), (d.name = Rb(a)), (c = O.ff(a, { wf: !b })), (d.exists = !0), (d.path = c.path), (d.object = c.node), (d.name = c.node.name), (d.wg = "/" === c.path);
+            ((c = O.ff(a, { parent: !0 })), (d.Ci = !0), (d.Ei = c.path), (d.Di = c.node), (d.name = Rb(a)), (c = O.ff(a, { wf: !b })), (d.exists = !0), (d.path = c.path), (d.object = c.node), (d.name = c.node.name), (d.wg = "/" === c.path));
           } catch (e) {
             d.error = e.ef;
           }
@@ -1860,7 +1860,7 @@ var createFFmpegCore = (function () {
           if ("undefined" !== typeof XMLHttpRequest) throw Error("Lazy loading should have been performed (contents set) in createLazyFile, but it was not. Lazy loading only works in web workers. Use --embed-file or --preload-file in emcc on the main thread.");
           if (ra)
             try {
-              (a.bf = Zb(ra(a.url), !0)), (a.gf = a.bf.length);
+              ((a.bf = Zb(ra(a.url), !0)), (a.gf = a.bf.length));
             } catch (c) {
               b = !1;
             }
@@ -1915,7 +1915,7 @@ var createFFmpegCore = (function () {
               if ("undefined" === typeof x.Sf[z]) throw Error("doXHR failed!");
               return x.Sf[z];
             });
-            if (q || !t) (p = t = 1), (p = t = this.yh(0).length), ya("LazyFiles on gzip forces download of the whole file when length is accessed");
+            if (q || !t) ((p = t = 1), (p = t = this.yh(0).length), ya("LazyFiles on gzip forces download of the whole file when length is accessed"));
             this.Uh = t;
             this.Th = p;
             this.Vg = !0;
@@ -1997,7 +1997,7 @@ var createFFmpegCore = (function () {
                 function (B) {
                   t(B);
                 },
-                k,
+                k
               )
             : t(c);
         },
@@ -2147,7 +2147,7 @@ var createFFmpegCore = (function () {
         d && ((E[d >> 2] = z), (E[(d + 4) >> 2] = I));
         return e;
       } catch (ua) {
-        return ("undefined" !== typeof O && ua instanceof O.af) || n(ua), -ua.ef;
+        return (("undefined" !== typeof O && ua instanceof O.af) || n(ua), -ua.ef);
       }
     }
     function lc(a, b) {
@@ -2161,7 +2161,7 @@ var createFFmpegCore = (function () {
         }
         return c;
       } catch (e) {
-        return ("undefined" !== typeof O && e instanceof O.af) || n(e), -e.ef;
+        return (("undefined" !== typeof O && e instanceof O.af) || n(e), -e.ef);
       }
     }
     function mc(a, b, c) {
@@ -2179,9 +2179,9 @@ var createFFmpegCore = (function () {
           case 3:
             return d.flags;
           case 4:
-            return (e = Q()), (d.flags |= e), 0;
+            return ((e = Q()), (d.flags |= e), 0);
           case 12:
-            return (e = Q()), (Qa[(e + 0) >> 1] = 2), 0;
+            return ((e = Q()), (Qa[(e + 0) >> 1] = 2), 0);
           case 13:
           case 14:
             return 0;
@@ -2189,12 +2189,12 @@ var createFFmpegCore = (function () {
           case 8:
             return -28;
           case 9:
-            return Eb(28), -1;
+            return (Eb(28), -1);
           default:
             return -28;
         }
       } catch (g) {
-        return ("undefined" !== typeof O && g instanceof O.af) || n(g), -g.ef;
+        return (("undefined" !== typeof O && g instanceof O.af) || n(g), -g.ef);
       }
     }
     function nc(a, b) {
@@ -2203,7 +2203,7 @@ var createFFmpegCore = (function () {
         var c = jc(a);
         return hc(O.stat, c.path, b);
       } catch (d) {
-        return ("undefined" !== typeof O && d instanceof O.af) || n(d), -d.ef;
+        return (("undefined" !== typeof O && d instanceof O.af) || n(d), -d.ef);
       }
     }
     function oc(a, b, c) {
@@ -2237,15 +2237,15 @@ var createFFmpegCore = (function () {
         O.tf(d, 280 * g, 0);
         return a;
       } catch (t) {
-        return ("undefined" !== typeof O && t instanceof O.af) || n(t), -t.ef;
+        return (("undefined" !== typeof O && t instanceof O.af) || n(t), -t.ef);
       }
     }
     function pc(a, b) {
       if (l) return N(8, 1, a, b);
       try {
-        return qc(b, 0, 136), (E[b >> 2] = 1), (E[(b + 4) >> 2] = 2), (E[(b + 8) >> 2] = 3), (E[(b + 12) >> 2] = 4), 0;
+        return (qc(b, 0, 136), (E[b >> 2] = 1), (E[(b + 4) >> 2] = 2), (E[(b + 8) >> 2] = 3), (E[(b + 12) >> 2] = 4), 0);
       } catch (c) {
-        return ("undefined" !== typeof O && c instanceof O.af) || n(c), -c.ef;
+        return (("undefined" !== typeof O && c instanceof O.af) || n(c), -c.ef);
       }
     }
     function rc(a, b, c) {
@@ -2271,7 +2271,7 @@ var createFFmpegCore = (function () {
           case 21520:
             return d.tty ? -28 : -59;
           case 21531:
-            return (e = Q()), O.Uf(d, b, e);
+            return ((e = Q()), O.Uf(d, b, e));
           case 21523:
             return d.tty ? 0 : -59;
           case 21524:
@@ -2280,23 +2280,23 @@ var createFFmpegCore = (function () {
             n("bad ioctl syscall " + b);
         }
       } catch (g) {
-        return ("undefined" !== typeof O && g instanceof O.af) || n(g), -g.ef;
+        return (("undefined" !== typeof O && g instanceof O.af) || n(g), -g.ef);
       }
     }
     function sc(a, b) {
       if (l) return N(10, 1, a, b);
       try {
-        return (a = C(a)), hc(O.lstat, a, b);
+        return ((a = C(a)), hc(O.lstat, a, b));
       } catch (c) {
-        return ("undefined" !== typeof O && c instanceof O.af) || n(c), -c.ef;
+        return (("undefined" !== typeof O && c instanceof O.af) || n(c), -c.ef);
       }
     }
     function tc(a, b) {
       if (l) return N(11, 1, a, b);
       try {
-        return (a = C(a)), (a = Pb(a)), "/" === a[a.length - 1] && (a = a.substr(0, a.length - 1)), O.mkdir(a, b, 0), 0;
+        return ((a = C(a)), (a = Pb(a)), "/" === a[a.length - 1] && (a = a.substr(0, a.length - 1)), O.mkdir(a, b, 0), 0);
       } catch (c) {
-        return ("undefined" !== typeof O && c instanceof O.af) || n(c), -c.ef;
+        return (("undefined" !== typeof O && c instanceof O.af) || n(c), -c.ef);
       }
     }
     function uc(a, b, c, d, e, g) {
@@ -2331,7 +2331,7 @@ var createFFmpegCore = (function () {
         }
         return m;
       } catch (w) {
-        return ("undefined" !== typeof O && w instanceof O.af) || n(w), -w.ef;
+        return (("undefined" !== typeof O && w instanceof O.af) || n(w), -w.ef);
       }
     }
     function wc(a, b) {
@@ -2355,7 +2355,7 @@ var createFFmpegCore = (function () {
         }
         return c;
       } catch (r) {
-        return ("undefined" !== typeof O && r instanceof O.af) || n(r), -r.ef;
+        return (("undefined" !== typeof O && r instanceof O.af) || n(r), -r.ef);
       }
     }
     function xc(a, b, c) {
@@ -2366,7 +2366,7 @@ var createFFmpegCore = (function () {
           e = Q();
         return O.open(d, b, e).fd;
       } catch (g) {
-        return ("undefined" !== typeof O && g instanceof O.af) || n(g), -g.ef;
+        return (("undefined" !== typeof O && g instanceof O.af) || n(g), -g.ef);
       }
     }
     function yc(a, b, c) {
@@ -2383,15 +2383,15 @@ var createFFmpegCore = (function () {
         }
         return c;
       } catch (r) {
-        return ("undefined" !== typeof O && r instanceof O.af) || n(r), -r.ef;
+        return (("undefined" !== typeof O && r instanceof O.af) || n(r), -r.ef);
       }
     }
     function zc(a, b, c, d) {
       if (l) return N(16, 1, a, b, c, d);
       try {
-        return d && ((E[d >> 2] = -1), (E[(d + 4) >> 2] = -1), (E[(d + 8) >> 2] = -1), (E[(d + 12) >> 2] = -1)), 0;
+        return (d && ((E[d >> 2] = -1), (E[(d + 4) >> 2] = -1), (E[(d + 8) >> 2] = -1), (E[(d + 12) >> 2] = -1)), 0);
       } catch (e) {
-        return ("undefined" !== typeof O && e instanceof O.af) || n(e), -e.ef;
+        return (("undefined" !== typeof O && e instanceof O.af) || n(e), -e.ef);
       }
     }
     function Ac(a, b, c) {
@@ -2400,23 +2400,23 @@ var createFFmpegCore = (function () {
         var d = jc(a);
         return O.read(d, y, b, c);
       } catch (e) {
-        return ("undefined" !== typeof O && e instanceof O.af) || n(e), -e.ef;
+        return (("undefined" !== typeof O && e instanceof O.af) || n(e), -e.ef);
       }
     }
     function Bc(a, b) {
       if (l) return N(18, 1, a, b);
       try {
-        return (a = C(a)), (b = C(b)), O.rename(a, b), 0;
+        return ((a = C(a)), (b = C(b)), O.rename(a, b), 0);
       } catch (c) {
-        return ("undefined" !== typeof O && c instanceof O.af) || n(c), -c.ef;
+        return (("undefined" !== typeof O && c instanceof O.af) || n(c), -c.ef);
       }
     }
     function Cc(a) {
       if (l) return N(19, 1, a);
       try {
-        return (a = C(a)), O.rmdir(a), 0;
+        return ((a = C(a)), O.rmdir(a), 0);
       } catch (b) {
-        return ("undefined" !== typeof O && b instanceof O.af) || n(b), -b.ef;
+        return (("undefined" !== typeof O && b instanceof O.af) || n(b), -b.ef);
       }
     }
     var R = {
@@ -2482,7 +2482,7 @@ var createFFmpegCore = (function () {
             c = b = null;
           }
           if (d)
-            if (d._socket) (b = d._socket.remoteAddress), (c = d._socket.remotePort);
+            if (d._socket) ((b = d._socket.remoteAddress), (c = d._socket.remotePort));
             else {
               c = /ws[s]?:\/\/([^:]+):(\d+)/.exec(d.url);
               if (!c) throw Error("WebSocket URL must be in the format ws(s)://address:port");
@@ -2527,7 +2527,7 @@ var createFFmpegCore = (function () {
           function c() {
             f.websocket.emit("open", a.stream.fd);
             try {
-              for (var g = b.ug.shift(); g; ) b.socket.send(g), (g = b.ug.shift());
+              for (var g = b.ug.shift(); g; ) (b.socket.send(g), (g = b.ug.shift()));
             } catch (k) {
               b.socket.close();
             }
@@ -2580,7 +2580,7 @@ var createFFmpegCore = (function () {
         Uf: function (a, b, c) {
           switch (b) {
             case 21531:
-              return (b = 0), a.ag.length && (b = a.ag[0].data.length), (E[c >> 2] = b), 0;
+              return ((b = 0), a.ag.length && (b = a.ag[0].data.length), (E[c >> 2] = b), 0);
             default:
               return 28;
           }
@@ -2643,7 +2643,7 @@ var createFFmpegCore = (function () {
               d.vf = c.port;
               a.pending.push(d);
               f.websocket.emit("connection", d.stream.fd);
-            } else R.qf.tg(a, c), f.websocket.emit("connection", a.stream.fd);
+            } else (R.qf.tg(a, c), f.websocket.emit("connection", a.stream.fd));
           });
           a.lf.on("closed", function () {
             f.websocket.emit("close", a.stream.fd);
@@ -2665,14 +2665,14 @@ var createFFmpegCore = (function () {
             if (void 0 === a.sf || void 0 === a.vf) throw new O.af(53);
             b = a.sf;
             a = a.vf;
-          } else (b = a.Bg || 0), (a = a.Qf || 0);
+          } else ((b = a.Bg || 0), (a = a.Qf || 0));
           return { hf: b, port: a };
         },
         fh: function (a, b, c, d, e, g) {
           if (2 === a.type) {
-            if (void 0 === e || void 0 === g) (e = a.sf), (g = a.vf);
+            if (void 0 === e || void 0 === g) ((e = a.sf), (g = a.vf));
             if (void 0 === e || void 0 === g) throw new O.af(17);
-          } else (e = a.sf), (g = a.vf);
+          } else ((e = a.sf), (g = a.vf));
           var k = R.qf.vg(a, e, g);
           if (1 === a.type) {
             if (!k || k.socket.readyState === k.socket.CLOSING || k.socket.readyState === k.socket.CLOSED) throw new O.af(53);
@@ -2681,9 +2681,9 @@ var createFFmpegCore = (function () {
           ArrayBuffer.isView(b) && ((c += b.byteOffset), (b = b.buffer));
           var m;
           b instanceof SharedArrayBuffer ? (m = new Uint8Array(new Uint8Array(b.slice(c, c + d))).buffer) : (m = b.slice(c, c + d));
-          if (2 === a.type && (!k || k.socket.readyState !== k.socket.OPEN)) return (k && k.socket.readyState !== k.socket.CLOSING && k.socket.readyState !== k.socket.CLOSED) || (k = R.qf.tg(a, e, g)), k.ug.push(m), d;
+          if (2 === a.type && (!k || k.socket.readyState !== k.socket.OPEN)) return ((k && k.socket.readyState !== k.socket.CLOSING && k.socket.readyState !== k.socket.CLOSED) || (k = R.qf.tg(a, e, g)), k.ug.push(m), d);
           try {
-            return k.socket.send(m), d;
+            return (k.socket.send(m), d);
           } catch (r) {
             throw new O.af(28);
           }
@@ -2771,9 +2771,9 @@ var createFFmpegCore = (function () {
       if (m) {
         c = Lc(a[6] | (a[7] << 16));
         if (-1 === a[5]) return "::ffff:" + c;
-        if (0 === a[5]) return "0.0.0.0" === c && (c = ""), "0.0.0.1" === c && (c = "1"), "::" + c;
+        if (0 === a[5]) return ("0.0.0.0" === c && (c = ""), "0.0.0.1" === c && (c = "1"), "::" + c);
       }
-      for (c = 0; 8 > c; c++) 0 === a[c] && (1 < c - e && (k = 0), (e = c), k++), k > d && ((d = k), (g = c - d + 1));
+      for (c = 0; 8 > c; c++) (0 === a[c] && (1 < c - e && (k = 0), (e = c), k++), k > d && ((d = k), (g = c - d + 1)));
       for (c = 0; 8 > c; c++) 1 < d && 0 === a[c] && c >= g && c < g + d ? c === g && ((b += ":"), 0 === g && (b += ":")) : ((b += Number(Nc(a[c] & 65535)).toString(16)), (b += 7 > c ? ":" : ""));
       return b;
     }
@@ -2851,7 +2851,7 @@ var createFFmpegCore = (function () {
             k.pf.bind(k, m.hf, m.port);
             return 0;
           case 3:
-            return (k = b()), (m = c()), k.pf.connect(k, m.hf, m.port), 0;
+            return ((k = b()), (m = c()), k.pf.connect(k, m.hf, m.port), 0);
           case 4:
             k = b();
             var r = Q();
@@ -2865,7 +2865,7 @@ var createFFmpegCore = (function () {
             q && Pc(q, t.family, Jc(t.sf), t.vf);
             return t.stream.fd;
           case 6:
-            return (k = b()), (q = Q()), Q(), Pc(q, k.family, Jc(k.Bg || "0.0.0.0"), k.Qf), 0;
+            return ((k = b()), (q = Q()), Q(), Pc(q, k.family, Jc(k.Bg || "0.0.0.0"), k.Qf), 0);
           case 7:
             k = b();
             q = Q();
@@ -2935,29 +2935,29 @@ var createFFmpegCore = (function () {
             (ua = E[w >> 2]) && Pc(ua, k.family, Jc(I.hf), I.port);
             k = 0;
             var cc = I.buffer.byteLength;
-            for (X = 0; 0 < cc && X < na; X++) if (((ac = E[(ia + 8 * X) >> 2]), (bc = E[(ia + (8 * X + 4)) >> 2]))) (B = Math.min(bc, cc)), (x = I.buffer.subarray(k, k + B)), v.set(x, ac + k), (k += B), (cc -= B);
+            for (X = 0; 0 < cc && X < na; X++) if (((ac = E[(ia + 8 * X) >> 2]), (bc = E[(ia + (8 * X + 4)) >> 2]))) ((B = Math.min(bc, cc)), (x = I.buffer.subarray(k, k + B)), v.set(x, ac + k), (k += B), (cc -= B));
             return k;
           default:
             return -52;
         }
       } catch (aa) {
-        return ("undefined" !== typeof O && aa instanceof O.af) || n(aa), -aa.ef;
+        return (("undefined" !== typeof O && aa instanceof O.af) || n(aa), -aa.ef);
       }
     }
     function Rc(a, b) {
       if (l) return N(21, 1, a, b);
       try {
-        return (a = C(a)), hc(O.stat, a, b);
+        return ((a = C(a)), hc(O.stat, a, b));
       } catch (c) {
-        return ("undefined" !== typeof O && c instanceof O.af) || n(c), -c.ef;
+        return (("undefined" !== typeof O && c instanceof O.af) || n(c), -c.ef);
       }
     }
     function Sc(a) {
       if (l) return N(22, 1, a);
       try {
-        return (a = C(a)), O.unlink(a), 0;
+        return ((a = C(a)), O.unlink(a), 0);
       } catch (b) {
-        return ("undefined" !== typeof O && b instanceof O.af) || n(b), -b.ef;
+        return (("undefined" !== typeof O && b instanceof O.af) || n(b), -b.ef);
       }
     }
     function Tc() {
@@ -2975,7 +2975,7 @@ var createFFmpegCore = (function () {
         c = d + c;
         for (Atomics.exchange(E, M.Vf >> 2, a); ; ) {
           d = performance.now();
-          if (d > c) return Atomics.exchange(E, M.Vf >> 2, 0), -73;
+          if (d > c) return (Atomics.exchange(E, M.Vf >> 2, 0), -73);
           d = Atomics.exchange(E, M.Vf >> 2, 0);
           if (0 == d) break;
           Ab();
@@ -3075,7 +3075,7 @@ var createFFmpegCore = (function () {
     }
     function rd(a, b, c, d, e, g, k, m) {
       b = S[b];
-      if ((a = V[a](b, c))) (d = m && Ia(a.name, v, m, d)), e && (E[e >> 2] = d), g && (E[g >> 2] = a.size), k && (E[k >> 2] = a.type);
+      if ((a = V[a](b, c))) ((d = m && Ia(a.name, v, m, d)), e && (E[e >> 2] = d), g && (E[g >> 2] = a.size), k && (E[k >> 2] = a.type));
     }
     function sd(a, b) {
       F[a >> 2] = b;
@@ -3251,7 +3251,7 @@ var createFFmpegCore = (function () {
       var d = Ed(a);
       if (!d) return -4;
       d.sg && ((E[d.sg >> 2] = b), (E[(d.sg + 4) >> 2] = c));
-      if (d.Fh || !d.aj) d.Fh && (d = d.Fh), (a = !1), d.rg && d.rg.qg && ((a = d.rg.qg.getParameter(2978)), (a = 0 === a[0] && 0 === a[1] && a[2] === d.width && a[3] === d.height)), (d.width = b), (d.height = c), a && d.rg.qg.viewport(0, 0, b, c);
+      if (d.Fh || !d.aj) (d.Fh && (d = d.Fh), (a = !1), d.rg && d.rg.qg && ((a = d.rg.qg.getParameter(2978)), (a = 0 === a[0] && 0 === a[1] && a[2] === d.width && a[3] === d.height)), (d.width = b), (d.height = c), a && d.rg.qg.viewport(0, 0, b, c));
       else {
         if (d.sg) {
           a = a ? C(a) : "";
@@ -3295,7 +3295,7 @@ var createFFmpegCore = (function () {
         O.close(b);
         return 0;
       } catch (c) {
-        return ("undefined" !== typeof O && c instanceof O.af) || n(c), c.ef;
+        return (("undefined" !== typeof O && c instanceof O.af) || n(c), c.ef);
       }
     }
     function Nd(a, b) {
@@ -3305,7 +3305,7 @@ var createFFmpegCore = (function () {
         y[b >> 0] = c.tty ? 2 : O.kf(c.mode) ? 3 : O.Mf(c.mode) ? 7 : 4;
         return 0;
       } catch (d) {
-        return ("undefined" !== typeof O && d instanceof O.af) || n(d), d.ef;
+        return (("undefined" !== typeof O && d instanceof O.af) || n(d), d.ef);
       }
     }
     function Od(a, b, c, d) {
@@ -3327,7 +3327,7 @@ var createFFmpegCore = (function () {
         E[d >> 2] = r;
         return 0;
       } catch (q) {
-        return ("undefined" !== typeof O && q instanceof O.af) || n(q), q.ef;
+        return (("undefined" !== typeof O && q instanceof O.af) || n(q), q.ef);
       }
     }
     function Pd(a, b, c, d, e) {
@@ -3343,7 +3343,7 @@ var createFFmpegCore = (function () {
         g.Lf && 0 === a && 0 === d && (g.Lf = null);
         return 0;
       } catch (k) {
-        return ("undefined" !== typeof O && k instanceof O.af) || n(k), k.ef;
+        return (("undefined" !== typeof O && k instanceof O.af) || n(k), k.ef);
       }
     }
     function Qd(a, b, c, d) {
@@ -3363,7 +3363,7 @@ var createFFmpegCore = (function () {
         E[d >> 2] = m;
         return 0;
       } catch (r) {
-        return ("undefined" !== typeof O && r instanceof O.af) || n(r), r.ef;
+        return (("undefined" !== typeof O && r instanceof O.af) || n(r), r.ef);
       }
     }
     var Rd = {};
@@ -3409,17 +3409,17 @@ var createFFmpegCore = (function () {
       if (0 !== q && 1 !== q && 2 !== q) return -7;
       if (0 !== r && 2 !== r && 10 !== r) return -6;
       if (b && ((b = C(b)), (k = parseInt(b, 10)), isNaN(k))) return m & 1024 ? -2 : -8;
-      if (!a) return 0 === r && (r = 2), 0 === (m & 1) && (2 === r ? (g = Ud(2130706433)) : (g = [0, 0, 0, 1])), (a = e(r, q, t, null, g, k)), (E[d >> 2] = a), 0;
+      if (!a) return (0 === r && (r = 2), 0 === (m & 1) && (2 === r ? (g = Ud(2130706433)) : (g = [0, 0, 0, 1])), (a = e(r, q, t, null, g, k)), (E[d >> 2] = a), 0);
       a = C(a);
       g = Dc(a);
       if (null !== g)
         if (0 === r || 2 === r) r = 2;
-        else if (10 === r && m & 8) (g = [0, 0, Ud(65535), g]), (r = 10);
+        else if (10 === r && m & 8) ((g = [0, 0, Ud(65535), g]), (r = 10));
         else return -2;
       else if (((g = Ec(a)), null !== g))
         if (0 === r || 10 === r) r = 10;
         else return -2;
-      if (null != g) return (a = e(r, q, t, a, g, k)), (E[d >> 2] = a), 0;
+      if (null != g) return ((a = e(r, q, t, a, g, k)), (E[d >> 2] = a), 0);
       if (m & 4) return -2;
       a = Jc(a);
       g = Dc(a);
@@ -3468,14 +3468,14 @@ var createFFmpegCore = (function () {
     }
     f._pthread_self = Wd;
     function Xd(a, b) {
-      if (!a) return u("pthread_join attempted on a null thread pointer!"), 71;
-      if (l && selfThreadId == a) return u("PThread " + a + " is attempting to join to itself!"), 16;
-      if (!l && M.xf == a) return u("Main thread " + a + " is attempting to join to itself!"), 16;
-      if (E[(a + 12) >> 2] !== a) return u("pthread_join attempted on thread " + a + ", which does not point to a valid thread, or does not exist anymore!"), 71;
-      if (Atomics.load(F, (a + 68) >> 2)) return u("Attempted to join thread " + a + ", which was already detached!"), 28;
+      if (!a) return (u("pthread_join attempted on a null thread pointer!"), 71);
+      if (l && selfThreadId == a) return (u("PThread " + a + " is attempting to join to itself!"), 16);
+      if (!l && M.xf == a) return (u("Main thread " + a + " is attempting to join to itself!"), 16);
+      if (E[(a + 12) >> 2] !== a) return (u("pthread_join attempted on thread " + a + ", which does not point to a valid thread, or does not exist anymore!"), 71);
+      if (Atomics.load(F, (a + 68) >> 2)) return (u("Attempted to join thread " + a + ", which was already detached!"), 28);
       for (Uc(); ; ) {
         var c = Atomics.load(F, a >> 2);
-        if (1 == c) return (c = Atomics.load(F, (a + 4) >> 2)), b && (E[b >> 2] = c), Atomics.store(F, (a + 68) >> 2, 1), l ? postMessage({ cmd: "cleanupThread", thread: a }) : vb(a), 0;
+        if (1 == c) return ((c = Atomics.load(F, (a + 4) >> 2)), b && (E[b >> 2] = c), Atomics.store(F, (a + 68) >> 2, 1), l ? postMessage({ cmd: "cleanupThread", thread: a }) : vb(a), 0);
         if (l && threadInfoStruct && !Atomics.load(F, (threadInfoStruct + 60) >> 2) && 2 == Atomics.load(F, (threadInfoStruct + 0) >> 2)) throw "Canceled!";
         l || Ab();
         Vc(a, c, l ? 100 : 1);
@@ -3494,7 +3494,7 @@ var createFFmpegCore = (function () {
       for (a = new Date(a.getTime()); 0 < b; ) {
         var c = a.getMonth(),
           d = (Yd(a.getFullYear()) ? $d : ae)[c];
-        if (b > d - a.getDate()) (b -= d - a.getDate() + 1), a.setDate(1), 11 > c ? a.setMonth(c + 1) : (a.setMonth(0), a.setFullYear(a.getFullYear() + 1));
+        if (b > d - a.getDate()) ((b -= d - a.getDate() + 1), a.setDate(1), 11 > c ? a.setMonth(c + 1) : (a.setMonth(0), a.setFullYear(a.getFullYear() + 1)));
         else {
           a.setDate(a.getDate() + b);
           break;
@@ -3725,7 +3725,7 @@ var createFFmpegCore = (function () {
       },
       K: function (a, b) {
         a = me(a, b);
-        if (!noExitRuntime) return postMessage({ cmd: "exitProcess", returnCode: a }), a;
+        if (!noExitRuntime) return (postMessage({ cmd: "exitProcess", returnCode: a }), a);
       },
       W: function (a, b) {
         return Gb(a, b);
@@ -3778,7 +3778,7 @@ var createFFmpegCore = (function () {
           Pa("x86-JS", a + b.machine);
           return 0;
         } catch (c) {
-          return ("undefined" !== typeof O && c instanceof O.af) || n(c), -c.ef;
+          return (("undefined" !== typeof O && c instanceof O.af) || n(c), -c.ef);
         }
       },
       Ba: Sc,
@@ -3806,7 +3806,7 @@ var createFFmpegCore = (function () {
       F: function (a, b, c) {
         Cd.length = 0;
         var d;
-        for (c >>= 2; (d = v[b++]); ) (d = 105 > d) && c & 1 && c++, Cd.push(d ? Sa[c++ >> 1] : E[c]), ++c;
+        for (c >>= 2; (d = v[b++]); ) ((d = 105 > d) && c & 1 && c++, Cd.push(d ? Sa[c++ >> 1] : E[c]), ++c);
         return mb[a].apply(null, Cd);
       },
       qa: Uc,
@@ -4103,7 +4103,7 @@ var createFFmpegCore = (function () {
           else {
             var d = gd[a];
             if (d)
-              if (35716 == b) (a = V.getProgramInfoLog(S[a])), null === a && (a = "(unknown error)"), (E[c >> 2] = a.length + 1);
+              if (35716 == b) ((a = V.getProgramInfoLog(S[a])), null === a && (a = "(unknown error)"), (E[c >> 2] = a.length + 1));
               else if (35719 == b) E[c >> 2] = d.Xg;
               else if (35722 == b) {
                 if (-1 == d.jg) {
@@ -4171,7 +4171,7 @@ var createFFmpegCore = (function () {
         E[d >> 2] = a.precision;
       },
       oc: function (a, b, c, d) {
-        if ((a = V.getShaderSource(dd[a]))) (b = 0 < b && d ? Ia(a, v, d, b) : 0), c && (E[c >> 2] = b);
+        if ((a = V.getShaderSource(dd[a]))) ((b = 0 < b && d ? Ia(a, v, d, b) : 0), c && (E[c >> 2] = b));
       },
       rc: function (a, b, c) {
         c ? (35716 == b ? ((a = V.getShaderInfoLog(dd[a])), null === a && (a = "(unknown error)"), (E[c >> 2] = a ? a.length + 1 : 0)) : 35720 == b ? ((a = V.getShaderSource(dd[a])), (E[c >> 2] = a ? a.length + 1 : 0)) : (E[c >> 2] = V.getShaderParameter(dd[a], b))) : U(1281);
@@ -4184,7 +4184,7 @@ var createFFmpegCore = (function () {
             b = b.concat(
               b.map(function (d) {
                 return "GL_" + d;
-              }),
+              })
             );
             b = ud(b.join(" "));
             break;
@@ -4205,7 +4205,7 @@ var createFFmpegCore = (function () {
             b = ud(b);
             break;
           default:
-            return U(1280), 0;
+            return (U(1280), 0);
         }
         return (hd[a] = b);
       },
@@ -4287,7 +4287,7 @@ var createFFmpegCore = (function () {
             var r = kd(T);
             c[k] = [g.size, r];
             T[r] = m;
-            for (var q = 1; q < g.size; ++q) (m = V.getUniformLocation(b, k + "[" + q + "]")), (r = kd(T)), (T[r] = m);
+            for (var q = 1; q < g.size; ++q) ((m = V.getUniformLocation(b, k + "[" + q + "]")), (r = kd(T)), (T[r] = m));
           }
         }
       },
@@ -4382,7 +4382,7 @@ var createFFmpegCore = (function () {
         V.uniform2f(T[a], b, c);
       },
       wb: function (a, b, c) {
-        if (144 >= b) for (var d = yd[2 * b - 1], e = 0; e < 2 * b; e += 2) (d[e] = G[(c + 4 * e) >> 2]), (d[e + 1] = G[(c + (4 * e + 4)) >> 2]);
+        if (144 >= b) for (var d = yd[2 * b - 1], e = 0; e < 2 * b; e += 2) ((d[e] = G[(c + 4 * e) >> 2]), (d[e + 1] = G[(c + (4 * e + 4)) >> 2]));
         else d = G.subarray(c >> 2, (c + 8 * b) >> 2);
         V.uniform2fv(T[a], d);
       },
@@ -4390,7 +4390,7 @@ var createFFmpegCore = (function () {
         V.uniform2i(T[a], b, c);
       },
       ub: function (a, b, c) {
-        if (144 >= b) for (var d = zd[2 * b - 1], e = 0; e < 2 * b; e += 2) (d[e] = E[(c + 4 * e) >> 2]), (d[e + 1] = E[(c + (4 * e + 4)) >> 2]);
+        if (144 >= b) for (var d = zd[2 * b - 1], e = 0; e < 2 * b; e += 2) ((d[e] = E[(c + 4 * e) >> 2]), (d[e + 1] = E[(c + (4 * e + 4)) >> 2]));
         else d = E.subarray(c >> 2, (c + 8 * b) >> 2);
         V.uniform2iv(T[a], d);
       },
@@ -4398,7 +4398,7 @@ var createFFmpegCore = (function () {
         V.uniform3f(T[a], b, c, d);
       },
       sb: function (a, b, c) {
-        if (96 >= b) for (var d = yd[3 * b - 1], e = 0; e < 3 * b; e += 3) (d[e] = G[(c + 4 * e) >> 2]), (d[e + 1] = G[(c + (4 * e + 4)) >> 2]), (d[e + 2] = G[(c + (4 * e + 8)) >> 2]);
+        if (96 >= b) for (var d = yd[3 * b - 1], e = 0; e < 3 * b; e += 3) ((d[e] = G[(c + 4 * e) >> 2]), (d[e + 1] = G[(c + (4 * e + 4)) >> 2]), (d[e + 2] = G[(c + (4 * e + 8)) >> 2]));
         else d = G.subarray(c >> 2, (c + 12 * b) >> 2);
         V.uniform3fv(T[a], d);
       },
@@ -4406,7 +4406,7 @@ var createFFmpegCore = (function () {
         V.uniform3i(T[a], b, c, d);
       },
       qb: function (a, b, c) {
-        if (96 >= b) for (var d = zd[3 * b - 1], e = 0; e < 3 * b; e += 3) (d[e] = E[(c + 4 * e) >> 2]), (d[e + 1] = E[(c + (4 * e + 4)) >> 2]), (d[e + 2] = E[(c + (4 * e + 8)) >> 2]);
+        if (96 >= b) for (var d = zd[3 * b - 1], e = 0; e < 3 * b; e += 3) ((d[e] = E[(c + 4 * e) >> 2]), (d[e + 1] = E[(c + (4 * e + 4)) >> 2]), (d[e + 2] = E[(c + (4 * e + 8)) >> 2]));
         else d = E.subarray(c >> 2, (c + 12 * b) >> 2);
         V.uniform3iv(T[a], d);
       },
@@ -4431,17 +4431,17 @@ var createFFmpegCore = (function () {
         V.uniform4i(T[a], b, c, d, e);
       },
       mb: function (a, b, c) {
-        if (72 >= b) for (var d = zd[4 * b - 1], e = 0; e < 4 * b; e += 4) (d[e] = E[(c + 4 * e) >> 2]), (d[e + 1] = E[(c + (4 * e + 4)) >> 2]), (d[e + 2] = E[(c + (4 * e + 8)) >> 2]), (d[e + 3] = E[(c + (4 * e + 12)) >> 2]);
+        if (72 >= b) for (var d = zd[4 * b - 1], e = 0; e < 4 * b; e += 4) ((d[e] = E[(c + 4 * e) >> 2]), (d[e + 1] = E[(c + (4 * e + 4)) >> 2]), (d[e + 2] = E[(c + (4 * e + 8)) >> 2]), (d[e + 3] = E[(c + (4 * e + 12)) >> 2]));
         else d = E.subarray(c >> 2, (c + 16 * b) >> 2);
         V.uniform4iv(T[a], d);
       },
       lb: function (a, b, c, d) {
-        if (72 >= b) for (var e = yd[4 * b - 1], g = 0; g < 4 * b; g += 4) (e[g] = G[(d + 4 * g) >> 2]), (e[g + 1] = G[(d + (4 * g + 4)) >> 2]), (e[g + 2] = G[(d + (4 * g + 8)) >> 2]), (e[g + 3] = G[(d + (4 * g + 12)) >> 2]);
+        if (72 >= b) for (var e = yd[4 * b - 1], g = 0; g < 4 * b; g += 4) ((e[g] = G[(d + 4 * g) >> 2]), (e[g + 1] = G[(d + (4 * g + 4)) >> 2]), (e[g + 2] = G[(d + (4 * g + 8)) >> 2]), (e[g + 3] = G[(d + (4 * g + 12)) >> 2]));
         else e = G.subarray(d >> 2, (d + 16 * b) >> 2);
         V.uniformMatrix2fv(T[a], !!c, e);
       },
       kb: function (a, b, c, d) {
-        if (32 >= b) for (var e = yd[9 * b - 1], g = 0; g < 9 * b; g += 9) (e[g] = G[(d + 4 * g) >> 2]), (e[g + 1] = G[(d + (4 * g + 4)) >> 2]), (e[g + 2] = G[(d + (4 * g + 8)) >> 2]), (e[g + 3] = G[(d + (4 * g + 12)) >> 2]), (e[g + 4] = G[(d + (4 * g + 16)) >> 2]), (e[g + 5] = G[(d + (4 * g + 20)) >> 2]), (e[g + 6] = G[(d + (4 * g + 24)) >> 2]), (e[g + 7] = G[(d + (4 * g + 28)) >> 2]), (e[g + 8] = G[(d + (4 * g + 32)) >> 2]);
+        if (32 >= b) for (var e = yd[9 * b - 1], g = 0; g < 9 * b; g += 9) ((e[g] = G[(d + 4 * g) >> 2]), (e[g + 1] = G[(d + (4 * g + 4)) >> 2]), (e[g + 2] = G[(d + (4 * g + 8)) >> 2]), (e[g + 3] = G[(d + (4 * g + 12)) >> 2]), (e[g + 4] = G[(d + (4 * g + 16)) >> 2]), (e[g + 5] = G[(d + (4 * g + 20)) >> 2]), (e[g + 6] = G[(d + (4 * g + 24)) >> 2]), (e[g + 7] = G[(d + (4 * g + 28)) >> 2]), (e[g + 8] = G[(d + (4 * g + 32)) >> 2]));
         else e = G.subarray(d >> 2, (d + 36 * b) >> 2);
         V.uniformMatrix3fv(T[a], !!c, e);
       },
@@ -4663,9 +4663,9 @@ var createFFmpegCore = (function () {
         return (b.getTime() / 1e3) | 0;
       },
       Ra: function (a) {
-        if (a === M.Ph) return u("Main thread (id=" + a + ") cannot be canceled!"), 71;
-        if (!a) return u("pthread_cancel attempted on a null thread pointer!"), 71;
-        if (E[(a + 12) >> 2] !== a) return u("pthread_cancel attempted on thread " + a + ", which does not point to a valid thread, or does not exist anymore!"), 71;
+        if (a === M.Ph) return (u("Main thread (id=" + a + ") cannot be canceled!"), 71);
+        if (!a) return (u("pthread_cancel attempted on a null thread pointer!"), 71);
+        if (E[(a + 12) >> 2] !== a) return (u("pthread_cancel attempted on thread " + a + ", which does not point to a valid thread, or does not exist anymore!"), 71);
         Atomics.compareExchange(F, a >> 2, 0, 2);
         l ? postMessage({ cmd: "cancelThread", thread: a }) : ub(a);
         return 0;
@@ -4680,8 +4680,8 @@ var createFFmpegCore = (function () {
         });
       },
       n: function (a, b, c, d) {
-        if ("undefined" === typeof SharedArrayBuffer) return u("Current environment does not support SharedArrayBuffer, pthreads are not available!"), 6;
-        if (!a) return u("pthread_create called with a null thread pointer!"), 28;
+        if ("undefined" === typeof SharedArrayBuffer) return (u("Current environment does not support SharedArrayBuffer, pthreads are not available!"), 6);
+        if (!a) return (u("pthread_create called with a null thread pointer!"), 28);
         var e = [];
         if (l && 0 === e.length) return Ee(687865856, a, b, c, d);
         var g = 0,
@@ -4713,7 +4713,7 @@ var createFFmpegCore = (function () {
             r = E[(b + 24) >> 2];
             E[(b + 20) >> 2] = t;
             E[(b + 24) >> 2] = w;
-          } else (m = E[(b + 20) >> 2]), (r = E[(b + 24) >> 2]);
+          } else ((m = E[(b + 20) >> 2]), (r = E[(b + 24) >> 2]));
         } else q = 2097152;
         (b = 0 == g) ? (g = vc(16, q)) : ((g -= q), assert(0 < g));
         t = Ma(232);
@@ -4924,7 +4924,7 @@ var createFFmpegCore = (function () {
         try {
           return f.instantiateWasm(d, a);
         } catch (e) {
-          return u("Module.instantiateWasm callback failed with error: " + e), !1;
+          return (u("Module.instantiateWasm callback failed with error: " + e), !1);
         }
       (function () {
         return Ba || "function" !== typeof WebAssembly.instantiateStreaming || ib() || gb("file://") || "function" !== typeof fetch
@@ -5380,7 +5380,7 @@ var createFFmpegCore = (function () {
             f._proxy_main(d, e);
           }
           if (!l) {
-            if (f.postRun) for ("function" == typeof f.postRun && (f.postRun = [f.postRun]); f.postRun.length; ) (c = f.postRun.shift()), Za.unshift(c);
+            if (f.postRun) for ("function" == typeof f.postRun && (f.postRun = [f.postRun]); f.postRun.length; ) ((c = f.postRun.shift()), Za.unshift(c));
             nb(Za);
           }
         }

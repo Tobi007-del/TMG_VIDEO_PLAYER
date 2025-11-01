@@ -43,8 +43,8 @@ addEventListener("install", (event) =>
     (async () => {
       await precache();
       await self.skipWaiting();
-    })(),
-  ),
+    })()
+  )
 );
 
 self.addEventListener("activate", (event) => {
@@ -53,7 +53,7 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
       await Promise.all(keys.filter((key) => key !== cacheName).map((key) => caches.delete(key)));
       await clients.claim();
-    })(),
+    })()
   );
 });
 

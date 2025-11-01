@@ -265,7 +265,7 @@ function handleFiles(files) {
               li.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load";
             },
           },
-          { captionState: "waiting" },
+          { captionState: "waiting" }
         );
         thumbnails.push(thumbnail);
         thumbnailContainer.appendChild(thumbnail);
@@ -314,7 +314,7 @@ function handleFiles(files) {
             } else if (!cancelJob(thumbnail.dataset.captionId)) return; // cancels if waiting and returns if loading since current job is shifted from queue
             thumbnail.dataset.captionState = "empty";
           },
-          async () => thumbnail.dataset.captionState === "empty" && (await deployCaption(thumbnail.playlistItem, files[i], thumbnail, false)),
+          async () => thumbnail.dataset.captionState === "empty" && (await deployCaption(thumbnail.playlistItem, files[i], thumbnail, false))
         );
         captionsBtn.appendChild(captionsInput);
         li.appendChild(captionsBtn);
@@ -367,7 +367,7 @@ function handleFiles(files) {
               {
                 height: `${rect.height}px`,
                 width: `${rect.width}px`,
-              },
+              }
             );
             li.parentElement.insertBefore(placeholderItem, li.nextElementSibling);
             li.classList.add("dragging");
@@ -377,7 +377,7 @@ function handleFiles(files) {
             document.addEventListener("pointercancel", onPointerUp);
             dragLoop();
           },
-          { passive: false },
+          { passive: false }
         );
         function onPointerMove(e) {
           clientY = e.clientY;
@@ -416,7 +416,7 @@ function handleFiles(files) {
               if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
               else return closest;
             },
-            { offset: Number.NEGATIVE_INFINITY },
+            { offset: Number.NEGATIVE_INFINITY }
           ).element;
           if (afterLine) list.insertBefore(placeholderItem, afterLine);
           else list.appendChild(placeholderItem);
@@ -478,7 +478,7 @@ function handleFiles(files) {
               () => {
                 if (video.currentTime > 3) containers[mP.Controller.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.parseNumber(video.currentTime / video.duration));
               },
-              1000,
+              1000
             );
           };
           video.onplay = () => {
@@ -540,7 +540,7 @@ async function deployCaption(item, file, thumbnail, autocancel = tmg.queryMediaM
     async () => await extractCaptions(file, id),
     id,
     autocancel,
-    () => thumbnail?.setAttribute("data-caption-state", "loading"),
+    () => thumbnail?.setAttribute("data-caption-state", "loading")
   );
   if (!res.cancelled) thumbnail?.setAttribute("data-caption-state", res.success ? "filled" : "empty");
   if (!res.success || !item) return;
