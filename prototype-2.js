@@ -2474,7 +2474,7 @@ class T_M_G_Video_Controller {
     this.deactivatePseudoMode();
     this.toggleMiniPlayerMode();
   }
-  expandMiniPlayer = () => this.toggleMiniPlayerMode(false, "auto");
+  expandMiniPlayer = () => this.toggleMiniPlayerMode(false, "smooth");
   removeMiniPlayer() {
     this.togglePlay(false);
     this.toggleMiniPlayerMode(false);
