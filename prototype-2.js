@@ -36,7 +36,7 @@ class T_M_G_Video_Controller {
     this.rafLoopMap = new Map();
     this.rafLoopFnMap = new Map();
     this.sliderVolume = this.sliderBrightness = 5;
-    this.gestureTouchThreshold = 300;
+    this.gestureTouchThreshold = 250;
     this.gestureTouchFingerRatio = 3;
     this.gestureWheelTimeout = 2000;
     this.fastPlayThreshold = 1000;
@@ -114,9 +114,8 @@ class T_M_G_Video_Controller {
   fire = (eventName, detail = null, el = this.video, bubbles = true, cancellable = true) => el?.dispatchEvent(new CustomEvent(eventName, { detail, bubbles, cancellable }));
   notify = (event) => this.settings.notifiers && this.fire(event, null, this.DOM.notifiersContainer);
   get toast() {
-    const base = (m, opts = {}) => t007.toast(m, { rootElement: this.videoContainer, ...(tmg.isObj(this.settings.toasts) ? this.settings.toasts : {}), ...opts });
-    ["info", "success", "warn", "error"].forEach((act) => (base[act] = (m, opts = {}) => base(m, { ...opts, type: act === "warn" ? "warning" : act })));
-    return this.settings.toasts ? base : null;
+    this._toast ??= t007.toaster({ rootElement: this.videoContainer, position: "bottom-left", hideProgressBar: true });
+    return this.settings.toasts ? this._toast : null;
   }
   throttle(key, fn, delay = 30, strict = true) {
     if (strict) {
@@ -1286,12 +1285,14 @@ class T_M_G_Video_Controller {
   setSettingsViewEventListeners() {
     this.DOM.settingsCloseBtn?.addEventListener("click", this.leaveSettingsView);
   }
-  toggleSettingsView = () => (!this.isUIActive("settings") ? this.enterSettingsView() : this.leaveSettingsView());
-  enterSettingsView() {
+  toggleSettingsView = async () => await (!this.isUIActive("settings") ? this.enterSettingsView : this.leaveSettingsView)();
+  async enterSettingsView() {
     if (this.isUIActive("settings")) return;
     this.wasPaused = this.video.paused;
     this.togglePlay(false);
     this.videoContainer.classList.add("T_M_G-video-settings-view");
+    await tmg.mockAsync(tmg.parseCSSTime(this.videoSettingsViewTransitionTime));
+    this.showOverlay();
     this.DOM.videoSettings.removeAttribute("inert");
     this.DOM.videoContainerContent.setAttribute("inert", "");
     this.DOM.settingsCloseBtn.focus();
@@ -1299,10 +1300,11 @@ class T_M_G_Video_Controller {
     this.floatingPlayer?.addEventListener("keyup", this._handleSettingsKeyUp);
     this.removeKeyEventListeners();
   }
-  leaveSettingsView() {
+  async leaveSettingsView() {
     if (!this.isUIActive("settings")) return;
-    setTimeout(this.togglePlay, tmg.parseCSSTime(this.videoSettingsViewTransitionTime), !this.wasPaused);
     this.videoContainer.classList.remove("T_M_G-video-settings-view");
+    await tmg.mockAsync(tmg.parseCSSTime(this.videoSettingsViewTransitionTime));
+    this.togglePlay(!this.wasPaused);
     this.DOM.videoSettings.setAttribute("inert", "");
     this.DOM.videoContainerContent.removeAttribute("inert");
     this.DOM.settingsCloseBtn.blur();
@@ -1412,28 +1414,24 @@ class T_M_G_Video_Controller {
   }
   async getVideoFrame(time = this.currentTime, monochrome) {
     if (Math.abs(this.pseudoVideo.currentTime - time) > 0.01) {
-      this.pseudoVideo.currentTime = time;
-      await new Promise((res) => this.pseudoVideo.addEventListener("timeupdate", res, { once: true })); // small tolerance for video time comparison - 10ms
+      this.pseudoVideo.currentTime = time; // small tolerance for video time comparison - 10ms
+      await new Promise((res) => this.pseudoVideo.addEventListener("timeupdate", res, { once: true }));
     }
     this.exportCanvas.width = this.video.videoWidth;
     this.exportCanvas.height = this.video.videoHeight;
     this.exportContext.drawImage(this.pseudoVideo, 0, 0, this.exportCanvas.width, this.exportCanvas.height);
-    if (monochrome) this.convertToMonoChrome(this.exportCanvas, this.exportContext);
+    monochrome && this.convertToMonoChrome(this.exportCanvas, this.exportContext);
     const blob = await new Promise((res) => this.exportCanvas.toBlob(res));
     return { blob, url: URL.createObjectURL(blob) };
   }
-  async exportVideoFrame(monochrome) {
+  async exportVideoFrame(m) {
     this.notify("capture");
-    const filename = `${this.media?.title ?? "Video"}${monochrome === true ? `_black&white` : ""}_at_'${tmg.formatTime(this.video.currentTime, "human", true)}'.png`.replace(/\s/g, "_"),
-      frame = await this.getVideoFrame(this.currentTime, monochrome === true);
-    const link = frame?.url && tmg.createEl("a", { href: frame?.url, download: filename });
-    frame?.url &&
-      this.toast?.success(`Video frame captured at '${this.toTimeText(this.video.currentTime)}'`, {
-        image: frame?.url,
-        tag: filename,
-        onClose: () => URL.revokeObjectURL(link.href),
-      });
-    link?.click?.();
+    const t = this.currentTime,
+      tTxt = tmg.formatTime(t, "human", true),
+      frameToastId = this.toast?.loading(`Capturing video frame ${m ? "in b&w " : ""}at ${tTxt}...`, { image: TMG_VIDEO_ALT_IMG_SRC, tag: `fcga${tTxt}` }),
+      frame = await this.getVideoFrame(t, m);
+    frame?.url ? this.toast?.success(frameToastId, { render: `Captured video frame ${m ? "in b&w " : ""}at ${tTxt}`, image: frame.url, tag: `fcda${tTxt}`, onClose: () => URL.revokeObjectURL(frame.url) }) : this.toast?.dismiss(frameToastId, "instant");
+    frame?.url && tmg.createEl("a", { href: frame.url, download: `${this.media?.title ?? "Video"}_${m ? `black&white_` : ""}at_${tTxt}.png`.replace(/\s|\/|\"|\:|\*|\?|\<|\>/g, "_") })?.click?.(); // system filename safe
   }
   convertToMonoChrome(canvas, context) {
     const frame = context.getImageData(0, 0, canvas.width, canvas.height);
@@ -1576,35 +1574,31 @@ class T_M_G_Video_Controller {
     this.canAutoMovePlaylist = false;
     const count = Math.floor((this.settings.time.end || this.duration) - this.currentTime);
     const v = this.playlist[this.currentPlaylistIndex + 1];
-    const nextVideoToast = this.toast?.("", { autoClose: count * 1000, showProgress: true, position: "bottom-right", onClose: (timeElapsed) => timeElapsed && cleanUp(true, false) && this.nextVideo(), onTimeUpdate: (time) => (this.queryDOM(".T_M_G-video-playlist-next-video-countdown").textContent = Math.round((count * 1000 - time) / 1000)) });
-    nextVideoToast.toastElement.querySelector(".t007-toast-image-wrapper").remove();
-    nextVideoToast.toastElement.querySelector(".t007-toast-body").remove();
-    nextVideoToast.toastElement.insertAdjacentHTML(
-      "afterbegin",
-      `
-      <span title="Play next video" class="T_M_G-video-playlist-next-video-preview-wrapper">
+    const nextVideoToastId = this.toast?.("", {
+      autoClose: count * 1000,
+      hideProgressBar: false,
+      position: "bottom-right",
+      bodyHTML: `<span title="Play next video" class="T_M_G-video-playlist-next-video-preview-wrapper">
         <button type="button">
-          <svg viewBox="0 0 25 25">
-            <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
-          </svg>
+          <svg viewBox="0 0 25 25"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg>
         </button>
         <video class="T_M_G-video-playlist-next-video-preview" src="${v.src}" autoplay muted loop playsinline webkit-playsinline></video>
       </span>
       <span class="T_M_G-video-playlist-next-video-info">
         <h2>Next Video in <span class="T_M_G-video-playlist-next-video-countdown">${count}</span></h2>
         ${v.media.title ? `<p class="T_M_G-video-playlist-next-video-title">${v.media.title}</p>` : ""}
-      </span>         
-    `
-    );
+      </span>`,
+      onTimeUpdate: (time) => this.throttle("nextVideoCountdown", () => (this.queryDOM(".T_M_G-video-playlist-next-video-countdown").textContent = Math.round((count * 1000 - time) / 1000)), 500),
+      onClose: (timeElapsed) => timeElapsed && cleanUp(true) && this.nextVideo(),
+    });
     const cleanUpWhenNeeded = () => !this.video.ended && cleanUp(),
       autoCleanUpToast = () => Math.floor((this.settings.time.end || this.duration) - this.currentTime) > this.settings.auto.next && cleanUp(),
-      cleanUp = (permanent = false, removeToast = true) => {
-        removeToast && nextVideoToast.remove("instant");
+      cleanUp = (permanent = false) => {
+        this.toast?.dismiss(nextVideoToastId, "instant");
         this.video.removeEventListener("pause", cleanUpWhenNeeded);
         this.video.removeEventListener("waiting", cleanUpWhenNeeded);
         this.video.removeEventListener("timeupdate", autoCleanUpToast);
-        this.canAutoMovePlaylist = !permanent;
-        return true;
+        return (this.canAutoMovePlaylist = !permanent) || true;
       };
     this.video.addEventListener("pause", cleanUpWhenNeeded);
     this.video.addEventListener("waiting", cleanUpWhenNeeded);
@@ -1621,9 +1615,8 @@ class T_M_G_Video_Controller {
     set("seekforward", () => this.skip(this.settings.time.skip));
     set("previoustrack", null);
     set("nexttrack", null);
-    if (!this.playlist) return;
-    if (this.currentPlaylistIndex > 0) set("previoustrack", this.previousVideo);
-    if (this.currentPlaylistIndex < this.playlist?.length - 1) set("nexttrack", this.nextVideo);
+    if (this.playlist && this.currentPlaylistIndex > 0) set("previoustrack", this.previousVideo);
+    if (this.playlist && this.currentPlaylistIndex < this.playlist?.length - 1) set("nexttrack", this.nextVideo);
   }
   syncAspectRatio() {
     this.aspectRatio = this.video.videoWidth && this.video.videoHeight ? this.video.videoWidth / this.video.videoHeight : 16 / 9;
@@ -1714,7 +1707,6 @@ class T_M_G_Video_Controller {
     this.videoContainer.classList.add("T_M_G-video-buffering");
   }
   _handleBufferStop() {
-    if (!this.buffering) return;
     this.buffering = false;
     this.delayOverlay();
     this.videoContainer.classList.remove("T_M_G-video-buffering");
@@ -1989,9 +1981,10 @@ class T_M_G_Video_Controller {
     this.speedCheck = false;
     clearInterval(this.speedIntervalId);
     this.video.removeEventListener("play", this.rewindReset);
-    this.DOM.playbackRateNotifier?.classList.remove("T_M_G-video-control-active", "T_M_G-video-rewind");
     this.playbackRate = this.lastPlaybackRate;
-    this.togglePlay(!this.wasPaused);
+    this.togglePlay(this.isMediaMobile ? true : !this.wasPaused);
+    this.isMediaMobile && this.removeOverlay();
+    this.DOM.playbackRateNotifier?.classList.remove("T_M_G-video-control-active", "T_M_G-video-rewind");
   }
   set videoCaptionsCharacterEdgeStyle(value) {
     this.DOM.cueContainer.classList.forEach((cls) => cls.startsWith("T_M_G-video-cue-character-edge-style") && this.DOM.cueContainer.classList.remove(cls));
@@ -2595,7 +2588,7 @@ class T_M_G_Video_Controller {
     if (this.shouldRemoveOverlay()) this.overlayDelayId = setTimeout(this.removeOverlay, this.settings.overlay.delay);
   }
   removeOverlay = (manner) => ((manner === "force" && this.settings.overlay.behavior !== "persistent") || this.shouldRemoveOverlay()) && this.videoContainer.classList.remove("T_M_G-video-overlay");
-  shouldRemoveOverlay = () => this.settings.overlay.behavior !== "persistent" && !this.isUIActive("pictureInPicture") && (this.isMediaMobile ? !this.video.paused && !this.buffering && !this.video.ended : this.settings.overlay.behavior === "strict" ? true : !this.video.paused);
+  shouldRemoveOverlay = () => this.settings.overlay.behavior !== "persistent" && !this.isUIActive("pictureInPicture") && !this.isUIActive("settings") && (this.isMediaMobile ? !this.video.paused && !this.buffering && !this.video.ended : this.settings.overlay.behavior === "strict" ? true : !this.video.paused);
   showLockedOverlay() {
     this.videoContainer.classList.add("T_M_G-video-locked-overlay");
     this.delayLockedOverlay();
@@ -2699,10 +2692,9 @@ class T_M_G_Video_Controller {
     this.lastGestureTouchY = e.clientY ?? e.targetTouches[0].clientY;
     this.videoContainer.addEventListener("touchmove", this._handleGestureTouchInit, { once: true, passive: false });
     this.videoContainer.addEventListener("touchmove", this.setGestureTouchCancel, { passive: true }); // tm: if user moves finger like during scrolling
-    // tm: changing bool since timeout reached and user is not scrolling
     this.gestureTouchTimeoutId = setTimeout(() => {
       this.videoContainer.removeEventListener("touchmove", this.setGestureTouchCancel, { passive: true });
-      this.gestureTouchCanCancel = false;
+      this.gestureTouchCanCancel = false; // tm: changing bool since timeout reached and user is not scrolling
     }, this.gestureTouchThreshold);
     this.videoContainer.addEventListener("touchend", this._handleGestureTouchEnd);
   }
@@ -2781,11 +2773,10 @@ class T_M_G_Video_Controller {
       this.DOM.touchBrightnessNotifier?.classList.remove("T_M_G-video-control-active");
       if (!this.gestureTouchCanCancel) this.removeOverlay();
     }
-    // tm: changing bool since user is not scrolling
     if (this.gestureTouchTimeoutId) {
       clearTimeout(this.gestureTouchTimeoutId);
       this.videoContainer.removeEventListener("touchmove", this.setGestureTouchCancel, { passive: true });
-      this.gestureTouchCanCancel = true;
+      this.gestureTouchCanCancel = true; // tm: changing bool since user is not scrolling
     }
     this.videoContainer.removeEventListener("touchmove", this._handleGestureTouchInit, { once: true, passive: false });
     this.videoContainer.removeEventListener("touchend", this._handleGestureTouchEnd);
@@ -3241,7 +3232,7 @@ class T_M_G {
     debug: true,
     settings: {
       allowOverride: true,
-      auto: { play: null, captions: true, next: 10 },
+      auto: { play: null, captions: true, next: 20 },
       beta: { rewind: true, gestureControls: true, floatingPlayer: true },
       brightness: { min: 0, max: 150, value: 100, skip: 5 },
       captions: {
@@ -3440,7 +3431,7 @@ class T_M_G {
       playbackRate: { min: 0.25, max: 8, value: null, skip: 0.25, fast: 2 },
       playsInline: true,
       time: { linePosition: "top", progressBar: null, previews: false, mode: "elapsed", format: "digital", start: null, end: null, skip: 10 },
-      toasts: { position: "bottom-left", showProgress: false },
+      toasts: true,
       volume: { min: 0, max: 300, value: null, skip: 5 },
     },
   };

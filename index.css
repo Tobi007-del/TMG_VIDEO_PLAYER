@@ -12,7 +12,7 @@
 
 :root {
   --T_M_G-brand-light-color: hsl(from var(--T_M_G-brand-color) h s calc(l + 40));
-  --T_M_G-brand-accent-color: rgb(244, 143, 177);
+  --T_M_G-brand-accent-color: rgb(from var(--T_M_G-brand-color) calc(r + 18) calc(g + 33) calc(b + 175));
   --max-turn: 0.235turn;
   --loader-size: 75px;
   --loader-width: 4px;

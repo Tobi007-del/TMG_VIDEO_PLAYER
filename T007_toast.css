@@ -185,7 +185,7 @@
   cursor: grab;
 }
 
-.t007-toast:is([data-pointer-type="mouse"], [data-pointer-type="true"]):active{
+.t007-toast:is([data-pointer-type="mouse"], [data-pointer-type="true"]):active {
   cursor: grabbing;
 }
 
@@ -265,11 +265,6 @@
   background: var(--t007-toast-progress-backdrop-background);
 }
 
-.t007-toast:not(.has-icon) .t007-toast-image-wrapper:not(:has(.t007-toast-image)),
-.t007-toast-image-wrapper:not(:has(.t007-toast-image)):has(.t007-toast-icon:empty) {
-  display: none;
-}
-
 .t007-toast-image-wrapper {
   position: relative;
   flex: 0 0 var(--t007-toast-image-width);
@@ -277,6 +272,10 @@
   height: var(--t007-toast-image-height);
   border-radius: var(--t007-toast-image-border-radius);
   overflow: hidden;
+}
+
+.t007-toast-image-wrapper:not(:has(.t007-toast-image), :has(.t007-toast-icon:not(:empty))) {
+  display: none;
 }
 
 .t007-toast:has(.t007-toast-image-wrapper:not(:has(.t007-toast-image))) {
@@ -331,7 +330,7 @@
 }
 
 .t007-toast-cancel-button {
-  display: none;
+  display: flex;
   align-self: start;
   background: none;
   padding: 0;
@@ -345,10 +344,6 @@
 .t007-toast-cancel-button:hover {
   cursor: pointer;
   opacity: 1;
-}
-
-.t007-toast.can-close .t007-toast-cancel-button {
-  display: flex;
 }
 
 @media (max-width: 36rem) {
