@@ -79,8 +79,7 @@ class T_M_G_Video_Controller {
     let proto = Object.getPrototypeOf(this);
     while (proto && proto !== Object.prototype) {
       for (const method of Object.getOwnPropertyNames(proto)) {
-        const descriptor = Object.getOwnPropertyDescriptor(proto, method);
-        if (method !== "constructor" && descriptor && typeof descriptor.value === "function") {
+        if (method !== "constructor" && typeof Object.getOwnPropertyDescriptor(proto, method)?.value === "function") {
           const fn = this[method].bind(this);
           this[method] = (...args) => {
             try {
@@ -1413,10 +1412,11 @@ class T_M_G_Video_Controller {
     });
   }
   async getVideoFrame(time = this.currentTime, monochrome) {
-    if (Math.abs(this.pseudoVideo.currentTime - time) > 0.01) {
-      this.pseudoVideo.currentTime = time; // small tolerance for video time comparison - 10ms
-      await new Promise((res) => this.pseudoVideo.addEventListener("timeupdate", res, { once: true }));
-    }
+    if (Math.abs(this.pseudoVideo.currentTime - time) > 0.01)
+      await new Promise((res) => {
+        this.pseudoVideo.addEventListener("timeupdate", res, { once: true });
+        this.pseudoVideo.currentTime = time; // small tolerance for video time comparison - 0.01(10ms)
+      });
     this.exportCanvas.width = this.video.videoWidth;
     this.exportCanvas.height = this.video.videoHeight;
     this.exportContext.drawImage(this.pseudoVideo, 0, 0, this.exportCanvas.width, this.exportCanvas.height);

@@ -1,6 +1,5 @@
 "use strict";
 
-let _TOAST_ID_COUNTER = 0;
 class T007_Toast {
   #autoCloseInterval;
   #progressInterval;
@@ -8,17 +7,16 @@ class T007_Toast {
   #autoClose;
   #vibrate;
   #isPaused = false;
+  #shouldUnPause;
   #unpause = () => (this.#isPaused = false);
   #pause = () => (this.#isPaused = true);
   #visiblityChange = () => (this.#shouldUnPause = document.visibilityState === "visible");
-  #shouldUnPause;
   constructor(options) {
     this.bindMethods();
     this.opts = { ...options };
-    this.id = this.opts.id || `_t007_toast_${++_TOAST_ID_COUNTER}`;
+    this.id = this.opts.id || uid();
     t007._TOASTS.set(this.id, this);
-    this.toastElement = document.createElement("div");
-    this.toastElement.className = `t007-toast ${this.opts.type}`;
+    this.toastElement = Object.assign(document.createElement("div"), { className: `t007-toast ${this.opts.type}` });
     requestAnimationFrame(() => this.toastElement.classList.add("t007-toast-show"));
     this.update(this.opts);
   }
@@ -26,8 +24,7 @@ class T007_Toast {
     let proto = Object.getPrototypeOf(this);
     while (proto && proto !== Object.prototype) {
       for (const method of Object.getOwnPropertyNames(proto)) {
-        const descriptor = Object.getOwnPropertyDescriptor(proto, method);
-        if (method !== "constructor" && descriptor && typeof descriptor.value === "function") this[method] = this[method].bind(this);
+        if (method !== "constructor" && typeof Object.getOwnPropertyDescriptor(proto, method)?.value === "function") this[method] = this[method].bind(this);
       }
       proto = Object.getPrototypeOf(proto);
     }
@@ -39,12 +36,14 @@ class T007_Toast {
       Object.entries(options).forEach(([key, value]) => (this[key] = value));
     } catch (err) {
       console.error("Toast update failed:", err);
+    } finally {
+      return this.id;
     }
   }
   set rootElement(value) {
     const container = value.querySelector(`.t007-toast-container[data-position="${this.opts.position}"]`);
     container?.style.setProperty("--t007-toast-container-position", value === document.body ? "fixed" : "absolute");
-    container && value.append(container);
+    container && !value.contains(container) && value.append(container);
   }
   set type(value) {
     this.toastElement.classList.remove("info", "success", "error", "warning");
@@ -82,14 +81,15 @@ class T007_Toast {
     } else icon()?.remove();
   }
   set isLoading(value) {
-    const loader = this.toastElement.querySelector(".t007-toast-loader"),
-      loadingIconHTML = `<svg class="no-css-fill" width="24" height="24" viewBox="0 0 16 16" fill="none" style="scale:0.8;"><g fill-rule="evenodd" clip-rule="evenodd"><path fill="grey" d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8"/><path fill="whitesmoke" d="M7.25.75A.75.75 0 0 1 8 0a8 8 0 0 1 8 8 .75.75 0 0 1-1.5 0A6.5 6.5 0 0 0 8 1.5a.75.75 0 0 1-.75-.75"/></g><animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0" to="360" dur="600ms" repeatCount="indefinite"/></svg>`;
+    const loader = () => this.toastElement.querySelector(".t007-toast-loader"),
+      loadingIconHTML = `<svg class="no-css-fill" width="24" height="24" viewBox="0 0 16 16" fill="none" style="scale:0.75;"><g fill-rule="evenodd" clip-rule="evenodd"><path fill="whitesmoke" d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8"/><path fill="gray" d="M7.25.75A.75.75 0 0 1 8 0a8 8 0 0 1 8 8 .75.75 0 0 1-1.5 0A6.5 6.5 0 0 0 8 1.5a.75.75 0 0 1-.75-.75"/></g><animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0" to="360" dur="600ms" repeatCount="indefinite"/></svg>`;
     if (value) {
       this.setUpBodyHTML();
-      this.toastElement.querySelectorAll(".t007-toast-icon:not(.t007-loader)").forEach((i) => i.remove());
-      this.toastElement.querySelector(".t007-toast-image-wrapper").appendChild(loader || Object.assign(document.createElement("span"), { className: "t007-toast-icon t007-toast-loader", innerHTML: loadingIconHTML }));
+      this.toastElement.querySelectorAll(".t007-toast-icon:not(.t007-toast-loader)").forEach((i) => i.remove());
+      this.toastElement.querySelector(".t007-toast-image-wrapper").appendChild(loader() || Object.assign(document.createElement("span"), { className: "t007-toast-icon t007-toast-loader" }));
+      loader().innerHTML = typeof value === "string" ? value : loadingIconHTML;
     } else {
-      loader?.remove();
+      loader()?.remove();
       this.icon = this.opts.icon;
     }
   }
@@ -128,8 +128,7 @@ class T007_Toast {
     const currentContainer = this.toastElement.parentElement;
     const container = this.opts.rootElement.querySelector(`.t007-toast-container[data-position="${value}"]`) || this.createContainer(value);
     container.append(this.toastElement);
-    if (currentContainer == null || currentContainer.hasChildNodes()) return;
-    currentContainer.remove();
+    if (!(currentContainer == null || currentContainer.hasChildNodes())) currentContainer.remove();
   }
   set closeOnClick(value) {
     this.toastElement.onclick = value ? () => this.remove() : null;
@@ -152,8 +151,7 @@ class T007_Toast {
     value ? document.addEventListener("visibilitychange", this.#visiblityChange) : document.removeEventListener("visibilitychange", this.#visiblityChange);
   }
   set renotify(value) {
-    if (!this.opts.tag || !value) return;
-    t007._TOASTS.entries().forEach(([id, toast]) => id !== this.id && (toast.opts.tag ?? 1) === (this.opts.tag ?? 0) && toast.remove("instant"));
+    value && this.opts.tag && t007._TOASTS.entries().forEach(([id, toast]) => id !== this.id && (toast.opts.tag ?? 1) === (this.opts.tag ?? 0) && toast.remove("instant"));
   }
   set vibrate(value) {
     if (!("vibrate" in navigator)) return;
@@ -214,7 +212,7 @@ class T007_Toast {
     else this.toastElement.onanimationend = this.cleanUpToast;
     this.toastElement.classList.remove("t007-toast-show");
     this.onClose?.(timeElapsed);
-    t007._TOASTS.delete(this.id);
+    if (!this.opts.isLoading) t007._TOASTS.delete(this.id);
   }
   updateACV() {
     const setACV = (value) => {
@@ -267,64 +265,46 @@ class T007_Toast {
   cleanUpToast() {
     const container = this.toastElement.parentElement;
     this.toastElement.remove();
-    if (container?.hasChildNodes()) return;
-    container?.remove();
+    if (!container?.hasChildNodes()) container?.remove();
+    this.destroyed = true;
   }
 }
 
 const Toaster = (defOptions = {}) => {
   const defaults = () => ({ ...t007.TOAST_DEFAULT_OPTIONS, ...defOptions });
-  const base = (render, options = {}) => {
-    const toast = new T007_Toast({ ...defaults(), ...options, render });
-    return toast.id;
+  const base = (render, options = {}) => new T007_Toast({ ...defaults(), ...options, render }).id;
+  base.update = (id, options) => {
+    const toast = t007._TOASTS.get(id),
+      allOpts = { ...toast?.opts, ...options };
+    return !!toast && (toast.destroyed ? base(allOpts.render, allOpts) : toast.update(options));
   };
-  base.update = (id, options) => t007._TOASTS.get(id)?.update(options);
   ["info", "success", "warn", "error"].forEach(
     (action) =>
       (base[action] = (renderOrId, options = {}) => {
-        const existingToast = t007._TOASTS.get(renderOrId);
+        options = { ...options, type: action === "warn" ? "warning" : action };
+        const toast = t007._TOASTS.get(renderOrId);
+        if (!toast) return base(renderOrId, options);
         const { autoClose, closeButton, closeOnClick, dragToClose } = defaults();
-        if (existingToast)
-          return existingToast.update({
-            isLoading: false,
-            autoClose,
-            closeButton,
-            closeOnClick,
-            dragToClose,
-            ...options,
-            type: action === "warn" ? "warning" : action,
-          });
-        return base(renderOrId, {
-          ...options,
-          type: action === "warn" ? "warning" : action,
-        });
+        return base.update(renderOrId, { ...(toast.opts.isLoading ? { autoClose, closeButton, closeOnClick, dragToClose } : {}), ...options, isLoading: false });
       })
   );
-  base.loading = (render, options = {}) =>
-    base(render, {
-      ...options,
-      isLoading: true,
-      autoClose: false,
-      closeButton: false,
-      closeOnClick: false,
-      dragToClose: false,
-    });
-  base.promise = function (promise, { pending, success, error, ...options } = {}) {
+  base.loading = (render, options = {}) => base(render, { autoClose: false, closeButton: false, closeOnClick: false, dragToClose: false, ...options, isLoading: options.isLoading || true });
+  base.promise = function (promise = new Promise((res, rej) => setTimeout(Math.round(Math.random()) ? res : rej, 3000)), { pending, success, error } = {}) {
     if (!promise || typeof promise.then !== "function") return console.error("Toast.promise() requires a valid promise");
-    const NFC = (input, type) => (typeof input === "string" ? { body: input, type } : typeof input === "object" ? { ...input, type } : { type });
-    const pendingConfig = NFC(pending || "Loading...");
-    const pendingToastId = base.loading(pendingConfig.render, { ...options, ...pendingConfig });
+    const NFC = (input, type) => (typeof input === "string" ? { render: input, type } : typeof input === "object" ? { ...input, type } : { type });
+    const pendingConfig = NFC(pending);
+    const pendingToastId = base.loading(pendingConfig.render || "Promise pending...", { ...pendingConfig });
     promise.then(
       (response) => {
-        const successConfig = NFC(success || "Completed Successfully", "success");
+        const successConfig = NFC(success || "Promise resolved", "success");
         const { render, bodyHTML } = successConfig;
-        if (typeof render === "function") successConfig.render = (response) => render(response);
+        if (typeof render === "function") successConfig.render = (response) => render(response); // preserving as functions that receive the response
         if (typeof bodyHTML === "function") successConfig.bodyHTML = (response) => bodyHTML(response);
         base.success(pendingToastId, successConfig);
         return response;
       },
       (err) => {
-        const errorConfig = NFC(error || "An error occurred", "error");
+        const errorConfig = NFC(error || "Promise rejected", "error");
         const { render, bodyHTML } = errorConfig;
         if (typeof render === "function") errorConfig.render = (err) => render(err);
         if (typeof bodyHTML === "function") errorConfig.bodyHTML = (err) => bodyHTML(err);
@@ -335,7 +315,7 @@ const Toaster = (defOptions = {}) => {
     return promise;
   };
   base.dismiss = function (id, manner) {
-    return arguments.length === 0 ? t007._TOASTS.values().forEach((toast) => toast.remove()) : t007._TOASTS.get(id)?.remove(manner);
+    return !arguments.length ? t007._TOASTS.values().forEach((toast) => toast.remove()) : t007._TOASTS.get(id)?.remove(manner);
   };
   return base;
 };
@@ -384,6 +364,9 @@ if (typeof window !== "undefined") {
 
 function clamp(min, amount, max) {
   return Math.min(Math.max(amount, min), max);
+}
+function uid(prefix = "t007_toast_") {
+  return `${prefix}${Date.now().toString(36)}_${performance.now().toString(36)}_${Math.random().toString(36)}`;
 }
 // prettier-ignore
 function isSameURL(src1, src2) {
