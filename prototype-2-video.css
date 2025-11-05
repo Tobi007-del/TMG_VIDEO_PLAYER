@@ -164,8 +164,8 @@
   --t007-toast-min-height: calc(var(--t007-toast-unit) * 3.65);
   --t007-toast-image-height: calc(var(--t007-toast-unit) * 3.8);
   --t007-toast-image-width: calc(var(--t007-toast-unit) * 5);
-  --t007-toast-container-margin-left: calc((var(--t007-toast-unit) / 2) + var(--T_M_G-video-current-safe-inset-x));
-  --t007-toast-container-margin-right: calc((var(--t007-toast-unit) / 2) + var(--T_M_G-video-current-safe-inset-x));
+  --t007-toast-container-margin-left: var(--T_M_G-video-current-safe-inset-x);
+  --t007-toast-container-margin-right: var(--T_M_G-video-current-safe-inset-x);
 }
 .T_M_G-video-container .t007-toast-container[data-position^="top"] {
   --t007-toast-container-margin-top: calc((var(--t007-toast-unit) / 2) + var(--T_M_G-video-current-safe-inset-top));
