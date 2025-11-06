@@ -41,9 +41,9 @@
 /* position variables */
 :root,
 .T_M_G-media-container {
-  --T_M_G-video-current-safe-inset-top: 0px;
-  --T_M_G-video-current-safe-inset-bottom: 0px;
-  --T_M_G-video-current-safe-inset-x: 0px;
+  --T_M_G-video-current-safe-inset-top: calc(var(--T_M_G-video-current-unit) / 1.75);
+  --T_M_G-video-current-safe-inset-bottom: calc(var(--T_M_G-video-current-unit) / 1.75);
+  --T_M_G-video-current-safe-inset-x: calc(var(--T_M_G-video-current-unit) / 1.75);
   --T_M_G-video-current-mini-player-x: calc(100% - (var(--T_M_G-video-current-container-width) / 2) - 7.5px);
   --T_M_G-video-current-mini-player-y: calc((var(--T_M_G-video-current-container-height) / 2) + 7.5px);
   --T_M_G-video-current-cue-x: 50%;
@@ -168,10 +168,10 @@
   --t007-toast-container-margin-right: var(--T_M_G-video-current-safe-inset-x);
 }
 .T_M_G-video-container .t007-toast-container[data-position^="top"] {
-  --t007-toast-container-margin-top: calc((var(--t007-toast-unit) / 2) + var(--T_M_G-video-current-safe-inset-top));
+  --t007-toast-container-margin-top: var(--T_M_G-video-current-safe-inset-top);
 }
 .T_M_G-video-container .t007-toast-container[data-position^="bottom"] {
-  --t007-toast-container-margin-bottom: calc((var(--t007-toast-unit) / 2) + var(--T_M_G-video-current-safe-inset-bottom));
+  --t007-toast-container-margin-bottom: var(--T_M_G-video-current-safe-inset-bottom);
 }
 .t007-toast:has(.T_M_G-video-playlist-next-video-preview) {
   --t007-toast-progress-background: var(--T_M_G-video-played-seek-bar-background);
@@ -639,7 +639,6 @@ body:where(:has(.T_M_G-video-floating-player)) {
 }
 .T_M_G-video-container:is(.T_M_G-video-overlay, :has(:focus-visible)) {
   --T_M_G-video-current-safe-inset-bottom: calc(var(--T_M_G-video-current-unit) * 2.25);
-  --T_M_G-video-current-safe-inset-x: calc(var(--T_M_G-video-current-unit) / 1.75);
 }
 .T_M_G-video-container:is(.T_M_G-video-overlay, :has(:focus-visible)):not(:has(.T_M_G-video-bottom-controls-wrapper [data-control-displayed="true"])) {
   --T_M_G-video-current-safe-inset-bottom: calc(var(--T_M_G-video-current-unit) * 1.5);
