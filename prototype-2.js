@@ -1420,12 +1420,13 @@ class T_M_G_Video_Controller {
     this.exportCanvas.width = this.video.videoWidth;
     this.exportCanvas.height = this.video.videoHeight;
     this.exportContext.drawImage(this.pseudoVideo, 0, 0, this.exportCanvas.width, this.exportCanvas.height);
-    monochrome && this.convertToMonoChrome(this.exportCanvas, this.exportContext);
+    monochrome === true && this.convertToMonoChrome(this.exportCanvas, this.exportContext);
     const blob = await new Promise((res) => this.exportCanvas.toBlob(res));
     return { blob, url: URL.createObjectURL(blob) };
   }
   async exportVideoFrame(m) {
     this.notify("capture");
+    m = m === true;
     const t = this.currentTime,
       tTxt = tmg.formatTime(t, "human", true),
       frameToastId = this.toast?.loading(`Capturing video frame ${m ? "in b&w " : ""}at ${tTxt}...`, { image: TMG_VIDEO_ALT_IMG_SRC, tag: `fcga${tTxt}` }),
