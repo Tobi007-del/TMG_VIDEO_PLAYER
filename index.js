@@ -455,6 +455,7 @@ function handleFiles(files) {
         if (!mP) {
           video.addEventListener("tmgready", readyUI, { once: true });
           mP = new tmg.Player({
+            tracks: [],
             playlist,
             settings: {
               captions: {

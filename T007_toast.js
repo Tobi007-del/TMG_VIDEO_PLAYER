@@ -217,7 +217,7 @@ class T007_Toast {
   updateACV() {
     const setACV = (value) => {
       this.#autoClose = this.opts.autoClose === true ? t007.TOAST_DURATIONS[value] : this.opts.autoClose;
-      this.#vibrate = this.opts.vibrate === true ? TOAST_VIBRATIONS[value] : this.opts.vibrate;
+      this.#vibrate = this.opts.vibrate === true ? t007.TOAST_VIBRATIONS[value] : this.opts.vibrate;
     };
     switch (this.opts.type) {
       case "success":

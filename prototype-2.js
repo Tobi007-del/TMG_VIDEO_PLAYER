@@ -11,18 +11,15 @@ class T_M_G_Video_Controller {
     this.bindMethods();
     this.CSSPropsCache = {};
     this.initCSSPropsManager();
-    // merging the video build into the Video Player Instance
     this.video = videoOptions.video;
-    Object.entries(videoOptions).forEach(([k, v]) => (this[k] = v));
-    // adding some info incase user had them burnt into the html
+    Object.entries(videoOptions).forEach(([k, v]) => (this[k] = v)); // merging the video build into the Video Player Instance
     const src = this.src,
       sources = this.sources,
-      tracks = this.tracks;
+      tracks = this.tracks; // adding some info incase user had them burnt into the html
     if (src) videoOptions.src = src;
     if (sources.length) videoOptions.sources = sources;
     if (tracks.length) videoOptions.tracks = tracks;
     this.log(videoOptions);
-    // some general variables
     this.audioSetup = this.loaded = this.locked = this.inFullScreen = this.isScrubbing = this.buffering = this.inFloatingPlayer = this.overTimeline = this.overVolume = this.overBrightness = this.gestureTouchXCheck = this.gestureTouchYCheck = this.gestureWheelXCheck = this.gestureWheelYCheck = this.shouldSetLastVolume = this.shouldSetLastBrightness = this.speedPointerCheck = this.speedCheck = this.skipPersist = false;
     this.parentIntersecting = this.isIntersecting = this.gestureTouchCanCancel = this.canAutoMovePlaylist = true;
     this.skipDuration = this.textTrackIndex = this.playTriggerCounter = 0;
@@ -2450,11 +2447,9 @@ class T_M_G_Video_Controller {
     }
     this.floatingPlayer?.document.head.appendChild(tmg.createEl("style", { textContent: cssText }));
     this.floatingPlayer?.document.body.append(this.videoContainer);
-    if (this.floatingPlayer) {
-      this.floatingPlayer.document.documentElement.id = document.documentElement.id;
-      this.floatingPlayer.document.documentElement.className = document.documentElement.className;
-      document.documentElement.getAttributeNames().forEach((attr) => this.floatingPlayer.document.documentElement.setAttribute(attr, document.documentElement.getAttribute(attr)));
-    }
+    if (this.floatingPlayer) this.floatingPlayer.document.documentElement.id = document.documentElement.id;
+    if (this.floatingPlayer) this.floatingPlayer.document.documentElement.className = document.documentElement.className;
+    this.floatingPlayer && document.documentElement.getAttributeNames().forEach((attr) => this.floatingPlayer.document.documentElement.setAttribute(attr, document.documentElement.getAttribute(attr)));
     tmg.DOMMutationObserver.observe(this.floatingPlayer.document.documentElement, { childList: true, subtree: true });
     this.floatingPlayer?.addEventListener("pagehide", this._handleFloatingPlayerClose);
     this.floatingPlayer?.addEventListener("resize", this._handleMediaParentResize);
@@ -2463,6 +2458,7 @@ class T_M_G_Video_Controller {
   _handleFloatingPlayerClose() {
     if (!this.inFloatingPlayer) return;
     this.inFloatingPlayer = false;
+    this.floatingPlayer = null;
     this.videoContainer.classList.toggle("T_M_G-video-progress-bar", this.settings.time.progressBar ?? this.isMediaMobile);
     this.videoContainer.classList.remove("T_M_G-video-floating-player");
     this.deactivatePseudoMode();
@@ -2546,8 +2542,7 @@ class T_M_G_Video_Controller {
     e.preventDefault();
   }
   _handleDoubleClick(e) {
-    const { clientX: x, target, detail } = e;
-    // this function triggers the forward and backward skip, they then assign the function to the click event, when the trigger is pulled, skipPersist is set to true and the skip is handled by only the click event, if the position of the click changes within the skip interval and when the 'skipPosition' prop is still available, the click event assignment is revoked
+    const { clientX: x, target, detail } = e; // this function triggers the forward and backward skip, they then assign the function to the click event, when the trigger is pulled, skipPersist is set to true and the skip is handled by only the click event, if the position of the click changes within the skip interval and when the 'skipPosition' prop is still available, the click event assignment is revoked
     if (target !== this.DOM.controlsContainer) return;
     const rect = this.videoContainer.getBoundingClientRect();
     let pos = x - rect.left > rect.width * 0.65 ? "right" : x - rect.left < rect.width * 0.35 ? "left" : "center";
@@ -3219,7 +3214,7 @@ class T_M_G_Media_Player {
     this.#build.video = this.#medium;
     await tmg.loadResource(TMG_VIDEO_CSS_SRC);
     await tmg.loadResource(T007_TOAST_JS_SRC, "script", { module: true });
-    this.Controller = new T_M_G_Video_Controller(this.#build);
+    this.Controller = new tmg.Controller(this.#build);
     tmg.Controllers.push(this.Controller);
   }
 }
@@ -4006,6 +4001,7 @@ class T_M_G {
     el.ownerDocument.defaultView.addEventListener("pointercancel", release);
   }
   static Controllers = []; // REFERENCES TO ALL THE DEPLOYED TMG MEDIA CONTROLLERS
+  static Controller = T_M_G_Video_Controller; // THE TMG MEDIA PLAYER CONTROLLER CLASS
   static Notifier = T_M_G_Media_Notifier; // THE TMG MEDIA PLAYER NOTIFIER CLASS
   static Player = T_M_G_Media_Player; // THE TMG MEDIA PLAYER BUILDER CLASS
 }

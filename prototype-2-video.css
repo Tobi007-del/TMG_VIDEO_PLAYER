@@ -592,12 +592,12 @@ body:has(.T_M_G-video-container.T_M_G-video-mini-player) .T_M_G-pseudo-video-con
 }
 body:where(:has(.T_M_G-video-floating-player)) {
   font-family: system-ui, sans-serif;
-  background-color: black;
-  padding: 0;
-  margin: 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 0;
+  margin: 0;
+  background-color: black;
   overflow: hidden;
 }
 .T_M_G-video-container.T_M_G-video-floating-player {
@@ -741,8 +741,8 @@ body:where(:has(.T_M_G-video-floating-player)) {
   min-width: inherit;
   min-height: inherit;
   border-radius: inherit;
-  transition: transform var(--T_M_G-video-settings-view-transition-time) var(--T_M_G-video-bounce-timing);
-  transform-style: preserve-3d;
+  transform-style: inherit;
+  transition: inherit;
   overflow: hidden;
 }
 .T_M_G-video-container-content {
@@ -758,7 +758,6 @@ body:where(:has(.T_M_G-video-floating-player)) {
   z-index: 1;
   background-color: var(--T_M_G-video-settings-background-color);
   transform: rotateY(180deg);
-  transform-style: preserve-3d;
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
   opacity: 0;
