@@ -901,7 +901,7 @@ class T_M_G_Video_Controller {
       bLeftSideControlsWrapperBuild = this.settings.status.ui.bLeftSideControls ? tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-left-side-controls-wrapper-cover" }) : null,
       bRightSideControlsWrapperBuild = this.settings.status.ui.bRightSideControls ? tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-right-side-controls-wrapper-cover" }) : null;
     this.settings.status.ui.notifiers && controlsContainerBuild.prepend(notifiersContainerBuild);
-    controlsContainerBuild.append(topControlsWrapperBuild, bigControlsWrapperBuild, bottomControlsWrapperBuild);
+    controlsContainerBuild.prepend(topControlsWrapperBuild, bigControlsWrapperBuild, bottomControlsWrapperBuild);
     if (this.settings.status.ui.tRightSideControls) {
       const tRightSideControlsWrapper = tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper T_M_G-video-right-side-controls-wrapper", innerHTML: ``.concat(...Array.from(this.settings.controlPanel.top || [], (el) => HTML[el] || "")) }, { dropZone: this.settings.status.ui.draggable });
       tRightSideControlsWrapperBuild.append(tRightSideControlsWrapper);
