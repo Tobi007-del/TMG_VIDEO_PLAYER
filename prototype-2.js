@@ -887,22 +887,21 @@ class T_M_G_Video_Controller {
     this.queryDOM(".T_M_G-video-container-content").prepend(this.video);
   }
   buildControllerStructure() {
-    const HTML = this.getPlayerHTML(),
+    const HTML = this.getPlayerHTML(), // breaking HTML into smaller units to use as building blocks
       spacerIndex = this.settings.controlPanel.bottom?.indexOf?.("spacer"),
       bLeftSideControls = spacerIndex > -1 ? this.settings.controlPanel.bottom?.slice?.(0, spacerIndex) : null,
       bRightSideControls = spacerIndex > -1 ? this.settings.controlPanel.bottom?.slice?.(spacerIndex + 1) : null,
-      // breaking HTML into smaller units to use as building blocks
       controlsContainerBuild = this.queryDOM(".T_M_G-video-controls-container"),
-      notifiersContainerBuild = this.settings.status.ui.notifiers ? tmg.createEl("div", { className: "T_M_G-video-notifiers-container" }) : null,
-      bigControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-big-controls-wrapper" }),
-      topControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-top-controls-wrapper" }),
+      notifiersContainerBuild = this.settings.status.ui.notifiers ? tmg.createEl("div", { className: "T_M_G-video-notifiers-container", innerHTML: ``.concat(HTML.playpausenotifier ?? "", HTML.prevnextnotifier ?? "", HTML.captionsnotifier ?? "", HTML.capturenotifier ?? "", HTML.objectfitnotifier ?? "", HTML.playbackratenotifier ?? "", HTML.volumenotifier ?? "", HTML.brightnessnotifier ?? "", HTML.fwdnotifier ?? "", HTML.bwdnotifier ?? "", HTML.scrubnotifier ?? "", HTML.touchtimelinenotifier ?? "", HTML.touchvolumenotifier ?? "", HTML.touchbrightnessnotifier ?? ""), "data-notify": "" }) : null,
+      bigControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-big-controls-wrapper", innerHTML: ``.concat(HTML.bigprev ?? "", HTML.bigplaypause ?? "", HTML.bignext ?? "") }),
+      topControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-top-controls-wrapper", innerHTML: HTML.videotitle ?? "" }),
       tRightSideControlsWrapperBuild = this.settings.status.ui.tRightSideControls ? tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-right-side-controls-wrapper-cover" }) : null,
       bottomControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-bottom-controls-wrapper" }),
       bSubControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-bottom-sub-controls-wrapper" }),
       bLeftSideControlsWrapperBuild = this.settings.status.ui.bLeftSideControls ? tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-left-side-controls-wrapper-cover" }) : null,
       bRightSideControlsWrapperBuild = this.settings.status.ui.bRightSideControls ? tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-right-side-controls-wrapper-cover" }) : null;
-    controlsContainerBuild.prepend(topControlsWrapperBuild, bigControlsWrapperBuild, bottomControlsWrapperBuild);
-    topControlsWrapperBuild.innerHTML += ``.concat(HTML.videotitle ?? "");
+    this.settings.status.ui.notifiers && controlsContainerBuild.prepend(notifiersContainerBuild);
+    controlsContainerBuild.append(topControlsWrapperBuild, bigControlsWrapperBuild, bottomControlsWrapperBuild);
     if (this.settings.status.ui.tRightSideControls) {
       const tRightSideControlsWrapper = tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper T_M_G-video-right-side-controls-wrapper", innerHTML: ``.concat(...Array.from(this.settings.controlPanel.top || [], (el) => HTML[el] || "")) }, { dropZone: this.settings.status.ui.draggable });
       tRightSideControlsWrapperBuild.append(tRightSideControlsWrapper);
@@ -919,16 +918,9 @@ class T_M_G_Video_Controller {
       bSubControlsWrapperBuild.append(bRightSideControlsWrapperBuild);
     }
     bottomControlsWrapperBuild.append(bSubControlsWrapperBuild);
-    bigControlsWrapperBuild.innerHTML += ``.concat(HTML.bigprev ?? "", HTML.bigplaypause ?? "", HTML.bignext ?? "");
     bSubControlsWrapperBuild.insertAdjacentHTML(this.settings.time.linePosition === "top" ? "beforebegin" : "afterend", HTML.timeline ?? "");
-    controlsContainerBuild.innerHTML += ``.concat(HTML.pictureinpicturewrapper ?? "", HTML.thumbnail ?? "", HTML.videobuffer ?? "", HTML.cueContainer ?? "", HTML.expandminiplayer ?? "", HTML.removeminiplayer ?? "");
-    if (this.settings.status.ui.notifiers) {
-      notifiersContainerBuild.setAttribute("data-notify", "");
-      notifiersContainerBuild.innerHTML += ``.concat(HTML.playpausenotifier ?? "", HTML.prevnextnotifier ?? "", HTML.captionsnotifier ?? "", HTML.capturenotifier ?? "", HTML.objectfitnotifier ?? "", HTML.playbackratenotifier ?? "", HTML.volumenotifier ?? "", HTML.brightnessnotifier ?? "", HTML.fwdnotifier ?? "", HTML.bwdnotifier ?? "", HTML.scrubnotifier ?? "", HTML.touchtimelinenotifier ?? "", HTML.touchvolumenotifier ?? "", HTML.touchbrightnessnotifier ?? "");
-      controlsContainerBuild.append(notifiersContainerBuild);
-    }
-    // running some pseudo build
-    this.pseudoVideoContainer.insertAdjacentHTML("beforeend", ``.concat(HTML.pictureinpicturewrapper ?? ""));
+    controlsContainerBuild.insertAdjacentHTML("afterbegin", ``.concat(HTML.expandminiplayer ?? "", HTML.removeminiplayer ?? "", HTML.pictureinpicturewrapper ?? "", HTML.thumbnail ?? "", HTML.videobuffer ?? "", HTML.cueContainer ?? ""));
+    this.pseudoVideoContainer.insertAdjacentHTML("beforeend", ``.concat(HTML.pictureinpicturewrapper ?? "")); // running some pseudo build
   }
   queryDOM(query, isPseudo = false, all = false) {
     return (isPseudo ? this.pseudoVideoContainer : this.videoContainer)[all ? "querySelectorAll" : "querySelector"](query);
@@ -1419,7 +1411,7 @@ class T_M_G_Video_Controller {
     this.exportContext.drawImage(this.pseudoVideo, 0, 0, this.exportCanvas.width, this.exportCanvas.height);
     monochrome === true && this.convertToMonoChrome(this.exportCanvas, this.exportContext);
     const blob = await new Promise((res) => this.exportCanvas.toBlob(res));
-    return { blob, url: URL.createObjectURL(blob) };
+    return { blob, url: blob && URL.createObjectURL(blob) };
   }
   async exportVideoFrame(m) {
     this.notify("capture");
@@ -1428,7 +1420,7 @@ class T_M_G_Video_Controller {
       tTxt = tmg.formatTime(t, "human", true),
       frameToastId = this.toast?.loading(`Capturing video frame ${m ? "in b&w " : ""}at ${tTxt}...`, { image: TMG_VIDEO_ALT_IMG_SRC, tag: `fcga${tTxt}` }),
       frame = await this.getVideoFrame(t, m);
-    frame?.url ? this.toast?.success(frameToastId, { render: `Captured video frame ${m ? "in b&w " : ""}at ${tTxt}`, image: frame.url, tag: `fcda${tTxt}`, onClose: () => URL.revokeObjectURL(frame.url) }) : this.toast?.dismiss(frameToastId, "instant");
+    frame?.url ? this.toast?.success(frameToastId, { render: `Captured video frame ${m ? "in b&w " : ""}at ${tTxt}`, image: frame.url, onClose: () => URL.revokeObjectURL(frame.url) }) : this.toast?.error(frameToastId, { render: `Failed video frame capture ${m ? "in b&w " : ""}at ${tTxt}` });
     frame?.url && tmg.createEl("a", { href: frame.url, download: `${this.media?.title ?? "Video"}_${m ? `black&white_` : ""}at_${tTxt}.png`.replace(/\s|\/|\"|\:|\*|\?|\<|\>/g, "_") })?.click?.(); // system filename safe
   }
   convertToMonoChrome(canvas, context) {
