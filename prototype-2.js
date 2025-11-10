@@ -110,7 +110,7 @@ class T_M_G_Video_Controller {
   fire = (eventName, detail = null, el = this.video, bubbles = true, cancellable = true) => el?.dispatchEvent(new CustomEvent(eventName, { detail, bubbles, cancellable }));
   notify = (event) => this.settings.notifiers && this.fire(event, null, this.DOM.notifiersContainer);
   get toast() {
-    this._toast ??= t007.toaster({ rootElement: this.videoContainer, position: "bottom-left", hideProgressBar: true });
+    this._toast ??= t007.toaster({ maxToasts: 7, rootElement: this.videoContainer, position: "bottom-left", hideProgressBar: true, animation: "slide-up" });
     return this.settings.toasts ? this._toast : null;
   }
   throttle(key, fn, delay = 30, strict = true) {
@@ -1578,7 +1578,7 @@ class T_M_G_Video_Controller {
         <h2>Next Video in <span class="T_M_G-video-playlist-next-video-countdown">${count}</span></h2>
         ${v.media.title ? `<p class="T_M_G-video-playlist-next-video-title">${v.media.title}</p>` : ""}
       </span>`,
-      onTimeUpdate: (time) => this.throttle("nextVideoCountdown", () => (this.queryDOM(".T_M_G-video-playlist-next-video-countdown").textContent = Math.round((count * 1000 - time) / 1000)), 500),
+      onTimeUpdate: (time) => this.throttle("nextVideoCountdown", () => (this.queryDOM(".T_M_G-video-playlist-next-video-countdown").textContent = Math.max(1, Math.round((count * 1000 - time) / 1000))), 500),
       onClose: (timeElapsed) => timeElapsed && cleanUp(true) && this.nextVideo(),
     });
     const cleanUpWhenNeeded = () => !this.video.ended && cleanUp(),
