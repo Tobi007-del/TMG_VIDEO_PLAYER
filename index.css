@@ -72,7 +72,19 @@
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
-  scrollbar-color: #f0ad5f rgb(20, 20, 20);
+  scrollbar-color: var(--T_M_G-brand-light-color) rgb(20, 20, 20);
+}
+
+*:focus {
+  outline-color: var(--T_M_G-brand-color);
+  outline-style: dashed;
+  outline-offset: 0.1rem;
+  outline-width: 0;
+}
+
+*:focus-visible {
+  outline-width: 0.15rem;
+  transition: none!important;
 }
 
 html {
@@ -649,6 +661,7 @@ body:has(#video.stall) #clear-button {
   width: 0;
   height: 0;
   opacity: 0;
+  visibility: hidden;
 }
 
 .content-line:has([data-caption-state="waiting"], [data-caption-state="loading"]) .captions-btn::before {

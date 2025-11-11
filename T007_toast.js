@@ -14,7 +14,7 @@ class T007_Toast {
     this.opts = { ...options };
     this.id = this.opts.id || uid();
     t007.toasts.set(this.id, this);
-    this.toastElement = Object.assign(document.createElement("div"), { className: `t007-toast ${this.opts.type}`, "data-animation": this.animation });
+    this.toastElement = Object.assign(document.createElement("div"), { className: "t007-toast" });
     requestAnimationFrame(() => this.toastElement.classList.add("t007-toast-show"));
     this.update(this.opts);
   }
