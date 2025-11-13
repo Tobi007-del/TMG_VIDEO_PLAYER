@@ -292,7 +292,7 @@
 }
 
 .t007-toast.progress::before {
-  width: calc(100% - var(--progress) * 100%);
+  width: calc(var(--progress, 0) * 100%);
   background: var(--t007-toast-progress-background);
 }
 

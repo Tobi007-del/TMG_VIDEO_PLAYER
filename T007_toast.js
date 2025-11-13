@@ -14,12 +14,12 @@ class T007_Toast {
     this.opts = { ...options };
     this.id = this.opts.id || uid();
     t007.toasts.set(this.id, this);
-    this.toastElement = Object.assign(document.createElement("div"), { className: "t007-toast" });
+    this.toastElement = Object.assign(document.createElement("div"), { className: "t007-toast", id: this.id });
     requestAnimationFrame(() => this.toastElement.classList.add("t007-toast-show"));
     this.update(this.opts);
   }
   bindMethods() {
-    let proto = Object.getPrototypeOf(this);
+    let proto = this;
     while (proto && proto !== Object.prototype) {
       for (const method of Object.getOwnPropertyNames(proto)) {
         if (method !== "constructor" && typeof Object.getOwnPropertyDescriptor(proto, method)?.value === "function") this[method] = this[method].bind(this);
@@ -39,7 +39,7 @@ class T007_Toast {
     }
   }
   set rootElement(value) {
-    const container = value.querySelector(`.t007-toast-container[data-position="${this.opts.position}"]`);
+    const container = value?.querySelector(`.t007-toast-container[data-position="${this.opts.position}"]`);
     container?.style.setProperty("--t007-toast-container-position", value === document.body ? "fixed" : "absolute");
     container && !value.contains(container) && value.append(container);
   }
@@ -124,8 +124,6 @@ class T007_Toast {
     return this.opts.autoClose === true ? t007.TOAST_DURATIONS[this.opts.type] || t007.TOAST_DURATIONS.info : this.opts.autoClose;
   }
   set autoClose(value) {
-    if (!value) this.toastElement.classList.remove("progress");
-    else this.hideProgressBar = this.opts.hideProgressBar;
     cancelAnimationFrame(this.#autoCloseInterval);
     this.#timeVisible = 0;
     let lastTime;
@@ -150,7 +148,7 @@ class T007_Toast {
   }
   set position(value) {
     const currentContainer = this.toastElement.parentElement;
-    const container = this.opts.rootElement.querySelector(`.t007-toast-container[data-position="${value}"]`) || this._createContainer(value);
+    const container = this.opts.rootElement?.querySelector(`.t007-toast-container[data-position="${value}"]`) || this._createContainer(value);
     container[this.opts.newestOnTop ? "prepend" : "append"](this.toastElement);
     if (!(currentContainer == null || currentContainer.hasChildNodes())) currentContainer.remove();
   }
@@ -158,21 +156,26 @@ class T007_Toast {
     this.toastElement.onclick = value ? () => this._remove() : null;
   }
   set hideProgressBar(value) {
-    this.toastElement.classList.toggle("progress", !(this.autoClose === false || value));
-    this.toastElement.style.setProperty("--progress", 1);
+    this.toastElement.classList.toggle("progress", !value);
+    this.nprogress = 0;
     cancelAnimationFrame(this.#progressInterval);
     const loop = () => {
-      if (!this.#isPaused) this.toastElement.style.setProperty("--progress", this.#timeVisible / this.autoClose);
+      if (!this.#isPaused && typeof this.autoClose === "number") this.nprogress = 1 - this.#timeVisible / this.autoClose;
       this.#progressInterval = requestAnimationFrame(loop);
     };
     if (!value) this.#progressInterval = requestAnimationFrame(loop);
+  }
+  get nprogress() {
+    return Number(this.toastElement.style.getProperty("--progress"));
+  }
+  set nprogress(value) {
+    this.toastElement.style.setProperty("--progress", value);
   }
   set pauseOnHover(value) {
     this.toastElement.onmouseover = value ? this.#pause : null;
     this.toastElement.onmouseleave = value ? this.#unpause : null;
   }
   set pauseOnFocusLoss(value) {
-    document.removeEventListener("visibilitychange", this.#visiblityChange);
     value ? document.addEventListener("visibilitychange", this.#visiblityChange) : document.removeEventListener("visibilitychange", this.#visiblityChange);
   }
   set renotify(value) {
@@ -254,7 +257,7 @@ class T007_Toast {
     container.classList.add("t007-toast-container");
     container.style.setProperty("--t007-toast-container-position", this.opts.rootElement === document.body ? "fixed" : "absolute");
     container.dataset.position = position;
-    this.opts.rootElement.append(container);
+    this.opts.rootElement?.append(container);
     return container;
   }
   _setUpBodyHTML() {
@@ -315,8 +318,8 @@ const Toaster = (defOptions = {}) => {
     );
     return promise;
   };
-  base.dismiss = function (id, manner) {
-    return !arguments.length ? t007.toasts.values().forEach((toast) => toast._remove()) : t007.toasts.get(id)?._remove(manner);
+  base.dismiss = function (id, manner, timeElapsed) {
+    return !arguments.length ? t007.toasts.values().forEach((toast) => toast._remove()) : t007.toasts.get(id)?._remove(manner, timeElapsed);
   };
   return base;
 };

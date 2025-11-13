@@ -99,6 +99,9 @@ installButton.addEventListener("click", async () => {
 });
 clearBtn.addEventListener("click", clearFiles);
 
+video.addEventListener("tmgready", readyUI);
+video.addEventListener("loadedmetadata", dispatchPlayerReadyToast);
+
 [uploadVideosInput, uploadFoldersInput].forEach((input) => {
   input.addEventListener("click", () => setTimeout(initUI, 1000));
   input.addEventListener("cancel", defaultUI);
@@ -453,26 +456,16 @@ function handleFiles(files) {
           thumbnails[i].playlistItem = item;
         });
         if (!mP) {
-          video.addEventListener("tmgready", readyUI, { once: true });
           mP = new tmg.Player({
             tracks: [],
             playlist,
-            settings: {
-              captions: {
-                font: {
-                  size: { value: 200 },
-                  weight: { value: "700" },
-                },
-                background: {
-                  opacity: { value: 0 },
-                },
-                characterEdgeStyle: { value: "drop-shadow" },
-              },
-            },
+            "settings.captions.font.size.value": 200,
+            "settings.captions.font.weight.value": 700,
+            "settings.captions.background.opacity.value": 0,
+            "settings.captions.characterEdgeStyle.value": "drop-shadow",
           });
           mP.build.playlist[0].settings.time.start = 2;
           mP.attach(video);
-          video.addEventListener("loadedmetadata", dispatchPlayerReadyToast, { once: true });
           video.ontimeupdate = () => {
             mP.Controller.throttle(
               "progressSetting",

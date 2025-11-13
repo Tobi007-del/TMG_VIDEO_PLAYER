@@ -36,7 +36,7 @@ class T_M_G_Video_Controller {
     this.gestureWheelTimeout = 2000;
     this.fastPlayThreshold = 1000;
     this.miniPlayerMinWindowWidth = 240;
-    this.floatingPlayerOptions = { width: 378, height: 199, disallowReturnToOpener: false, preferInitialWindowPlacement: false };
+    this.floatingPlayerOptions = { width: 280, height: 150, disallowReturnToOpener: false, preferInitialWindowPlacement: false };
     this.exportCanvas = tmg.createEl("canvas");
     this.exportContext = this.exportCanvas.getContext("2d", { willReadFrequently: true });
     this.mutatingDOM = true;
@@ -71,17 +71,21 @@ class T_M_G_Video_Controller {
     value?.length && tmg.addTracks(value, this.video);
   }
   bindMethods() {
-    let proto = Object.getPrototypeOf(this);
+    let proto = this;
     while (proto && proto !== Object.prototype) {
       for (const method of Object.getOwnPropertyNames(proto)) {
         if (method !== "constructor" && typeof Object.getOwnPropertyDescriptor(proto, method)?.value === "function") {
           const fn = this[method].bind(this);
           this[method] = (...args) => {
             try {
-              const result = fn(...args);
-              return result instanceof Promise ? result.catch((e) => this.log(e, "error", "swallow")) : result;
+              const result = fn(...args),
+                onError = (e) => {
+                  this.log(e, "error", "swallow");
+                  method !== "togglePlay" && this.toast?.("Something went wrong", { tag: "T_M_G-stwr" });
+                };
+              return result instanceof Promise ? result.catch(onError) : result;
             } catch (e) {
-              this.log(e, "error", "swallow");
+              onError(e);
             }
           };
         }
@@ -93,12 +97,9 @@ class T_M_G_Video_Controller {
     if (!this.debug) return;
     switch (type) {
       case "error":
-        const body = (action === "swallow" ? false : (typeof mssg === "string" && mssg) || mssg?.message) || "Something went wrong";
-        action === "swallow" ? this.toast?.(body, { tag: body }) : this.toast?.error(body, { tag: body });
         action === "swallow" ? console.warn(`TMG swallowed a Controller error:`, mssg) : console.error(`TMG Controller error:`, mssg);
         break;
       case "warn":
-        this.toast?.warn(mssg, { tag: mssg });
         console.warn(`TMG Controller warning:`, mssg);
         break;
       default:
@@ -154,7 +155,7 @@ class T_M_G_Video_Controller {
         this.videoContainer.classList.remove("T_M_G-video-floating-player");
         if (tmg.isInDOM(this.video)) this.pseudoVideoContainer.parentElement?.replaceChild(this.video, this.pseudoVideoContainer);
         this.videoContainer.remove();
-        this.video = tmg.cloneVideo(this.video);
+        this.video = tmg.cloneVideo(this.video); // had to do this to get rid of stateful issues and freezing
         this.video.tmgcontrols = false;
         this.video.tmgPlayer = null;
       });
@@ -216,9 +217,7 @@ class T_M_G_Video_Controller {
       },
     });
   }
-  initSettingsManager() {
-    // this.log("TMG Video Settings Manager started")
-  }
+  initSettingsManager() {}
   getPlayerHTML() {
     const { ui } = this.settings.status,
       keyShortcuts = this.fetchKeyShortcutsForDisplay();
@@ -1204,7 +1203,7 @@ class T_M_G_Video_Controller {
     this.DOM.miniPlayerRemoveBtn?.addEventListener("click", this.removeMiniPlayer);
     this.DOM.fullScreenOrientationBtn?.addEventListener("click", () => this.changeScreenOrientation());
     this.DOM.fullScreenLockBtn?.addEventListener("click", this.lock);
-    tmg.onSafeClicks(this.DOM.captureBtn, this.exportVideoFrame, () => this.exportVideoFrame(true));
+    tmg.onSafeClicks(this.DOM.captureBtn, this.exportVideoFrame, () => this.exportVideoFrame("monochrome"));
     this.DOM.bigPrevBtn?.addEventListener("click", this.previousVideo);
     this.DOM.prevBtn?.addEventListener("click", this.previousVideo);
     this.DOM.bigNextBtn?.addEventListener("click", this.nextVideo);
@@ -1350,28 +1349,25 @@ class T_M_G_Video_Controller {
     tmg.intersectionObserver.unobserve(this.video);
   }
   _handleResize(target) {
-    const isPseudo = target.className.includes("T_M_G-pseudo");
-    if (target.classList.contains("T_M_G-media-container")) this._handleMediaParentResize(isPseudo);
+    if (target.classList.contains("T_M_G-media-container")) this._handleMediaParentResize(target.className.includes("T_M_G-pseudo"));
     else if (target.classList.contains("T_M_G-video-side-controls-wrapper")) this._handleSideControlsWrapperResize(target);
   }
   _handleMediaParentResize(isPseudo = false) {
     const getTier = (container) => {
       const { offsetWidth: w, offsetHeight: h } = container;
-      return { w, h, tier: h <= 130 ? "xxxxx" : w <= 280 ? "xxxx" : w <= 380 ? "xxx" : w <= 480 ? "xx" : w <= 630 ? "x" : "", repeat: w < 1 && h < 1 };
+      return { w, h, tier: h <= 130 ? "xxxxx" : w <= 280 ? "xxxx" : w <= 380 ? "xxx" : w <= 480 ? "xx" : w <= 630 ? "x" : "" };
     };
     if (!isPseudo) {
-      const { w, h, tier, repeat } = getTier(this.videoContainer);
+      const { w, h, tier } = getTier(this.videoContainer);
       this.settings.css.currentContainerWidth = `${w}px`;
       this.settings.css.currentContainerHeight = `${h}px`;
       this.videoContainer.dataset.sizeTier = tier;
       this.syncThumbnailDimensions();
       this.resetCueCharWidth();
       this.previewCaptions("");
-      repeat && requestAnimationFrame(this._handleMediaParentResize);
     } else {
-      const { tier, repeat } = getTier(this.pseudoVideoContainer);
+      const { tier } = getTier(this.pseudoVideoContainer);
       this.pseudoVideoContainer.dataset.sizeTier = tier;
-      repeat && requestAnimationFrame(() => this._handleMediaParentResize(true));
     }
   }
   _handleSideControlsWrapperResize = (wrapper) => this.updateSideControls({ target: wrapper });
@@ -1410,27 +1406,25 @@ class T_M_G_Video_Controller {
       svg.addEventListener("mouseover", () => (svg.parentElement.title = title));
     });
   }
-  async getVideoFrame(time = this.currentTime, monochrome, raw = false) {
-    if (Math.abs(this.pseudoVideo.currentTime - time) > 0.01)
-      await new Promise((res) => {
-        this.pseudoVideo.addEventListener("timeupdate", res, { once: true });
-        this.pseudoVideo.currentTime = time; // small tolerance for video time comparison - 0.01(10ms)
-      });
+  async getVideoFrame(time = this.currentTime, display, raw = false) {
+    if (Math.abs(this.pseudoVideo.currentTime - time) > 0.01) this.frameReadyPromise ??= new Promise((res) => this.pseudoVideo.addEventListener("timeupdate", () => res(null), { once: true }));
+    this.pseudoVideo.currentTime = time; // small tolerance for video time comparison - 0.01(10ms)
+    this.frameReadyPromise = await this.frameReadyPromise;
     this.exportCanvas.width = this.video.videoWidth;
     this.exportCanvas.height = this.video.videoHeight;
     this.exportContext.drawImage(this.pseudoVideo, 0, 0, this.exportCanvas.width, this.exportCanvas.height);
-    monochrome === true && this.convertToMonoChrome(this.exportCanvas, this.exportContext);
+    display === "monochrome" && this.convertToMonoChrome(this.exportCanvas, this.exportContext);
     if (raw === true) return { canvas: this.exportCanvas, context: this.exportContext };
     const blob = await new Promise((res) => this.exportCanvas.toBlob(res));
     return { blob, url: blob && URL.createObjectURL(blob) };
   }
-  async exportVideoFrame(m) {
+  async exportVideoFrame(display) {
     this.notify("capture");
-    m = m === true;
-    const t = this.currentTime,
+    const m = display === "monochrome",
+      t = this.currentTime,
       tTxt = tmg.formatTime(t, "human", true),
-      frameToastId = this.toast?.loading(`Capturing video frame ${m ? "in b&w " : ""}at ${tTxt}...`, { image: TMG_VIDEO_ALT_IMG_SRC, tag: `fcga${tTxt}` }),
-      frame = await this.getVideoFrame(t, m);
+      frameToastId = this.toast?.loading(`Capturing video frame ${m ? "in b&w " : ""}at ${tTxt}...`, { image: TMG_VIDEO_ALT_IMG_SRC, tag: `T_M_G-fcpa${tTxt}` }),
+      frame = await this.getVideoFrame(t, display);
     frame?.url ? this.toast?.success(frameToastId, { render: `Captured video frame ${m ? "in b&w " : ""}at ${tTxt}`, image: frame.url, onClose: () => URL.revokeObjectURL(frame.url) }) : this.toast?.error(frameToastId, { render: `Failed video frame capture ${m ? "in b&w " : ""}at ${tTxt}` });
     frame?.url && tmg.createEl("a", { href: frame.url, download: `${this.media?.title ?? "Video"}_${m ? `black&white_` : ""}at_${tTxt}.png`.replace(/\s|\/|\"|\:|\*|\?|\<|\>/g, "_") })?.click?.(); // system filename safe
   }
@@ -1444,9 +1438,10 @@ class T_M_G_Video_Controller {
     }
     canvas.getContext("2d").putImageData(frame, 0, 0);
   }
-  async getMediaBrandColor(time = 5, usePoster = true, poster = this.video.poster || this.media.artwork[0]?.src) {
-    const c = await tmg.getDominantColor(usePoster && poster ? poster : (await this.getVideoFrame(time, false, true)).canvas);
-    return !c || c === "rgb(0,0,0)" || c === "#000000" ? null : c;
+  async getMediaBrandColor(time = 5, usePoster = true, poster = this.video.poster || this.media?.artwork?.[0]?.src) {
+    const clr = await tmg.getDominantColor(usePoster && poster ? poster : (await this.getVideoFrame(time, "", true)).canvas);
+    // console.log(clr);
+    return clr === "rgb(0,0,0)" || clr === "#000000" ? null : clr;
   }
   syncMediaBrandColor = async () => (this.settings.css.brandColor = (await this.getMediaBrandColor()) ?? this.CSSPropsCache.brandColor);
   deactivate(message) {
@@ -1460,12 +1455,11 @@ class T_M_G_Video_Controller {
     this.videoContainer.classList.remove("T_M_G-video-inactive");
   }
   disable() {
+    this.leaveSettingsView();
     this.videoContainer.classList.add("T_M_G-video-disabled");
     this.togglePlay(false);
     this.showOverlay();
     this.cancelAllLoops();
-    this.leaveSettingsView();
-    this.DOM.videoSettings.setAttribute("inert", "");
     this.DOM.videoContainerContent.setAttribute("inert", "");
     this.removeKeyEventListeners();
     this.disabled = true;
@@ -1475,7 +1469,6 @@ class T_M_G_Video_Controller {
     if (!this.disabled) return;
     this.disabled = false;
     this.videoContainer.classList.remove("T_M_G-video-disabled");
-    this.DOM.videoSettings.removeAttribute("inert");
     this.DOM.videoContainerContent.removeAttribute("inert");
     this.setKeyEventListeners();
   }
@@ -1618,10 +1611,8 @@ class T_M_G_Video_Controller {
     set("pause", () => this.togglePlay(false));
     set("seekbackward", () => this.skip(-this.settings.time.skip));
     set("seekforward", () => this.skip(this.settings.time.skip));
-    set("previoustrack", null);
-    set("nexttrack", null);
-    if (this.playlist && this.currentPlaylistIndex > 0) set("previoustrack", this.previousVideo);
-    if (this.playlist && this.currentPlaylistIndex < this.playlist?.length - 1) set("nexttrack", this.nextVideo);
+    set("previoustrack", this.playlist && this.currentPlaylistIndex > 0 ? this.previousVideo : null);
+    set("nexttrack", this.playlist && this.currentPlaylistIndex < this.playlist?.length - 1 ? this.nextVideo : null);
   }
   syncAspectRatio() {
     this.aspectRatio = this.video.videoWidth && this.video.videoHeight ? this.video.videoWidth / this.video.videoHeight : 16 / 9;
@@ -1696,13 +1687,7 @@ class T_M_G_Video_Controller {
       }
     }
   }
-  async togglePlay(bool) {
-    try {
-      await this.video[(typeof bool === "boolean" ? bool : this.video.paused) ? "play" : "pause"]();
-    } catch (e) {
-      this.video.error ? this._handleLoadedError(e) : this.log(e, "error", "swallow");
-    }
-  }
+  togglePlay = async (bool) => await this.video[(typeof bool === "boolean" ? bool : this.video.paused) ? "play" : "pause"]();
   replay() {
     this.moveVideoTime({ to: "start" });
     this.video.play();
@@ -1720,16 +1705,17 @@ class T_M_G_Video_Controller {
   _handlePlay() {
     tmg.connectAudio(this.audioGainNode);
     for (const media of document.querySelectorAll("video, audio")) {
-      if (media !== this.video && !media.paused) media.pause();
+      media !== this.video && !media.muted && !media.paused && media.pause();
     }
     this.videoContainer.classList.remove("T_M_G-video-paused");
     this.delayOverlay();
     this.setMediaSession();
+    this.leaveSettingsView();
     this.toggleMiniPlayerMode();
     this.video.requestVideoFrameCallback?.(this._handleFrameUpdate);
     if (!this.loaded || !this.video.currentSrc) return;
     this.loaded = true;
-    this.reactivate();
+    !this.video.error && this.reactivate();
   }
   _handlePause() {
     this.videoContainer.classList.add("T_M_G-video-paused");
@@ -1739,11 +1725,11 @@ class T_M_G_Video_Controller {
   get duration() {
     return tmg.parseNumber(this.video.duration);
   }
-  set currentTime(value) {
-    this.video.currentTime = tmg.parseNumber(Math.max(0, value));
-  }
   get currentTime() {
     return tmg.parseNumber(this.video.currentTime);
+  }
+  set currentTime(value) {
+    this.video.currentTime = tmg.parseNumber(Math.max(0, value));
   }
   toTimeText(t = this.video.currentTime, useMode = false, showMs = false) {
     return !useMode || this.settings.time.mode !== "remaining" ? tmg.formatTime(t, this.settings.time.format, showMs) : `${tmg.formatTime(this.video.duration - t, this.settings.time.format, showMs, true)}`;
@@ -1911,11 +1897,11 @@ class T_M_G_Video_Controller {
   moveVideoFrame(dir = "forwards") {
     this.video.paused && this.throttle("frameStepping", () => (this.currentTime = tmg.clamp(0, Math.round(this.currentTime * this.pfps) + (dir === "backwards" ? -1 : 1), Math.floor(this.duration * this.pfps)) / this.pfps), this.pframeDelay);
   }
-  set playbackRate(value) {
-    this.video.playbackRate = this.video.defaultPlaybackRate = this.settings.playbackRate.value = tmg.clamp(this.settings.playbackRate.min, value, this.settings.playbackRate.max);
-  }
   get playbackRate() {
     return this.video.playbackRate ?? 1;
+  }
+  set playbackRate(value) {
+    this.video.playbackRate = this.video.defaultPlaybackRate = this.settings.playbackRate.value = tmg.clamp(this.settings.playbackRate.min, value, this.settings.playbackRate.max);
   }
   updatePlaybackRateSettings() {
     this.playbackRate = this.settings.playbackRate.value ?? this.video.playbackRate;
@@ -2074,7 +2060,7 @@ class T_M_G_Video_Controller {
     const i = Math.max(0, numeric ? steps.reduce((cIdx, s, idx) => (Math.abs(s - curr) < Math.abs(steps[cIdx] - curr) ? idx : cIdx), 0) : steps.indexOf(curr));
     const next = steps[(i + 1) % steps.length];
     this.settings.css[cProp] = next;
-    tmg.assignNestedConfig(this.settings, prop, next);
+    tmg.assignDottedConfig(this.settings, prop, next);
     this.resetCueCharWidth();
     this.previewCaptions();
   }
@@ -2107,14 +2093,14 @@ class T_M_G_Video_Controller {
     this.DOM.cueContainer?.removeEventListener("pointermove", this._handleCueDragging);
     this.DOM.cueContainer?.removeEventListener("pointerup", this._handleCueDragEnd);
   }
+  get volume() {
+    return Math.round((this.audioGainNode?.gain?.value ?? 1) * 100);
+  }
   set volume(value) {
     const v = tmg.clamp(this.shouldMute ? 0 : this.settings.volume.min, value, this.settings.volume.max) / 100;
     if (this.audioGainNode) this.audioGainNode.gain.value = this.settings.volume.value = v;
     this.video.muted = this.video.defaultMuted = this.settings.volume.muted = v === 0;
     this._handleVolumeChange();
-  }
-  get volume() {
-    return Math.round((this.audioGainNode?.gain?.value ?? 1) * 100);
   }
   setUpAudio() {
     if (this.audioSetup) return;
@@ -2140,7 +2126,7 @@ class T_M_G_Video_Controller {
     this.shouldMute = this.shouldSetLastVolume = this.video.muted;
     this.volume = this.shouldMute ? 0 : this.lastVolume;
   }
-  toggleMute(auto) {
+  toggleMute(option) {
     let volume;
     if (this.volume) {
       this.lastVolume = this.volume;
@@ -2148,7 +2134,7 @@ class T_M_G_Video_Controller {
       volume = 0;
     } else {
       volume = this.shouldSetLastVolume ? this.lastVolume : this.volume;
-      if (volume === 0) volume = auto === "auto" ? this.settings.volume.skip : this.sliderVolume;
+      if (volume === 0) volume = option === "auto" ? this.settings.volume.skip : this.sliderVolume;
       this.shouldSetLastVolume = false;
     }
     this.shouldMute = volume === 0;
@@ -2247,14 +2233,14 @@ class T_M_G_Video_Controller {
     this.lastBrightness = tmg.clamp(min, value, max);
     this.brightness = this.lastBrightness;
   }
+  get brightness() {
+    return Number(this.settings.css.brightness ?? 100);
+  }
   set brightness(value) {
     this.settings.css.brightness = this.settings.brightness.value = tmg.clamp(this.shouldDark ? 0 : this.settings.brightness.min, value, this.settings.brightness.max);
     this._handleBrightnessChange();
   }
-  get brightness() {
-    return Number(this.settings.css.brightness ?? 100);
-  }
-  toggleDark(auto) {
+  toggleDark(option) {
     let brightness;
     if (this.brightness) {
       this.lastBrightness = this.brightness;
@@ -2262,7 +2248,7 @@ class T_M_G_Video_Controller {
       brightness = 0;
     } else {
       brightness = this.shouldSetLastBrightness ? this.lastBrightness : this.brightness;
-      if (brightness === 0) brightness = auto === "auto" ? this.settings.brightness.skip : this.sliderBrightness;
+      if (brightness === 0) brightness = option === "auto" ? this.settings.brightness.skip : this.sliderBrightness;
       this.shouldSetLastBrightness = false;
     }
     this.shouldDark = brightness === 0;
@@ -2456,6 +2442,7 @@ class T_M_G_Video_Controller {
     this.floatingPlayer?.addEventListener("pagehide", this._handleFloatingPlayerClose);
     this.floatingPlayer?.addEventListener("resize", this._handleMediaParentResize);
     this.setKeyEventListeners("floating");
+    this._handleMediaParentResize();
   }
   _handleFloatingPlayerClose() {
     if (!this.inFloatingPlayer) return;
@@ -2967,7 +2954,7 @@ class T_M_G_Video_Controller {
     else if (action) this.showOverlay();
     switch (action) {
       case "capture":
-        this.exportVideoFrame(e.altKey);
+        this.exportVideoFrame(e.altKey ? "monochrome" : undefined);
         break;
       case "timeMode":
         this.toggleTimeMode();
@@ -3124,7 +3111,7 @@ class T_M_G_Media_Player {
   }
   configure(customOptions) {
     if (!this.queryBuild() || !tmg.isObj(customOptions)) return;
-    this.#build = tmg.mergeObjs(this.#build, customOptions);
+    this.#build = tmg.mergeObjs(tmg.parseDottedObj(this.#build), tmg.parseDottedObj(customOptions));
     const s = this.#build.settings;
     Object.entries(s.keys.shortcuts).forEach(([k, v]) => (s.keys.shortcuts[k] = tmg.cleanKeyCombo(v)));
     s.keys.blocks = tmg.cleanKeyCombo(s.keys.blocks);
@@ -3164,15 +3151,12 @@ class T_M_G_Media_Player {
     }
     const customOptions = (await fetchedControls) ?? {};
     const attributes = this.#medium.getAttributeNames().filter((attr) => attr.startsWith("tmg--"));
-    const specialProps = ["tmg--media--artwork", "tmg--playlist"];
-    attributes?.forEach((attr) => !specialProps.some((sp) => attr.includes(sp)) && tmg.putHTMLOptions(attr, customOptions, this.#medium));
-    if (this.#medium.poster || attributes.includes("tmg--media--artwork")) customOptions.media = { ...(customOptions.media || {}), artwork: [{ src: this.#medium.getAttribute("tmg--media--artwork") ?? this.#medium.poster }] };
-    if (this.#active) {
-      if (customOptions?.settings) Object.entries(customOptions.settings).forEach(([setting, value]) => (this.Controller.settings[setting] = value));
-    } else this.configure(customOptions);
+    attributes?.forEach((attr) => tmg.assignHTMLConfig(attr, customOptions, this.#medium));
+    if (this.#medium.poster) this.configure({ "media.artwork[0].src": customOptions.media?.artwork?.[0]?.src || this.#medium.poster });
+    this.#active ? customOptions.settings && Object.entries(customOptions.settings).forEach(([setting, value]) => (this.Controller.settings[setting] = value)) : this.configure(customOptions);
   }
   async #deployController() {
-    if (this.#active) return;
+    if (this.#active || !tmg.isInDOM(this.#medium)) return;
     if (!(this.#medium instanceof HTMLVideoElement)) {
       console.error(`TMG could not deploy custom controls on the '${this.#medium.tagName}' element as it is not supported`);
       return console.warn("TMG only supports the 'VIDEO' element currently");
@@ -3464,7 +3448,9 @@ class T_M_G {
   }
   static mountMedia() {
     Object.defineProperty(HTMLVideoElement.prototype, "tmgcontrols", {
-      get: () => this.hasAttribute("tmgcontrols"),
+      get: function () {
+        return this.hasAttribute("tmgcontrols");
+      },
       set: async function (value) {
         if (value) {
           tmg.activateInternalMutation(this);
@@ -3482,7 +3468,7 @@ class T_M_G {
       configurable: true,
     });
   }
-  static unmountMedia = () => delete HTMLVideoElement.tmgcontrols;
+  static unmountMedia = () => delete HTMLVideoElement.prototype.tmgcontrols;
   static init() {
     tmg.mountMedia();
     ["pointerdown", "keydown"].forEach((e) =>
@@ -3667,6 +3653,8 @@ class T_M_G {
     if (track.id) trackElement.id = track.id;
   }
   static removeTracks = (medium) => medium.querySelectorAll("track")?.forEach((track) => (track.kind == "subtitles" || track.kind == "captions") && track.remove());
+  static clamp = (min = 0, amount, max = Infinity) => Math.min(Math.max(amount, min), max);
+  static remToPx = (val) => parseFloat(getComputedStyle(document.documentElement).fontSize * val);
   static isIter = (obj) => obj != null && typeof obj[Symbol.iterator] === "function";
   static isObj = (obj) => typeof obj === "object" && obj != null && !tmg.isArr(obj);
   static isArr = (arr) => Array.isArray(arr);
@@ -3678,8 +3666,44 @@ class T_M_G {
     return axis === "x" ? inY : axis === "y" ? inX : inY && inX;
   }
   static isValidNumber = (number) => !isNaN(number ?? NaN) && number !== Infinity;
-  static clamp = (min = 0, amount, max = Infinity) => Math.min(Math.max(amount, min), max);
-  static remToPx = (val) => parseFloat(getComputedStyle(document.documentElement).fontSize * val);
+  static assignDef(target, value, key) {
+    if (value !== undefined) target[key] = value;
+  }
+  static assignHTMLConfig = (attr, optionsObj = {}, medium) =>
+    tmg.assignDottedConfig(
+      optionsObj,
+      attr.replace("tmg--", ""),
+      (() => {
+        let value = medium.getAttribute(attr);
+        if (value.includes(",")) value = value.split(",")?.map((val) => val.replace(/\s+/g, ""));
+        else if (/^(true|false|null|\d+)$/.test(value)) value = JSON.parse(value);
+        return value;
+      })(),
+      "--"
+    );
+  static assignDottedConfig(obj = {}, prop, value, separator = ".") {
+    if (!tmg.isObj(obj) || !prop?.includes?.(separator)) return;
+    const keys = prop.split(separator).map((p) => tmg.camelize(p));
+    let currObj = obj;
+    keys.forEach((key, i) => {
+      const match = key.match(/^([^\[\]]+)\[(\d+)\]$/);
+      if (match) {
+        const [, key, iStr] = match;
+        if (!tmg.isArr(currObj[key])) currObj[key] = [];
+        if (i === keys.length - 1) currObj[key][Number(iStr)] = value;
+        else {
+          currObj[key][Number(iStr)] ||= {};
+          currObj = currObj[key][Number(iStr)];
+        }
+      } else {
+        if (i === keys.length - 1) currObj[key] = value;
+        else {
+          currObj[key] ||= {};
+          currObj = currObj[key];
+        }
+      }
+    });
+  }
   static parseNumber = (number, fallback = 0) => (tmg.isValidNumber(number) ? number : fallback);
   static parseCSSTime = (time) => (time.endsWith("ms") ? parseFloat(time) : parseFloat(time) * 1000);
   static parseCSSUnit = (val) => (val.endsWith("px") ? parseFloat(val) : tmg.remToPx(parseFloat(val)));
@@ -3697,32 +3721,15 @@ class T_M_G {
     }
     return result;
   }
-  static putHTMLOptions = (attr, optionsObj, medium) =>
-    tmg.assignNestedConfig(
-      optionsObj,
-      attr.replace("tmg--", ""),
-      (() => {
-        let value = medium.getAttribute(attr);
-        if (value.includes(",")) value = value.split(",")?.map((val) => val.replace(/\s+/g, ""));
-        else if (/^(true|false|null|\d+)$/.test(value)) value = JSON.parse(value);
-        return value;
-      })(),
-      "--"
-    );
-  static assignDef(target, value, key) {
-    if (value !== undefined) target[key] = value;
-  }
-  static assignNestedConfig = (obj, prop, value, separator = ".") => {
-    const parts = prop.split(separator).map((p) => tmg.camelize(p));
-    let currObj = obj;
-    parts.forEach((part, i) => {
-      if (i === parts.length - 1) currObj[part] = value;
-      else {
-        currObj[part] ||= {};
-        currObj = currObj[part];
-      }
+  static parseDottedObj(obj = {}, separator = ".") {
+    if (!tmg.isObj(obj)) return obj;
+    const result = {};
+    Object.entries(obj).forEach(([k, v]) => {
+      if (k.includes(separator)) tmg.assignDottedConfig(result, k, tmg.parseDottedObj(v, separator), separator);
+      else result[k] = v;
     });
-  };
+    return result;
+  }
   static mergeObjs(o1 = {}, o2 = {}) {
     const merged = { ...o1, ...o2 };
     Object.keys(merged).forEach((k) => {
@@ -3746,7 +3753,7 @@ class T_M_G {
     return remaining ? `${base}${msPart} left` : `${base}${msPart}`;
   }
   static capitalize = (word = "") => word.charAt(0).toUpperCase() + word.slice(1);
-  static camelize = (str = "", separatorRegex = /[\s_\-]+/) => str.toLowerCase().replace(new RegExp(`${separatorRegex.source}(\\w)?`, "g"), (_, chr) => (chr ? chr.toUpperCase() : ""));
+  static camelize = (str = "", separatorRegex = /[\s_\-]+/) => str.toLowerCase().replace(new RegExp(`${separatorRegex.source}(\\w)?`, "g"), (_, ch) => (ch ? ch.toUpperCase() : "")); // \\ to preserve \
   static uncamelize = (str = "", separator = " ") => str.replace(/([a-z])([A-Z])/g, `$1${separator}$2`).toLowerCase();
   static parseKeyCombo(combo) {
     const parts = combo.toLowerCase().split("+");
@@ -3843,7 +3850,7 @@ class T_M_G {
   }
   static removeSafeClicks(el) {
     el.removeEventListener("click", el._clickHandler);
-    el.removeEventListener("dblclick", el._dblClickHandler); // will only remove recent handlers
+    el.removeEventListener("dblclick", el._dblClickHandler);
   }
   static getRenderedBox(elem) {
     const getResourceDimensions = (source) => (source.videoWidth ? { width: source.videoWidth, height: source.videoHeight } : null);
@@ -3895,7 +3902,7 @@ class T_M_G {
   static async getDominantColor(src, format = "rgb") {
     if (typeof src === "string")
       src = await new Promise((res, rej) => {
-        const i = tmg.createEl("img", { src, rossOrigin: "anonymous", onload: () => res(i), onerror: () => rej(new Error(`Image load error: ${src}`)) });
+        const i = tmg.createEl("img", { src, crossOrigin: "anonymous", onload: () => res(i), onerror: () => rej(new Error(`Image load error: ${src}`)) });
       });
     const c = document.createElement("canvas"),
       x = c.getContext("2d"),
@@ -3912,8 +3919,9 @@ class T_M_G {
         n = (map[key] = (map[key] || 0) + 1);
       if (n > max) ((max = n), (dom = key));
     }
-    const [r, g, b] = dom.split(",").map(Number);
-    return format !== "hex" ? `rgb(${r},${g},${b})` : `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    const [r, g, b] = dom.split(",").map(Number),
+      clr = format !== "hex" ? `rgb(${r},${g},${b})` : `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    return clr?.includes?.("undefined") ? null : clr;
   }
   static _SCROLLER_R_OBSERVER = typeof window !== "undefined" && new ResizeObserver((entries) => entries.forEach(({ target }) => tmg._SCROLLERS.get(target)?.update()));
   static _SCROLLER_M_OBSERVER =
