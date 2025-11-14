@@ -453,7 +453,7 @@ function handleFiles(files) {
           thumbnails[i].playlistItem = item;
         });
         if (!mP) {
-          video.addEventListener("tmgready", readyUI, {onc});
+          video.addEventListener("tmgready", readyUI, { once: true });
           mP = new tmg.Player({
             tracks: [],
             playlist,
