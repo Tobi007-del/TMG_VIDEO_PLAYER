@@ -99,9 +99,6 @@ installButton.addEventListener("click", async () => {
 });
 clearBtn.addEventListener("click", clearFiles);
 
-video.addEventListener("tmgready", readyUI);
-video.addEventListener("loadedmetadata", dispatchPlayerReadyToast);
-
 [uploadVideosInput, uploadFoldersInput].forEach((input) => {
   input.addEventListener("click", () => setTimeout(initUI, 1000));
   input.addEventListener("cancel", defaultUI);
@@ -456,6 +453,7 @@ function handleFiles(files) {
           thumbnails[i].playlistItem = item;
         });
         if (!mP) {
+          video.addEventListener("tmgready", readyUI, {onc});
           mP = new tmg.Player({
             tracks: [],
             playlist,
@@ -466,6 +464,7 @@ function handleFiles(files) {
           });
           mP.build.playlist[0].settings.time.start = 2;
           mP.attach(video);
+          video.addEventListener("loadedmetadata", dispatchPlayerReadyToast, { once: true });
           video.ontimeupdate = () => {
             mP.Controller.throttle(
               "progressSetting",
