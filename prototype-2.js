@@ -36,7 +36,7 @@ class T_M_G_Video_Controller {
     this.gestureWheelTimeout = 2000;
     this.fastPlayThreshold = 1000;
     this.miniPlayerMinWindowWidth = 240;
-    this.floatingPlayerOptions = { width: 280, height: 150, disallowReturnToOpener: false, preferInitialWindowPlacement: false };
+    this.floatingPlayerOptions = { width: 270, height: 145, disallowReturnToOpener: false, preferInitialWindowPlacement: false };
     this.exportCanvas = tmg.createEl("canvas");
     this.exportContext = this.exportCanvas.getContext("2d", { willReadFrequently: true });
     this.mutatingDOM = true;
@@ -2442,7 +2442,7 @@ class T_M_G_Video_Controller {
     this.floatingPlayer?.addEventListener("pagehide", this._handleFloatingPlayerClose);
     this.floatingPlayer?.addEventListener("resize", this._handleMediaParentResize);
     this.setKeyEventListeners("floating");
-    this._handleMediaParentResize();
+    setTimeout(this._handleMediaParentResize);
   }
   _handleFloatingPlayerClose() {
     if (!this.inFloatingPlayer) return;
