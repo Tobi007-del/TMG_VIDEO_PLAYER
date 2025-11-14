@@ -209,7 +209,7 @@ class T_M_G_Video_Controller {
     Object.defineProperty(this.settings.css, "captionsCharacterEdgeStyle", {
       get() {
         const edgeStyle = [...(self.DOM.cueContainer?.classList ?? [])].find((cls) => cls.startsWith("T_M_G-video-cue-character-edge-style"))?.replace("T_M_G-video-cue-character-edge-style-", "");
-        return tmg.parseUIConfig(self.settings.captions).characterEdgeStyle.values.includes(edgeStyle) ? edgeStyle : "none";
+        return tmg.parseUIObj(self.settings.captions).characterEdgeStyle.values.includes(edgeStyle) ? edgeStyle : "none";
       },
       set(value) {
         self.DOM.cueContainer.classList.forEach((cls) => cls.startsWith("T_M_G-video-cue-character-edge-style") && self.DOM.cueContainer.classList.remove(cls));
@@ -2064,13 +2064,13 @@ class T_M_G_Video_Controller {
     this.resetCueCharWidth();
     this.previewCaptions();
   }
-  rotateCaptionsFontFamily = () => this.rotateCaptionsProp(tmg.parseUIConfig(this.settings.captions).font.family.values, "captions.font.family.value", false);
-  rotateCaptionsFontWeight = () => this.rotateCaptionsProp(tmg.parseUIConfig(this.settings.captions).font.weight.values, "captions.font.weight.value", false);
-  rotateCaptionsFontVariant = () => this.rotateCaptionsProp(tmg.parseUIConfig(this.settings.captions).font.variant.values, "captions.font.variant.value", false);
-  rotateCaptionsFontOpacity = () => this.rotateCaptionsProp(tmg.parseUIConfig(this.settings.captions).font.opacity.values, "captions.font.opacity.value");
-  rotateCaptionsBackgroundOpacity = () => this.rotateCaptionsProp(tmg.parseUIConfig(this.settings.captions).background.opacity.values, "captions.background.opacity.value");
-  rotateCaptionsWindowOpacity = () => this.rotateCaptionsProp(tmg.parseUIConfig(this.settings.captions).window.opacity.values, "captions.window.opacity.value");
-  rotateCaptionsCharacterEdgeStyle = () => this.rotateCaptionsProp(tmg.parseUIConfig(this.settings.captions).characterEdgeStyle.values, "captions.characterEdgeStyle.value", false);
+  rotateCaptionsFontFamily = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).font.family.values, "captions.font.family.value", false);
+  rotateCaptionsFontWeight = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).font.weight.values, "captions.font.weight.value", false);
+  rotateCaptionsFontVariant = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).font.variant.values, "captions.font.variant.value", false);
+  rotateCaptionsFontOpacity = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).font.opacity.values, "captions.font.opacity.value");
+  rotateCaptionsBackgroundOpacity = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).background.opacity.values, "captions.background.opacity.value");
+  rotateCaptionsWindowOpacity = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).window.opacity.values, "captions.window.opacity.value");
+  rotateCaptionsCharacterEdgeStyle = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).characterEdgeStyle.values, "captions.characterEdgeStyle.value", false);
   _handleCueDragStart(e) {
     this.DOM.cueContainer?.setPointerCapture(e.pointerId);
     this.DOM.cueContainer?.addEventListener("pointermove", this._handleCueDragging);
@@ -3111,7 +3111,7 @@ class T_M_G_Media_Player {
   }
   configure(customOptions) {
     if (!this.queryBuild() || !tmg.isObj(customOptions)) return;
-    this.#build = tmg.mergeObjs(tmg.parseDottedObj(this.#build), tmg.parseDottedObj(customOptions));
+    this.#build = tmg.mergeObjs(this.#build, tmg.parseDottedObj(customOptions));
     const s = this.#build.settings;
     Object.entries(s.keys.shortcuts).forEach(([k, v]) => (s.keys.shortcuts[k] = tmg.cleanKeyCombo(v)));
     s.keys.blocks = tmg.cleanKeyCombo(s.keys.blocks);
@@ -3152,7 +3152,7 @@ class T_M_G_Media_Player {
     const customOptions = (await fetchedControls) ?? {};
     const attributes = this.#medium.getAttributeNames().filter((attr) => attr.startsWith("tmg--"));
     attributes?.forEach((attr) => tmg.assignHTMLConfig(attr, customOptions, this.#medium));
-    if (this.#medium.poster) this.configure({ "media.artwork[0].src": customOptions.media?.artwork?.[0]?.src || this.#medium.poster });
+    if (this.#medium.poster) this.configure({ "media.artwork[0].src": customOptions.media?.artwork?.[0]?.src ?? this.#medium.poster });
     this.#active ? customOptions.settings && Object.entries(customOptions.settings).forEach(([setting, value]) => (this.Controller.settings[setting] = value)) : this.configure(customOptions);
   }
   async #deployController() {
@@ -3679,11 +3679,12 @@ class T_M_G {
         else if (/^(true|false|null|\d+)$/.test(value)) value = JSON.parse(value);
         return value;
       })(),
-      "--"
+      "--",
+      (p) => tmg.camelize(p)
     );
-  static assignDottedConfig(obj = {}, prop, value, separator = ".") {
+  static assignDottedConfig(obj = {}, prop, value, separator = ".", keyFunc = (p) => p) {
     if (!tmg.isObj(obj) || !prop?.includes?.(separator)) return;
-    const keys = prop.split(separator).map((p) => tmg.camelize(p));
+    const keys = prop.split(separator).map(keyFunc);
     let currObj = obj;
     keys.forEach((key, i) => {
       const match = key.match(/^([^\[\]]+)\[(\d+)\]$/);
@@ -3707,7 +3708,7 @@ class T_M_G {
   static parseNumber = (number, fallback = 0) => (tmg.isValidNumber(number) ? number : fallback);
   static parseCSSTime = (time) => (time.endsWith("ms") ? parseFloat(time) : parseFloat(time) * 1000);
   static parseCSSUnit = (val) => (val.endsWith("px") ? parseFloat(val) : tmg.remToPx(parseFloat(val)));
-  static parseUIConfig(node) {
+  static parseUIObj(node) {
     const result = {};
     for (const key of Object.keys(node)) {
       const entry = node[key];
@@ -3715,17 +3716,17 @@ class T_M_G {
       result[key] = entry.options
         ? {
             values: entry.options.map((opt) => opt.value ?? opt),
-            displays: entry.options.map((opt) => opt.display ?? String(opt)),
+            displays: entry.options.map((opt) => opt.display ?? `${opt}`),
           }
-        : tmg.parseUIConfig(entry); // recurse on sub-branch
+        : tmg.parseUIObj(entry); // recurse on sub-branch
     }
     return result;
   }
-  static parseDottedObj(obj = {}, separator = ".") {
+  static parseDottedObj(obj = {}, separator = ".", keyFunc = (p) => p) {
     if (!tmg.isObj(obj)) return obj;
     const result = {};
     Object.entries(obj).forEach(([k, v]) => {
-      if (k.includes(separator)) tmg.assignDottedConfig(result, k, tmg.parseDottedObj(v, separator), separator);
+      if (k.includes(separator)) tmg.assignDottedConfig(result, k, tmg.parseDottedObj(v, separator, keyFunc), separator, keyFunc);
       else result[k] = v;
     });
     return result;
@@ -3753,7 +3754,7 @@ class T_M_G {
     return remaining ? `${base}${msPart} left` : `${base}${msPart}`;
   }
   static capitalize = (word = "") => word.charAt(0).toUpperCase() + word.slice(1);
-  static camelize = (str = "", separatorRegex = /[\s_\-]+/) => str.toLowerCase().replace(new RegExp(`${separatorRegex.source}(\\w)?`, "g"), (_, ch) => (ch ? ch.toUpperCase() : "")); // \\ to preserve \
+  static camelize = (str = "", separatorRegex = /[\s_\-]+/) => str.toLowerCase().replace(new RegExp(`${separatorRegex.source}(\\w)?`, "g"), (_, ch) => (ch ? ch.toUpperCase() : "")); // '\\w' to preserve \
   static uncamelize = (str = "", separator = " ") => str.replace(/([a-z])([A-Z])/g, `$1${separator}$2`).toLowerCase();
   static parseKeyCombo(combo) {
     const parts = combo.toLowerCase().split("+");
