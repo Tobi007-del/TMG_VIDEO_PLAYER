@@ -14,8 +14,6 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(400).json({ error: `Invalid JSON: ${e}` });
   }
-  console.log("Supabase URL:", process.env.SUPABASE_URL);
-  console.log("Service Key:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
   let supabaseResponse, supabaseText; // Send to Supabase REST API
   try {
     supabaseResponse = await fetch(`${process.env.SUPABASE_URL}/rest/v1/visitors`, {
@@ -42,6 +40,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Fetch failed", details: err.toString() });
   }
   res.status(200).json({
+    url: process.env.SUPABASE_URL,
+    key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     ok: supabaseResponse.ok,
     status: supabaseResponse.status,
     statusText: supabaseResponse.statusText,
