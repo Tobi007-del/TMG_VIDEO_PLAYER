@@ -25,7 +25,7 @@
     });
     console.log("TVP Log IP response:", await response.json());
   } catch (err) {
-    localStorage.deleteItem("TVP_visitor_id");
+    localStorage.removeItem("TVP_visitor_id");
     console.error("TVP failed to Log IP:", err);
   }
 })();

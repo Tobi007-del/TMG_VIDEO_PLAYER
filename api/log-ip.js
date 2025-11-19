@@ -5,8 +5,14 @@ export default async function handler(req) {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
   const body = await req.json(),
     ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown",
-    geo = req.geo || {},
     userAgent = req.headers.get("user-agent") || "unknown";
+  let geo = req.geo || {};
+  if (!geo.country) {
+    try {
+      const data = await (await fetch(`https://ipapi.co/${ip}/json/`)).json();
+      geo = { country: data.country_name, city: data.city, region: data.region };
+    } catch {}
+  }
   try {
     await fetch(process.env.DISCORD_WEBHOOK_URL, {
       method: "POST",
