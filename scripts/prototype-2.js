@@ -1438,14 +1438,14 @@ class T_M_G_Video_Controller {
     frame?.url ? this.toast?.success(frameToastId, { render: `Captured video frame ${m ? "in b&w " : ""}at ${tTxt}`, image: frame.url, onClose: () => URL.revokeObjectURL(frame.url) }) : this.toast?.error(frameToastId, { render: `Failed video frame capture ${m ? "in b&w " : ""}at ${tTxt}` });
     frame?.url && tmg.createEl("a", { href: frame.url, download: `${this.media?.title ?? "Video"}_${m ? `black&white_` : ""}at_${tTxt}.png`.replace(/\s|\/|\"|\:|\*|\?|\<|\>/g, "_") })?.click?.(); // system filename safe
   }
-  async findGoodFrameTime(t = 0, s = 25) {
+  async findGoodFrameTime(t = this.currentTime, s = 25) {
     for (; t <= t + s; t += 0.333) {
       const rgb = await tmg.getDominantColor((await this.getVideoFrame(t, "", true)).canvas, "rgb", true); // ~3 frames per second
       if (rgb && tmg.getRGBBri(rgb) > 40 && tmg.getRGBSat(rgb) > 12) return t; // <= FIRST legit content frame
     }
     return null;
   }
-  getMediaBrandColor = async (time, usePoster = true, poster = this.video.poster || this.media?.artwork?.[0]?.src) => await tmg.getDominantColor(usePoster && poster ? poster : (await this.getVideoFrame(await this.findGoodFrameTime(time), "", true)).canvas);
+  getMediaBrandColor = async (time, usePoster = true, poster = this.video.poster || this.media?.artwork?.[0]?.src) => await tmg.getDominantColor(usePoster && poster ? poster : (await this.getVideoFrame(time ?? (await this.findGoodFrameTime()), "", true)).canvas);
   syncMediaBrandColor = async () => (this.settings.css.brandColor = (this.loaded ? await this.getMediaBrandColor() : null) ?? this.CSSPropsCache.brandColor);
   deactivate(message) {
     this.showOverlay();
