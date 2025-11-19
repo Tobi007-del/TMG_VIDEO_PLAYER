@@ -1157,7 +1157,7 @@ class T_M_G_Video_Controller {
     [this.DOM.controlsContainer, this.DOM.bottomControlsWrapper].forEach((el) => {
       el.addEventListener("contextmenu", this._handleRightClick);
       el.addEventListener("click", this._handleAnyClick, true);
-      el.addEventListener("pointermove", this._handleHoverPointerActive, true);
+      ["pointermove", "dragenter"].forEach((e) => el.addEventListener(e, this._handleHoverPointerActive, true));
       el.addEventListener("mouseleave", this._handleHoverPointerOut, true);
     });
     tmg.onSafeClicks(this.DOM.controlsContainer, this._handleClick, this._handleDoubleClick, true);
@@ -1406,6 +1406,16 @@ class T_M_G_Video_Controller {
       svg.addEventListener("mouseover", () => (svg.parentElement.title = title));
     });
   }
+  convertToMonoChrome(canvas, context) {
+    const frame = context.getImageData(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < frame.data.length / 4; i++) {
+      const grey = (frame.data[i * 4 + 0] + frame.data[i * 4 + 1] + frame.data[i * 4 + 2]) / 3;
+      frame.data[i * 4 + 0] = grey;
+      frame.data[i * 4 + 1] = grey;
+      frame.data[i * 4 + 2] = grey;
+    }
+    canvas.getContext("2d").putImageData(frame, 0, 0);
+  }
   async getVideoFrame(time = this.currentTime, display, raw = false) {
     if (Math.abs(this.pseudoVideo.currentTime - time) > 0.01) this.frameReadyPromise ??= new Promise((res) => this.pseudoVideo.addEventListener("timeupdate", () => res(null), { once: true }));
     this.pseudoVideo.currentTime = time; // small tolerance for video time comparison - 0.01(10ms)
@@ -1428,22 +1438,16 @@ class T_M_G_Video_Controller {
     frame?.url ? this.toast?.success(frameToastId, { render: `Captured video frame ${m ? "in b&w " : ""}at ${tTxt}`, image: frame.url, onClose: () => URL.revokeObjectURL(frame.url) }) : this.toast?.error(frameToastId, { render: `Failed video frame capture ${m ? "in b&w " : ""}at ${tTxt}` });
     frame?.url && tmg.createEl("a", { href: frame.url, download: `${this.media?.title ?? "Video"}_${m ? `black&white_` : ""}at_${tTxt}.png`.replace(/\s|\/|\"|\:|\*|\?|\<|\>/g, "_") })?.click?.(); // system filename safe
   }
-  convertToMonoChrome(canvas, context) {
-    const frame = context.getImageData(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i < frame.data.length / 4; i++) {
-      const grey = (frame.data[i * 4 + 0] + frame.data[i * 4 + 1] + frame.data[i * 4 + 2]) / 3;
-      frame.data[i * 4 + 0] = grey;
-      frame.data[i * 4 + 1] = grey;
-      frame.data[i * 4 + 2] = grey;
+  async findGoodFrameTime(t = 0, maxT = 20) {
+    for (; t <= maxT; t += 0.333) {
+      const rgb = await tmg.getDominantColor((await this.getVideoFrame(t, "", true)).canvas, "rgb", true); // ~3 frames per second
+      if (!rgb) continue;
+      if (tmg.getRGBBri(rgb) > 40 && tmg.getRGBSat(rgb) > 12) return t; // <= FIRST legit content frame
     }
-    canvas.getContext("2d").putImageData(frame, 0, 0);
+    return null;
   }
-  async getMediaBrandColor(time = 5, usePoster = true, poster = this.video.poster || this.media?.artwork?.[0]?.src) {
-    const clr = await tmg.getDominantColor(usePoster && poster ? poster : (await this.getVideoFrame(time, "", true)).canvas);
-    // console.log(clr);
-    return clr === "rgb(0,0,0)" || clr === "#000000" ? null : clr;
-  }
-  syncMediaBrandColor = async () => (this.settings.css.brandColor = (await this.getMediaBrandColor()) ?? this.CSSPropsCache.brandColor);
+  getMediaBrandColor = async (time, usePoster = true, poster = this.video.poster || this.media?.artwork?.[0]?.src) => await tmg.getDominantColor(usePoster && poster ? poster : (await this.getVideoFrame(await this.findGoodFrameTime(time), "", true)).canvas);
+  syncMediaBrandColor = async () => (this.settings.css.brandColor = (this.loaded ? await this.getMediaBrandColor() : null) ?? this.CSSPropsCache.brandColor);
   deactivate(message) {
     this.showOverlay();
     this.showUserMessage(message);
@@ -1657,12 +1661,13 @@ class T_M_G_Video_Controller {
   showUserMessage = (message) => message && this.DOM.videoContainerContent.setAttribute("data-message", message);
   removeUserMessage = () => this.DOM.videoContainerContent.removeAttribute("data-message");
   _handleLoadedError(error) {
+    this.loaded = false;
     const fallbackMessage = (typeof error === "string" && error) || error?.message || this.video.error?.message || (error && "An unknown error occurred with the video :(");
     const message = this.settings.errorMessages?.[this.video.error?.code ?? (error && 5)] || fallbackMessage;
-    this.loaded = false;
     this.deactivate(message);
   }
   _handleLoadedMetadata() {
+    this.loaded = true;
     this.stats = { fps: 30 };
     if (this.settings.time.start && !this.initialState) this.currentTime = this.settings.time.start;
     this.syncAspectRatio();
@@ -1670,7 +1675,6 @@ class T_M_G_Video_Controller {
     this.setCaptionsState();
     if (this.DOM.totalTimeElement) this.DOM.totalTimeElement.textContent = this.toTimeText(this.video.duration);
     this.settings.css.currentPlayedPosition = this.currentTime < 1 ? (this.settings.css.currentBufferedPosition = 0) : tmg.parseNumber(this.video.currentTime / this.video.duration);
-    this.loaded = true;
     this.reactivate();
   }
   _handleLoadedData() {
@@ -1699,7 +1703,7 @@ class T_M_G_Video_Controller {
   }
   _handleBufferStop() {
     this.buffering = false;
-    this.delayOverlay();
+    this.isMediaMobile && this.delayOverlay();
     this.videoContainer.classList.remove("T_M_G-video-buffering");
   }
   _handlePlay() {
@@ -1830,7 +1834,7 @@ class T_M_G_Video_Controller {
   _handleTimeUpdate() {
     if (this.isScrubbing) return;
     this.video.volume = 1; // just in case
-    this.settings.css.currentPlayedPosition = tmg.isValidNumber(this.video.duration) ? tmg.parseNumber(this.video.currentTime / this.video.duration) : this.video.currentTime / 60; // progress fallback, shouldn't take more than a min for duration to be available
+    this.settings.css.currentPlayedPosition = tmg.parseNumber(this.video.currentTime / tmg.parseNumber(this.video.duration, 60)); // progress fallback, shouldn't take more than a min for duration to be available
     if (this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(this.video.currentTime, true);
     if (this.speedCheck && !this.video.paused) this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.toTimeText(this.video.currentTime, true));
     if (this.playlist && this.currentTime > 3) this.playlistCurrentTime = this.currentTime;
@@ -3036,21 +3040,20 @@ class T_M_G_Video_Controller {
   }
   _handleDragEnter = ({ target }) => target.dataset.dropZone && this.dragging && target.classList.add("T_M_G-video-dragover");
   _handleDragOver(e) {
-    if (e.target.dataset.dropZone && this.dragging) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      this.throttle(
-        "dragOver",
-        () => {
-          const afterControl = this.getControlAfterDragging(e.target, e.clientX);
-          if (afterControl) e.target?.insertBefore(this.dragging, afterControl);
-          else e.target.appendChild(this.dragging);
-          this.updateSideControls(e);
-        },
-        20,
-        false
-      );
-    }
+    if (!e.target.dataset.dropZone || !this.dragging) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    this.throttle(
+      "dragOver",
+      () => {
+        const afterControl = this.getControlAfterDragging(e.target, e.clientX);
+        if (afterControl) e.target?.insertBefore(this.dragging, afterControl);
+        else e.target.appendChild(this.dragging);
+        this.updateSideControls(e);
+      },
+      20,
+      false
+    );
   }
   _handleDrop(e) {
     if (!e.target?.dataset.dropZone) return;
@@ -3900,29 +3903,40 @@ class T_M_G {
       return { left, top, width, height };
     }
   }
-  static async getDominantColor(src, format = "rgb") {
-    if (typeof src === "string")
+  static getRGBBri = ([r, g, b]) => 0.299 * r + 0.587 * g + 0.114 * b;
+  static getRGBSat = ([r, g, b]) => Math.max(r, g, b) - Math.min(r, g, b);
+  static clampRGBBri([r, g, b], m = 50) {
+    const br = tmg.getRGBBri([r, g, b]),
+      d = br < m ? m - br : br > 255 - m ? br - (255 - m) : 0;
+    return [r + (br < m ? d : -d), g + (br < m ? d : -d), b + (br < m ? d : -d)];
+  }
+  static async getDominantColor(src, format = "rgb", raw = false) {
+    if (typeof src == "string")
       src = await new Promise((res, rej) => {
         const i = tmg.createEl("img", { src, crossOrigin: "anonymous", onload: () => res(i), onerror: () => rej(new Error(`Image load error: ${src}`)) });
       });
+    if (src?.canvas) src = src.canvas;
     const c = document.createElement("canvas"),
-      x = c.getContext("2d"),
-      s = 100;
-    c.width = c.height = s;
-    x.drawImage(src, 0, 0, s, s);
-    const d = x.getImageData(0, 0, s, s).data,
-      map = {};
-    let max = 0,
-      dom = "";
-    for (let i = 0; i < d.length; i += 4) {
+      x = c.getContext("2d");
+    c.width = c.height = 100;
+    src && x.drawImage(src, 0, 0, 100, 100);
+    const d = src && x.getImageData(0, 0, 100, 100).data,
+      ct = {}, // count
+      pt = {}; // per total
+    for (let i = 0; i < d?.length; i += 4) {
       if (d[i + 3] < 128) continue;
-      const key = `${d[i] & 0xe0},${d[i + 1] & 0xe0},${d[i + 2] & 0xe0}`,
-        n = (map[key] = (map[key] || 0) + 1);
-      if (n > max) ((max = n), (dom = key));
+      const k = `${d[i] & 0xf0},${d[i + 1] & 0xf0},${d[i + 2] & 0xf0}`;
+      ct[k] = (ct[k] || 0) + 1;
+      pt[k] = pt[k] ? [pt[k][0] + d[i], pt[k][1] + d[i + 1], pt[k][2] + d[i + 2]] : [d[i], d[i + 1], d[i + 2]];
     }
-    const [r, g, b] = dom.split(",").map(Number),
-      clr = format !== "hex" ? `rgb(${r},${g},${b})` : `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-    return clr?.includes?.("undefined") ? null : clr;
+    const clrs = Object.entries(ct)
+      .sort((a, b) => b[1] - a[1]) // sort by count DESC
+      .slice(0, 3) // take top 3 buckets
+      .map(([k]) => ({ key: k, rgb: pt[k].map((v) => Math.round(v / ct[k])) }));
+    if (!clrs.length) return null;
+    const [r, g, b] = tmg.clampRGBBri(clrs.reduce((sat, curr) => (tmg.getRGBSat(sat.rgb) > tmg.getRGBSat(curr.rgb) ? sat : curr), clrs[0]).rgb); // vibrancy test to avoid muddy colors
+    // console.log(clrs.map((c) => [c, tmg.getRGBSat(c.rgb)]));
+    return format === "hex" ? `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}` : raw == false ? `rgb(${r},${g},${b})` : [r, g, b];
   }
   static _SCROLLER_R_OBSERVER = typeof window !== "undefined" && new ResizeObserver((entries) => entries.forEach(({ target }) => tmg._SCROLLERS.get(target)?.update()));
   static _SCROLLER_M_OBSERVER =

@@ -29,7 +29,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/tmg-icon.png" />
     <link rel="apple-touch-icon" sizes="32x32" href="assets/icons/tmg-icon.png" />
     <link rel="preload" href="assets/images/lone-tree.jpg" type="image/jpg" as="image" />
-    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="styles/index.css" />
     <style>
       .magic {
         --tmg-orange: rgb(from var(--T_M_G-brand-color) r g b/0.85);
@@ -188,15 +188,16 @@
     </div>
     <p class="offline-notice">You're offline</p>
     <script>
-      window.TMG_VIDEO_CSS_SRC = "prototype-2-video.css";
+      window.TMG_VIDEO_CSS_SRC = "styles/prototype-2-video.css";
       window.TMG_VIDEO_ALT_IMG_SRC = "assets/icons/movie-tape.png";
-      window.T007_TOAST_JS_SRC = "T007_toast.js";
-      window.T007_TOAST_CSS_SRC = "T007_toast.css";
+      window.T007_TOAST_JS_SRC = "scripts/T007_toast.js";
+      window.T007_TOAST_CSS_SRC = "styles/T007_toast.css";
     </script>
-    <script type="module" src="T007_toast.js"></script>
-    <script src="prototype-2.js"></script>
+    <script type="module" src="scripts/T007_toast.js"></script>
+    <!-- <script src="/TMG_MEDIA_PROTOTYPE/prototype-2/prototype-2.js"></script> -->
+    <script src="scripts/prototype-2.js"></script>
     <script src="assets/ffmpeg/ffmpeg.min.js"></script>
-    <script src="index.js"></script>
+    <script src="scripts/index.js"></script>
     <script>
       let index = 0,
         interval = 1000;

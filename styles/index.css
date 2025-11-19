@@ -107,7 +107,7 @@ body::before {
   z-index: -1;
   background:
     conic-gradient(from var(--turn) at 50% -10%, #0b1012e8 10deg, #0b1012e8 calc((360deg - var(--degree)) / 2), rgba(27, 38, 74, 0.751), #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2), #0b1012e8 350deg),
-    center/cover url("./assets/images/lone-tree.jpg"),
+    center/cover url("../assets/images/lone-tree.jpg"),
     #0b1012;
   animation: rotateLight 30s linear infinite;
 }
@@ -115,7 +115,7 @@ body::before {
 body.light::before {
   background:
     conic-gradient(from var(--turn) at 50% -10%, #0b1012e8 10deg, #0b1012e8 calc((360deg - var(--degree)) / 2), #5c80f755, #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2), #0b1012e8 350deg),
-    center/cover url("./assets/images/lone-tree.jpg"),
+    center/cover url("../assets/images/lone-tree.jpg"),
     #0b1012;
 }
 

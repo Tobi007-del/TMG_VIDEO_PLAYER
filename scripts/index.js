@@ -8,6 +8,20 @@
   }
 })();
 
+if (!localStorage.getItem("TVP_visitor_id")) localStorage.setItem("TVP_visitor_id", crypto.randomUUID());
+
+fetch("/api/log-ip", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    visitorId: localStorage.getItem("TVP_visitor_id"),
+    platform: navigator.platform,
+    screenW: screen.width,
+    screenH: screen.height,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  }),
+});
+
 const { createFFmpeg, fetchFile } = FFmpeg,
   ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" }),
   installButton = document.getElementById("install"),
