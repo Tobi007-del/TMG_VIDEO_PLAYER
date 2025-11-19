@@ -9,7 +9,8 @@
 })();
 
 (async function logVisitor() {
-  if (!localStorage.getItem("TVP_visitor_id")) localStorage.setItem("TVP_visitor_id", crypto?.randomUUID?.());
+  if (localStorage.getItem("TVP_visitor_id")) return;
+  localStorage.setItem("TVP_visitor_id", crypto?.randomUUID?.());
   try {
     const response = await fetch("../api/log-ip", {
       method: "POST",
@@ -22,9 +23,9 @@
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       }),
     });
-    const data = await response.json();
-    console.log("TVP Log IP debug response:", data);
+    console.log("TVP Log IP response:", await response.json());
   } catch (err) {
+    localStorage.deleteItem("TVP_visitor_id");
     console.error("TVP failed to Log IP:", err);
   }
 })();

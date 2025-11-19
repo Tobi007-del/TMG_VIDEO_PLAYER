@@ -1,50 +1,38 @@
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(204).end(); // CORS preflight
-  let body = {};
+export const config = { runtime: "edge" };
+
+export default async function handler(req) {
+  const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
+  const body = await req.json(),
+    ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown",
+    geo = req.geo || {},
+    userAgent = req.headers.get("user-agent") || "unknown";
   try {
-    body = await new Promise((resolve, reject) => {
-      let data = "";
-      req.on("data", (chunk) => (data += chunk));
-      req.on("end", () => resolve(JSON.parse(data)));
-      req.on("error", (err) => reject(err));
-    });
-  } catch (e) {
-    return res.status(400).json({ error: `Invalid JSON: ${e}` });
-  }
-  let supabaseResponse, supabaseText; // Send to Supabase REST API
-  try {
-    supabaseResponse = await fetch(`${process.env.SUPABASE_URL}/rest/v1/visitors`, {
+    await fetch(process.env.DISCORD_WEBHOOK_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        Prefer: "resolution=merge-duplicates",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        visitor_id: body.visitorId,
-        ip: req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.socket?.remoteAddress || "unknown",
-        user_agent: req.headers["user-agent"] || "unknown",
-        platform: body.platform || "unknown",
-        screen_w: body.screenW || null,
-        screen_h: body.screenH || null,
-        timezone: body.timezone || "unknown",
-        last_seen: new Date().toISOString(),
+        content: null,
+        embeds: [
+          {
+            title: "🌍 New TVP Visitor Logged",
+            color: 5814783,
+            fields: [
+              { name: "Visitor ID", value: body.visitorId || "unknown", inline: false },
+              { name: "IP Address", value: ip, inline: false },
+              { name: "User Agent", value: userAgent, inline: false },
+              { name: "Platform", value: body.platform || "unknown", inline: true },
+              { name: "Screen", value: `${body.screenW} x ${body.screenH}`, inline: true },
+              { name: "Timezone", value: body.timezone || "unknown", inline: false },
+              { name: "Geo Location", value: `Country: ${geo.country || "N/A"}\nCity: ${geo.city || "N/A"}\nRegion: ${geo.region || "N/A"}`, inline: false },
+            ],
+            timestamp: new Date().toISOString(),
+          },
+        ],
       }),
     });
-    supabaseText = await supabaseResponse.text();
   } catch (err) {
-    return res.status(500).json({ error: "Fetch failed", details: err.toString() });
+    return new Response(JSON.stringify({ error: "Failed to send to Discord", details: err.toString() }), { status: 500, headers });
   }
-  res.status(200).json({
-    url: process.env.SUPABASE_URL,
-    key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    ok: supabaseResponse.ok,
-    status: supabaseResponse.status,
-    statusText: supabaseResponse.statusText,
-    supabaseText,
-  }); // Return debug info
+  return new Response(JSON.stringify({ ok: true, logged: true, ip, geo }), { status: 200, headers });
 }
