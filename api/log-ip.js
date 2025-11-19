@@ -5,11 +5,16 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(204).end(); // CORS preflight
-  let body;
+  let body = {};
   try {
-    body = await req.json(); // simple, modern
-  } catch {
-    return res.status(400).json({ error: "Invalid JSON" });
+    body = await new Promise((resolve, reject) => {
+      let data = "";
+      req.on("data", (chunk) => (data += chunk));
+      req.on("end", () => resolve(JSON.parse(data)));
+      req.on("error", (err) => reject(err));
+    });
+  } catch (e) {
+    return res.status(400).json({ error: `Invalid JSON: ${e}` });
   }
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   const { data, error } = await supabase.from("visitors").upsert({
