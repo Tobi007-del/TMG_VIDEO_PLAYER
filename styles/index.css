@@ -1,7 +1,7 @@
 @property --T_M_G-brand-color {
   syntax: "<color>";
   initial-value: rgb(226, 110, 2);
-  inherits: false;
+  inherits: true;
 }
 
 @property --turn {
@@ -11,6 +11,7 @@
 }
 
 :root {
+  --T_M_G-brand-color: rgb(226, 110, 2);
   --T_M_G-brand-light-color: hsl(from var(--T_M_G-brand-color) h s calc(l + 40));
   --T_M_G-brand-accent-color: rgb(from var(--T_M_G-brand-color) calc(r + 18) calc(g + 33) calc(b + 175));
   --max-turn: 0.235turn;

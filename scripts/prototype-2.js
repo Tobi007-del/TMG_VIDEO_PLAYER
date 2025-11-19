@@ -1438,11 +1438,10 @@ class T_M_G_Video_Controller {
     frame?.url ? this.toast?.success(frameToastId, { render: `Captured video frame ${m ? "in b&w " : ""}at ${tTxt}`, image: frame.url, onClose: () => URL.revokeObjectURL(frame.url) }) : this.toast?.error(frameToastId, { render: `Failed video frame capture ${m ? "in b&w " : ""}at ${tTxt}` });
     frame?.url && tmg.createEl("a", { href: frame.url, download: `${this.media?.title ?? "Video"}_${m ? `black&white_` : ""}at_${tTxt}.png`.replace(/\s|\/|\"|\:|\*|\?|\<|\>/g, "_") })?.click?.(); // system filename safe
   }
-  async findGoodFrameTime(t = 0, maxT = 20) {
-    for (; t <= maxT; t += 0.333) {
+  async findGoodFrameTime(t = 0, s = 25) {
+    for (; t <= t + s; t += 0.333) {
       const rgb = await tmg.getDominantColor((await this.getVideoFrame(t, "", true)).canvas, "rgb", true); // ~3 frames per second
-      if (!rgb) continue;
-      if (tmg.getRGBBri(rgb) > 40 && tmg.getRGBSat(rgb) > 12) return t; // <= FIRST legit content frame
+      if (rgb && tmg.getRGBBri(rgb) > 40 && tmg.getRGBSat(rgb) > 12) return t; // <= FIRST legit content frame
     }
     return null;
   }
