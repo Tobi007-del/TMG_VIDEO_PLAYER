@@ -8,19 +8,26 @@
   }
 })();
 
-if (!localStorage.getItem("TVP_visitor_id")) localStorage.setItem("TVP_visitor_id", crypto.randomUUID());
-
-fetch("../api/log-ip", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    visitorId: localStorage.getItem("TVP_visitor_id"),
-    platform: navigator.platform,
-    screenW: screen.width,
-    screenH: screen.height,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  }),
-});
+(async function logVisitor() {
+  if (!localStorage.getItem("TVP_visitor_id")) localStorage.setItem("TVP_visitor_id", crypto.randomUUID());
+  try {
+    const response = await fetch("../api/log-ip", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        visitorId: localStorage.getItem("TVP_visitor_id"),
+        platform: navigator.platform,
+        screenW: screen.width,
+        screenH: screen.height,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }),
+    });
+    const data = await response.json();
+    console.log("Log IP debug response:", data);
+  } catch (err) {
+    console.error("Failed to call log-ip:", err);
+  }
+})();
 
 const { createFFmpeg, fetchFile } = FFmpeg,
   ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" }),
