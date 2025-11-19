@@ -10,7 +10,7 @@
 
 if (!localStorage.getItem("TVP_visitor_id")) localStorage.setItem("TVP_visitor_id", crypto.randomUUID());
 
-fetch("/api/log-ip", {
+fetch("../api/log-ip", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({

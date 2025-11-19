@@ -1,8 +1,14 @@
 export default async function handler(req, res) {
-  const body = await new Promise((res) => {
+  // Allow your origin so SW fetch works
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  // Handle preflight
+  if (req.method === "OPTIONS") return res.status(204).end();
+  const body = await new Promise((resolve) => {
     let data = "";
     req.on("data", (c) => (data += c));
-    req.on("end", () => res(JSON.parse(data)));
+    req.on("end", () => resolve(JSON.parse(data)));
   });
   const ip = req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.socket?.remoteAddress || "unknown";
   const ua = req.headers["user-agent"] || "unknown";

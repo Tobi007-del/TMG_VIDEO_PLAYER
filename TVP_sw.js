@@ -7,7 +7,8 @@ async function precache() {
 }
 
 function isCacheable(request) {
-  return new URL(request.url).origin === location.origin;
+  const url = new URL(request.url);
+  return url.origin === location.origin && !url.pathname.startsWith("/api/");
 }
 
 async function cacheFirstWithRefresh(request) {
