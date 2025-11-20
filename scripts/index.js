@@ -8,16 +8,14 @@ var lsk = "TVP_visitor_info",
     const response = await fetch("../api/log-ip", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        { ...vi },
-        {
-          screenW: screen.width,
-          screenH: screen.height,
-          platform: navigator.platform,
-          touchScreen: navigator.maxTouchPoints > 0,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        }
-      ),
+      body: JSON.stringify({
+        ...vi,
+        screenW: screen.width,
+        screenH: screen.height,
+        platform: navigator.platform,
+        touchScreen: navigator.maxTouchPoints > 0,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }),
     });
     console.log("TVP logged visitor info: ", await response.json());
   } catch (err) {
