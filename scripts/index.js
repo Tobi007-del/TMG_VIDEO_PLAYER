@@ -1,3 +1,31 @@
+var lsk = "TVP_visitor_info",
+  vi = JSON.parse(localStorage[lsk] || `{ "visitorId": "${crypto?.randomUUID?.() || uid()}", "visitCount": 0 }`);
+(async function logVisitor() {
+  vi.isNew = vi.isNew == null ? true : false;
+  vi.visitCount += 1;
+  vi.lastVisited = vi.lastVisit ? formatTimeAgo(vi.lastVisit, " ago") : "Just now";
+  try {
+    const response = await fetch("../api/log-ip", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        { ...vi },
+        {
+          screenW: screen.width,
+          screenH: screen.height,
+          platform: navigator.platform,
+          touchScreen: navigator.maxTouchPoints > 0,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }
+      ),
+    });
+    console.log("TVP logged visitor info: ", await response.json());
+  } catch (err) {
+    console.error("TVP couldn't log info: ", err);
+  }
+  localStorage[lsk] = JSON.stringify({ ...vi, lastVisit: new Date().toISOString() });
+})();
+
 (async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return Toast.warn("Offline support is unavailable");
   try {
@@ -5,28 +33,6 @@
   } catch (error) {
     Toast.error("Offline caching failed: " + error.message);
     Toast("Don’t worry, your local videos still play fine", { vibrate: true, icon: "🎬" });
-  }
-})();
-
-(async function logVisitor() {
-  if (localStorage.getItem("TVP_visitor_id")) return;
-  localStorage.setItem("TVP_visitor_id", crypto?.randomUUID?.());
-  try {
-    const response = await fetch("../api/log-ip", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        visitorId: localStorage.getItem("TVP_visitor_id"),
-        platform: navigator.platform,
-        screenW: screen.width,
-        screenH: screen.height,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      }),
-    });
-    console.log("TVP Log IP response:", await response.json());
-  } catch (err) {
-    localStorage.removeItem("TVP_visitor_id");
-    console.error("TVP failed to Log IP:", err);
   }
 })();
 
@@ -67,7 +73,6 @@ const { createFFmpeg, fetchFile } = FFmpeg,
       { icon: "✅", body: "Scene Loaded — Ready to Play." },
       { icon: "✨", body: "Showtime Unlocked." },
       { icon: "🎉", body: "Player Ready – Let the Magic Begin!" },
-      { icon: "🎬", body: "Lights, Camera, Action!" },
       { icon: "📽️", body: "The Reel is Spinning..." },
       { icon: "🎥", body: "Scene One, Take One — Playback Engaged." },
       { icon: "🍿", body: "Popcorn Ready? Your Movie Is." },
@@ -96,12 +101,12 @@ if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load()); // let the UI brea
 window.addEventListener("load", () => {
   if ("navigator" in window) {
     document.body.classList.toggle("offline", !navigator.onLine);
-    if (navigator.onLine) {
+    navigator.onLine &&
       fetch("https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", { method: "HEAD", cache: "no-cache" })
         .then((response) => document.body.classList.toggle("offline", !response.ok))
         .catch(() => document.body.classList.add("offline"));
-    }
   }
+  (vi.isNew || !vi.lastVisited.match(/[smh]/)) && Toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! your last visit was ${vi.lastVisited}`, { icon: "👋" });
 });
 window.addEventListener("online", () => document.body.classList.remove("offline"));
 window.addEventListener("offline", () => document.body.classList.add("offline"));
@@ -200,6 +205,7 @@ function initUI() {
 function readyUI() {
   video.classList.remove("stall");
   videoPlayerContainer.classList.remove("loading");
+  setTimeout(() => mP.Controller.toast(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }));
 }
 
 function errorUI(error) {
@@ -754,6 +760,16 @@ function srtToVtt(srt) {
     vttLines.push(""); // blank line after cue
   }
   return vttLines.join("\n");
+}
+
+function formatTimeAgo(date, s = "") {
+  const now = new Date();
+  const then = new Date(date);
+  const diff = Math.floor((now.getTime() - then.getTime()) / 1000); // in seconds
+  if (diff < 60) return `${diff}s${s}`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m${s}`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h${s}`;
+  return `${Math.floor(diff / 86400)}d${s}`;
 }
 
 function uid(prefix = "tvp_") {

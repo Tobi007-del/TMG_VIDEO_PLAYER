@@ -4,8 +4,7 @@ export default async function handler(req) {
   const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
   const body = await req.json(),
-    ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown",
-    userAgent = req.headers.get("user-agent") || "unknown";
+    ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
   let geo = req.geo || {};
   if (!geo.country) {
     try {
@@ -21,16 +20,19 @@ export default async function handler(req) {
         content: null,
         embeds: [
           {
-            title: "🌍 New TVP Visitor Logged",
+            title: `🌍 ${body.isNew ? "New" : "Returning"} TVP Visitor Logged`,
             color: 5814783,
             fields: [
               { name: "Visitor ID", value: body.visitorId || "unknown", inline: false },
-              { name: "IP Address", value: ip, inline: false },
-              { name: "User Agent", value: userAgent, inline: false },
+              { name: "User Agent", value: req.headers.get("user-agent") || "unknown", inline: false },
+              { name: "IP Address", value: ip, inline: true },
               { name: "Platform", value: body.platform || "unknown", inline: true },
-              { name: "Screen", value: `${body.screenW} x ${body.screenH}`, inline: true },
+              { name: "Screen Size", value: `${body.screenW} x ${body.screenH}`, inline: true },
+              { name: "Screen Touch", value: body.touchScreen ? "Yes" : "No", inline: true },
+              { name: "Last Visit", value: body.lastVisited || "unknown", inline: true },
+              { name: "Total Visits", value: body.visitCount || "unknown", inline: true },
               { name: "Timezone", value: body.timezone || "unknown", inline: false },
-              { name: "Geo Location", value: `Country: ${geo.country || "N/A"}\nCity: ${geo.city || "N/A"}\nRegion: ${geo.region || "N/A"}`, inline: false },
+              { name: "Geo Location", value: `Country: ${geo.country || "unknown"}\nCity: ${geo.city || "unknown"}\nRegion: ${geo.region || "unknown"}`, inline: false },
             ],
             timestamp: new Date().toISOString(),
           },
@@ -40,5 +42,5 @@ export default async function handler(req) {
   } catch (err) {
     return new Response(JSON.stringify({ error: "Failed to send to Discord", details: err.toString() }), { status: 500, headers });
   }
-  return new Response(JSON.stringify({ ok: true, logged: true, ip, geo }), { status: 200, headers });
+  return new Response(JSON.stringify({ ok: true, logged: true }), { status: 200, headers });
 }
