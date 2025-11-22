@@ -72,7 +72,7 @@ class T_M_G_Video_Controller {
           const fn = this[method].bind(this);
           this[method] = (...args) => {
             const onError = (e) => {
-              this.log(e, "error", "swallow");
+              this.log?.(e, "error", "swallow");
               method !== "togglePlay" && this.toast?.("Something went wrong", { tag: "T_M_G-stwr" });
             };
             try {
@@ -218,7 +218,7 @@ class T_M_G_Video_Controller {
     return {
       pictureinpicturewrapper: `
         <div class="T_M_G-video-picture-in-picture-wrapper">
-          <span class="T_M_G-video-picture-in-picture-icon-wrapper">
+          <button type="button" class="T_M_G-video-picture-in-picture-icon-wrapper">
             <svg class="T_M_G-video-picture-in-picture-icon" viewBox="0 0 73 73">
             <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
               <g transform="translate(2, 2)" fill-rule="nonzero" stroke-width="2" class="T_M_G-video-pip-icon-background">
@@ -243,7 +243,7 @@ class T_M_G_Video_Controller {
               </g>
               </g>
             </svg>
-          </span>
+          </button>
           <p>Playing in picture-in-picture</p>
         </div>      
       `,
@@ -543,7 +543,7 @@ class T_M_G_Video_Controller {
         : null,
       expandminiplayer: `
         <div class="T_M_G-video-mini-player-btn-wrapper T_M_G-video-mini-player-expand-btn-wrapper">
-          <button type="button" class="T_M_G-video-mini-player-expand-btn">
+          <button type="button" class="T_M_G-video-mini-player-expand-btn" data-control-id="expandminiplayer">
             <svg class="T_M_G-video-mini-player-expand-icon" viewBox="0 -960 960 960" data-control-title="Expand miniplayer" style="transform: scale(0.9) rotate(90deg);">
               <path d="M120-120v-320h80v184l504-504H520v-80h320v320h-80v-184L256-200h184v80H120Z"/>
             </svg>
@@ -552,7 +552,7 @@ class T_M_G_Video_Controller {
       `,
       removeminiplayer: `
         <div class="T_M_G-video-mini-player-btn-wrapper T_M_G-video-mini-player-remove-btn-wrapper">
-          <button type="button" class="T_M_G-video-mini-player-remove-btn">
+          <button type="button" class="T_M_G-video-mini-player-remove-btn" data-control-id="removeminiplayer">
             <svg class="T_M_G-video-mini-player-remove-icon" viewBox="0 -960 960 960" data-control-title="Remove miniplayer">
               <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
             </svg>
@@ -588,7 +588,7 @@ class T_M_G_Video_Controller {
       `
         : null,
       bigprev: `
-        <button type="button" class="T_M_G-video-big-prev-btn">
+        <button type="button" class="T_M_G-video-big-prev-btn" data-control-id="bigprev">
           <svg viewBox="0 0 25 25" class="T_M_G-video-prev-icon" data-control-title="Previous video${keyShortcuts["prev"]}">
             <rect x="4" y="5.14" width="2.5" height="14" transform="translate(2.1,0)"/>
             <path d="M17,5.14V19.14L6,12.14L17,5.14Z" transform="translate(2.5,0)" />
@@ -596,7 +596,7 @@ class T_M_G_Video_Controller {
         </button>      
       `,
       bigplaypause: `
-        <button type="button" class="T_M_G-video-big-play-pause-btn" tabindex="${this.initialState ? "0" : "-1"}">
+        <button type="button" class="T_M_G-video-big-play-pause-btn" tabindex="${this.initialState ? "0" : "-1"}" data-control-id="bigplaypause">
           <svg viewBox="0 0 25 25" class="T_M_G-video-play-icon" data-control-title="Play${keyShortcuts["playPause"]}">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
           </svg>
@@ -609,7 +609,7 @@ class T_M_G_Video_Controller {
         </button>         
       `,
       bignext: `
-        <button type="button" class="T_M_G-video-big-next-btn">
+        <button type="button" class="T_M_G-video-big-next-btn" data-control-id="bignext">
           <svg viewBox="0 0 25 25" class="T_M_G-video-next-icon" data-control-title="Next video${keyShortcuts["next"]}">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" transform="translate(-2.5,0)" />
             <rect x="19" y="5.14" width="2.5" height="14" transform="translate(-2.5,0)"/>
@@ -711,7 +711,7 @@ class T_M_G_Video_Controller {
         : null,
       timeandduration: ui.timeAndDuration
         ? `
-        <button class="T_M_G-video-time-and-duration-btn" data-draggable-control="${ui.draggable}" data-control-id="timeandduration" title="Switch (format${keyShortcuts["timeFormat"]} / DblClick→mode${keyShortcuts["timeMode"]})">
+        <button type="button" class="T_M_G-video-time-and-duration-btn" data-draggable-control="${ui.draggable}" title="Switch (format${keyShortcuts["timeFormat"]} / DblClick→mode${keyShortcuts["timeMode"]})" data-control-id="timeandduration">
           <div class="T_M_G-video-current-time">0:00</div>
           <span>/</span>
           <div class="T_M_G-video-total-time">-:--</div>
@@ -1728,10 +1728,8 @@ class T_M_G_Video_Controller {
     this.throttle(
       "canvasPreviewSync",
       () => {
-        if (this.DOM.previewCanvas) {
-          this.DOM.previewCanvas.width = this.DOM.previewCanvas.offsetWidth || this.DOM.previewCanvas.width;
-          this.DOM.previewCanvas.height = this.DOM.previewCanvas.offsetHeight || this.DOM.previewCanvas.height;
-        }
+        if (this.DOM.previewCanvas) this.DOM.previewCanvas.width = this.DOM.previewCanvas.offsetWidth || this.DOM.previewCanvas.width;
+        if (this.DOM.previewCanvas) this.DOM.previewCanvas.height = this.DOM.previewCanvas.offsetHeight || this.DOM.previewCanvas.height;
         if (!this.isMediaMobile) this.previewContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.previewCanvas.width, this.DOM.previewCanvas.height);
         if (this.isScrubbing) this.thumbnailContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.thumbnailCanvas.width, this.DOM.thumbnailCanvas.height);
       },
@@ -2009,9 +2007,10 @@ class T_M_G_Video_Controller {
     this.DOM.cueContainer.style.removeProperty("display");
   }
   _handleCueChange(cue) {
-    this.DOM.cueContainer.innerHTML = "";
-    if (!cue) return;
-    const cueWrapper = tmg.createEl("div", { className: "T_M_G-video-cue-wrapper" });
+    const existing = this.DOM.cueContainer.querySelector(".T_M_G-video-cue-wrapper");
+    if (!cue) return existing?.remove();
+    const cueWrapper = existing || tmg.createEl("div", { className: "T_M_G-video-cue-wrapper" });
+    cueWrapper.innerHTML = "";
     const maxChars = Math.floor(this.videoContainer.offsetWidth / this.cueCharW);
     const paragraphs = cue.text.replace(/<br\s*\/?>/gi, "\n").split(/\n/);
     paragraphs.forEach((p) => {
@@ -2035,7 +2034,7 @@ class T_M_G_Video_Controller {
         cueWrapper.appendChild(cueLine);
       });
     });
-    this.DOM.cueContainer.appendChild(cueWrapper);
+    !existing && this.DOM.cueContainer.appendChild(cueWrapper);
     this.settings.css.currentCueContainerHeight = `${this.DOM.cueContainer.offsetHeight}px`;
     this.settings.css.currentCueContainerWidth = `${this.DOM.cueContainer.offsetWidth}px`;
     this.lastCueText = cue.text;
@@ -2400,7 +2399,7 @@ class T_M_G_Video_Controller {
   async togglePictureInPictureMode() {
     if (!this.settings.modes.pictureInPicture) return;
     if (this.inFullScreen) await this.toggleFullScreenMode();
-    if (this.settings.beta.floatingPlayer && window.documentPictureInPicture) return this.toggleFloatingPlayer();
+    if (!this.isUIActive("pictureInPicture") && window.documentPictureInPicture && this.settings.beta.floatingPlayer) return !this.inFloatingPlayer ? this.initFloatingPlayer() : this.floatingPlayer?.close();
     !this.isUIActive("pictureInPicture") ? await this.video.requestPictureInPicture() : await document.exitPictureInPicture();
   }
   _handleEnterPictureInPicture() {
@@ -2416,10 +2415,6 @@ class T_M_G_Video_Controller {
     this.videoContainer.classList.remove("T_M_G-video-picture-in-picture");
     this.toggleMiniPlayerMode();
     this.delayOverlay();
-  }
-  toggleFloatingPlayer() {
-    if (!this.settings.modes.pictureInPicture || !window.documentPictureInPicture) return;
-    !this.inFloatingPlayer ? this.initFloatingPlayer() : this.floatingPlayer?.close();
   }
   async initFloatingPlayer() {
     if (this.inFloatingPlayer) return;
@@ -3747,11 +3742,12 @@ class T_M_G {
     }
     return result;
   }
-  static parseDottedObj(obj = {}, separator = ".", keyFunc = (p) => p) {
-    if (!tmg.isObj(obj)) return obj;
+  static parseDottedObj(obj = {}, separator = ".", keyFunc = (p) => p, visited = new WeakSet()) {
+    if (!tmg.isObj(obj) || visited.has(obj)) return obj; // prevent circular references
+    visited.add(obj);
     const result = {};
     Object.entries(obj).forEach(([k, v]) => {
-      if (k.includes(separator)) tmg.assignDottedConfig(result, k, tmg.parseDottedObj(v, separator, keyFunc), separator, keyFunc);
+      if (k.includes(separator)) tmg.assignDottedConfig(result, k, tmg.parseDottedObj(v, separator, keyFunc), separator, keyFunc, visited);
       else result[k] = v;
     });
     return result;

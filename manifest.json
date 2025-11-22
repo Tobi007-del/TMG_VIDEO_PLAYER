@@ -16,7 +16,7 @@
   ],
   "screenshots": [
     {
-      "src": "assets/images/desktop_preview.png",
+      "src": "assets/images/hero_image.png",
       "sizes": "2530x1260",
       "type": "image/png",
       "form_factor": "wide"
@@ -80,6 +80,15 @@
       "sizes": "410x900",
       "type": "image/png",
       "form_factor": "narrow"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "index.html",
+      "accept": {
+        "video/*": [".mp4", ".mkv", ".webm", ".mov", ".avi", ".m4v"]
+      },
+      "launch_type": "multiple-clients"
     }
   ]
 }

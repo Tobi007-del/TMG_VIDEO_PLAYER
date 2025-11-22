@@ -418,6 +418,7 @@ body:has(#video.stall) #clear-button {
 
 #install {
   display: none;
+  margin-top: 5px;
 }
 
 #install:hover,

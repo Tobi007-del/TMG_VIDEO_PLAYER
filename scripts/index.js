@@ -169,9 +169,7 @@ clearBtn.addEventListener("click", clearFiles);
     const promises = [];
     for (let i = 0; i < dtItems.length; i++) {
       const entry = dtItems[i].webkitGetAsEntry?.();
-      if (entry) promises.push(traverseFileTree(entry));
-      else if (dtItems[i].kind === "file") promises.push(Promise.resolve(dtItems[i].getAsFile()));
-      else return Promise.resolve([]);
+      promises.push(entry ? traverseFileTree(entry) : Promise.resolve(dtItems[i].kind === "file" ? dtItems[i].getAsFile() : []));
     }
     const flatFiles = (await Promise.all(promises)).flat().filter(Boolean);
     const videoFiles = flatFiles.filter((file) => (file.type || getMimeTypeFromExtension(file.name)).startsWith("video/"));
@@ -182,6 +180,19 @@ clearBtn.addEventListener("click", clearFiles);
     foldersDropBox.classList.remove("active");
   });
 });
+(async function launchWithOpenedFiles() {
+  if (!("launchQueue" in window)) return;
+  launchQueue.setConsumer(async (launchParams) => {
+    if (!launchParams?.files?.length) return;
+    initUI();
+    const promises = launchParams.files.map((fileHandle) => fileHandle.getFile());
+    const flatFiles = (await Promise.all(promises)).flat().filter(Boolean);
+    const videoFiles = flatFiles.filter((file) => (file.type || getMimeTypeFromExtension(file.name)).startsWith("video/"));
+    const rejectedCount = flatFiles.length - videoFiles.length;
+    if (rejectedCount > 0) Toast.warn(`You opened ${rejectedCount} unsupported file${rejectedCount > 1 ? "s" : ""}. Only video files are supported.`);
+    handleFiles(videoFiles);
+  });
+})();
 
 function defaultUI() {
   if (numberOfFiles >= 1) return;
@@ -229,6 +240,7 @@ function clearFiles() {
   [...containers].forEach((c) => {
     const vid = c.querySelector("video");
     URL.revokeObjectURL(vid.src);
+    if (vid.playlistItem?.tracks?.[0].src?.startsWith("blob:")) URL.revokeObjectURL(vid.playlistItem.tracks[0].src);
     cancelJob(vid.dataset.captionId);
     c.style.setProperty("--video-progress-position", 0);
   });
@@ -255,7 +267,10 @@ function handleFiles(files) {
         const li = tmg.createEl("li", { className: "content-line" }, { fileName: files[i].name });
         const thumbnailContainer = tmg.createEl("span", {
           className: "thumbnail-container",
-          onclick: () => mP.Controller?.movePlaylistTo(mP.Controller.playlist.findIndex((vid) => vid.src === thumbnailContainer.querySelector("video").src)),
+          onclick: () => {
+            const idx = mP.Controller?.playlist.findIndex((vid) => vid.src === thumbnailContainer.querySelector("video").src);
+            if (idx >= 0) mP.Controller.movePlaylistTo(idx);
+          },
         });
         li.appendChild(thumbnailContainer);
         const playbtn = tmg.createEl("button", {
@@ -335,6 +350,7 @@ function handleFiles(files) {
             if (target.matches("input")) return;
             if (thumbnail.dataset.captionState === "empty") return captionsBtn.querySelector("input").click();
             else if (thumbnail.dataset.captionState === "filled") {
+              if (thumbnail.playlistItem?.tracks?.[0]?.src?.startsWith("blob:")) URL.revokeObjectURL(thumbnail.playlistItem.tracks[0].src);
               thumbnail.playlistItem.tracks = [];
               if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = [];
             } else if (!cancelJob(thumbnail.dataset.captionId)) return; // cancels if waiting and returns if loading since current job is shifted from queue
@@ -406,10 +422,12 @@ function handleFiles(files) {
           { passive: false }
         );
         function onPointerMove(e) {
+          e.preventDefault();
           clientY = e.clientY;
         }
         function dragLoop() {
           function update() {
+            if (!li.isConnected) return; // ← Exit if element removed
             const now = performance.now();
             scrollSpeed = (LINES_PER_SEC * LINE_HEIGHT * (now - lastTime)) / 1000;
             lastTime = now;
@@ -568,28 +586,33 @@ async function deployCaption(item, file, thumbnail, autocancel = tmg.queryMediaM
 }
 
 async function extractCaptions(file, id) {
+  const inputName = `video${id}${file.name.slice(file.name.lastIndexOf("."))}`;
+  const outputName = `cue${id}.vtt`;
   try {
     console.log(`🎥 Processing file: '${file.name}'`);
-    const inputName = `video${id}.mp4`;
-    const outputName = `cue${id}.vtt`;
     if (!ffmpeg.isLoaded()) await ffmpeg.load();
     ffmpeg.FS("writeFile", inputName, await fetchFile(file));
     console.log("🛠 Extracting first subtitle stream to .vtt...");
     await ffmpeg.run("-i", inputName, "-map", "0:s:0", "-f", "webvtt", outputName);
     const vttData = ffmpeg.FS("readFile", outputName);
-    ffmpeg.FS("unlink", inputName);
-    ffmpeg.FS("unlink", outputName);
     console.log("✅ First subtitle stream extracted successfully.");
     return { success: true, track: { id, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([vttData.buffer], { type: "text/vtt" })), default: true } };
   } catch (err) {
     console.error("❌ Subtitle stream extraction failed:", err);
     return { success: false, error: err.toString() };
+  } finally {
+    try {
+      ffmpeg.FS("unlink", inputName);
+    } catch {}
+    try {
+      ffmpeg.FS("unlink", outputName);
+    } catch {}
   }
 }
 
 function rebuildPlaylistFromUI() {
   const map = Object.fromEntries(mP.Controller.playlist.map((v) => [v.src, v]));
-  mP.Controller.playlist = Array.from(fileList.querySelectorAll(".content-line"), (li) => map[li.querySelector("video")?.src]);
+  mP.Controller.playlist = Array.from(fileList.querySelectorAll(".content-line"), (li) => map[li.querySelector("video")?.src]).filter(Boolean);
 }
 
 function dispatchPlayerReadyToast() {
@@ -628,6 +651,8 @@ function smartFlatSort(files) {
   function romanToInt(roman) {
     // Map of Roman numeral characters to their integer values
     const ROMAN = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+    const valid = /^[IVXLCDM]+$/i.test(roman);
+    if (!valid) return 0; // ← Invalid input
     return roman
       .toUpperCase() // Ensure consistent uppercase (e.g., 'iv' becomes 'IV')
       .split("") // Turn into array of characters: 'XIV' → ['X','I','V']
@@ -733,7 +758,7 @@ function srtToVtt(srt) {
     if (idx >= lines.length) {
       continue; // malformed block
     }
-    const timing = lines[idx].trim();
+    const timing = lines[idx].trim().replace(/\s+/g, " "); // ← Normalize;
     // Match times with optional ms, comma or dot
     const m = timing.match(/(\d{1,2}:\d{2}:\d{2})(?:[.,](\d{1,3}))?\s*-->\s*(\d{1,2}:\d{2}:\d{2})(?:[.,](\d{1,3}))?/);
     if (!m) {
@@ -771,5 +796,5 @@ function formatTimeAgo(date, s = "") {
 }
 
 function uid(prefix = "tvp_") {
-  return `${prefix}${Date.now().toString(36)}_${performance.now().toString(36)}_${Math.random().toString(36)}`;
+  return `${prefix}${Date.now().toString(36)}_${performance.now().toString(36).replace(".", "")}_${Math.random().toString(36).slice(2)}`;
 }
