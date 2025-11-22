@@ -1,7 +1,7 @@
 {
   "name": "TMG Video Player",
   "short_name": "TVP",
-  "desciption": "TVP is a simple video player that allows you to play videos from your local device in your web browser.",
+  "description": "TVP is a simple video player that allows you to play videos from your local device in your web browser.",
   "start_url": "index.html",
   "id": "index.html",
   "display": "standalone",
