@@ -3940,12 +3940,12 @@ class T_M_G {
     if (src?.canvas) src = src.canvas;
     const c = document.createElement("canvas"),
       x = c.getContext("2d"),
-      s = Math.min(100, src.width || 100, src.height || 100);
+      s = Math.min(100, src.width, src.height);
     c.width = c.height = s;
     src && x.drawImage(src, 0, 0, s, s);
-    const d = src && x.getImageData(0, 0, s, s).data;
-    ((ct = {}), // count
-      (pt = {})); // per total
+    const d = src && x.getImageData(0, 0, s, s).data,
+      ct = {}, // count
+      pt = {}; // per total
     for (let i = 0; i < d?.length; i += 4) {
       if (d[i + 3] < 128) continue;
       const k = `${d[i] & 0xf0},${d[i + 1] & 0xf0},${d[i + 2] & 0xf0}`;
