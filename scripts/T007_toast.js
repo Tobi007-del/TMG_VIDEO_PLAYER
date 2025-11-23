@@ -274,26 +274,22 @@ class T007_Toast {
   }
 }
 
-const Toaster = (defOptions = {}) => {
-  const defaults = () => ({ ...t007.TOAST_DEFAULT_OPTIONS, ...defOptions });
-  const base = (render, options = {}) => new T007_Toast({ ...defaults(), ...options, render }).id;
-  base.update = (id, options) => {
+export const Toasting = {
+  update(base, id, options) {
     const toast = t007.toasts.get(id),
       allOpts = { ...toast?.opts, ...options };
     return !!toast && (toast.destroyed ? base(allOpts.render, allOpts) : toast.update(options));
-  };
-  ["info", "success", "warn", "error"].forEach(
-    (action) =>
-      (base[action] = (renderOrId, options = {}) => {
-        options = { ...options, type: action === "warn" ? "warning" : action };
-        const toast = t007.toasts.get(renderOrId);
-        if (!toast) return base(renderOrId, options);
-        const { autoClose, closeButton, closeOnClick, dragToClose } = defaults();
-        return base.update(renderOrId, { ...(toast.opts.isLoading ? { autoClose, closeButton, closeOnClick, dragToClose } : {}), ...options, isLoading: false });
-      })
-  );
-  base.loading = (render, options = {}) => base(render, { autoClose: false, closeButton: false, closeOnClick: false, dragToClose: false, ...options, isLoading: options.isLoading || true });
-  base.promise = function (promise = new Promise((res, rej) => setTimeout(Math.round(Math.random()) ? res : rej, 3000)), { pending, success, error } = {}) {
+  },
+  message: (base, defaults, action) =>
+    (base[action] = (renderOrId, options = {}) => {
+      options = { ...options, type: action === "warn" ? "warning" : action };
+      const toast = t007.toasts.get(renderOrId);
+      if (!toast) return base(renderOrId, options);
+      const { autoClose, closeButton, closeOnClick, dragToClose } = defaults();
+      return base.update(renderOrId, { ...(toast.opts.isLoading ? { autoClose, closeButton, closeOnClick, dragToClose } : {}), ...options, isLoading: false });
+    }),
+  loading: (base, render, options = {}) => base(render, { autoClose: false, closeButton: false, closeOnClick: false, dragToClose: false, ...options, isLoading: options.isLoading || true }),
+  promise(base, promise = new Promise((res, rej) => setTimeout(Math.round(Math.random()) ? res : rej, 3000)), { pending, success, error } = {}) {
     if (!promise || typeof promise.then !== "function") return console.error("Toast.promise() requires a valid promise");
     const NFC = (input, type) => (typeof input === "string" ? { render: input, type } : typeof input === "object" ? { ...input, type } : { type });
     const pendingConfig = NFC(pending);
@@ -317,19 +313,28 @@ const Toaster = (defOptions = {}) => {
       }
     );
     return promise;
-  };
-  base.dismiss = function (id, manner, timeElapsed) {
+  },
+  dismiss(id, manner, timeElapsed) {
     return !arguments.length ? t007.toasts.values().forEach((toast) => toast._remove()) : t007.toasts.get(id)?._remove(manner, timeElapsed);
-  };
+  },
+};
+export const Toaster = (defOptions = {}) => {
+  const defaults = () => ({ ...t007.TOAST_DEFAULT_OPTIONS, ...defOptions });
+  const base = (render, options = {}) => new T007_Toast({ ...defaults(), ...options, render }).id;
+  base.update = (id, options) => Toasting.update(base, id, options);
+  ["info", "success", "warn", "error"].forEach((action) => Toasting.message(base, defaults, action));
+  base.loading = (render, options) => Toasting.loading(base, render, options);
+  base.promise = (promise, options) => Toasting.promise(base, promise, options);
+  base.dismiss =  Toasting.dismiss;
   return base;
 };
 const Toast = Toaster();
 export default Toast;
-export { Toaster };
 
 if (typeof window !== "undefined") {
   window.t007 ??= { _resourceCache: {} };
   t007.toast = Toast;
+  t007.toasting = Toasting;
   t007.toaster = Toaster;
   t007.toasts = new Map();
   t007.TOAST_DEFAULT_OPTIONS ??= {};
@@ -380,7 +385,7 @@ function clamp(min, amount, max) {
   return Math.min(Math.max(amount, min), max);
 }
 function uid(prefix = "t007_toast_") {
-  return `${prefix}${Date.now().toString(36)}_${performance.now().toString(36)}_${Math.random().toString(36)}`;
+  return `${prefix}${Date.now().toString(36)}_${performance.now().toString(36).replace(".", "")}_${Math.random().toString(36).slice(2)}`;
 }
 // prettier-ignore
 function isSameURL(src1, src2) {
