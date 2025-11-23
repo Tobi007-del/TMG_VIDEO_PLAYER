@@ -2597,7 +2597,7 @@ class T_M_G_Video_Controller {
   _handleFocusIn = ({ target: t }) => (this.focusSubjectId = t?.dataset?.controlId && !t.matches(":focus-visible") ? t.dataset.controlId : null);
   _handleKeyFocusIn = ({ target: t }) => t?.dataset?.controlId === this.focusSubjectId && t.blur();
   _handleGestureWheel(e) {
-    if (!this.settings.beta && !this.settings.beta.gesture.wheel.disabled && !this.locked && !this.disabled && (this.overVolume || this.overBrightness || this.overTimeline || (e.target === this.DOM.controlsContainer && !this.gestureTouchXCheck && !this.gestureTouchYCheck && !this.speedCheck && (this.isUIActive("fullScreen") || this.inFloatingPlayer)))) {
+    if (!this.settings.beta.disabled && !this.settings.beta.gesture.wheel.disabled && !this.locked && !this.disabled && (this.overVolume || this.overBrightness || this.overTimeline || (e.target === this.DOM.controlsContainer && !this.gestureTouchXCheck && !this.gestureTouchYCheck && !this.speedCheck && (this.isUIActive("fullScreen") || this.inFloatingPlayer)))) {
       e.preventDefault();
       this.gestureWheelTimeoutId ? clearTimeout(this.gestureWheelTimeoutId) : this._handleGestureWheelInit(e);
       this.gestureWheelTimeoutId = setTimeout(this._handleGestureWheelStop, this.settings.beta.gesture.wheel.timeout);
@@ -2627,7 +2627,7 @@ class T_M_G_Video_Controller {
     if (deltaX || shiftKey || this.overTimeline) {
       if ((!wc.timeline.slider && this.overTimeline) || (!wc.timeline.normal && !this.overTimeline) || this.gestureWheelYCheck) return this._handleGestureWheelStop();
       this.gestureWheelXCheck = true;
-      if (!this.overTimeline) this.DOM.touchTimelineNotifier.classList.add("T_M_G-video-control-active");
+      !this.overTimeline && this.DOM.touchTimelineNotifier.classList.add("T_M_G-video-control-active");
       this._handleGestureTimelineInput({
         percent: xPercent,
         sign: xSign,
@@ -2649,7 +2649,7 @@ class T_M_G_Video_Controller {
         currentXZone = x - rect.left > width * 0.5 ? "right" : "left";
       if (cancel || currentXZone !== this.gestureWheelZone.x) return this._handleGestureWheelStop();
       this.gestureWheelYCheck = true;
-      if (!this.overVolume && !this.overBrightness) (this.gestureWheelZone?.x === "right" ? this.DOM.touchVolumeNotifier : this.DOM.touchBrightnessNotifier)?.classList.add("T_M_G-video-control-active");
+      !this.overVolume && !this.overBrightness && (this.gestureWheelZone?.x === "right" ? this.DOM.touchVolumeNotifier : this.DOM.touchBrightnessNotifier)?.classList.add("T_M_G-video-control-active");
       if (this.overVolume) this.delayVolumeActive();
       if (this.overBrightness) this.delayBrightnessActive();
       const ySign = -deltaY >= 0 ? "+" : "-";
@@ -2709,13 +2709,8 @@ class T_M_G_Video_Controller {
     };
     const rTop = this.lastGestureTouchX - rect.left,
       rLeft = this.lastGestureTouchY - rect.top; // relative
-    if (deltaX > deltaY * tc.axesRatio && rTop > tc.inset && rTop < rect.width - tc.inset) {
-      this.gestureTouchXCheck = true;
-      tc.timeline && this.videoContainer.addEventListener("touchmove", this._handleGestureTouchXMove, { passive: false });
-    } else if (deltaY > deltaX * tc.axesRatio && rLeft > tc.inset && rLeft < rect.height - tc.inset) {
-      this.gestureTouchYCheck = true;
-      ((tc.volume && this.gestureTouchZone?.x === "right") || (tc.brightness && this.gestureTouchZone?.x === "left")) && this.videoContainer.addEventListener("touchmove", this._handleGestureTouchYMove, { passive: false });
-    }
+    if (deltaX > deltaY * tc.axesRatio && rTop > tc.inset && rTop < rect.width - tc.inset) tc.timeline && (this.gestureTouchXCheck = true) && this.videoContainer.addEventListener("touchmove", this._handleGestureTouchXMove, { passive: false });
+    else if (deltaY > deltaX * tc.axesRatio && rLeft > tc.inset && rLeft < rect.height - tc.inset) ((tc.volume && this.gestureTouchZone?.x === "right") || (tc.brightness && this.gestureTouchZone?.x === "left")) && (this.gestureTouchYCheck = true) && this.videoContainer.addEventListener("touchmove", this._handleGestureTouchYMove, { passive: false });
   }
   _handleGestureTouchXMove(e) {
     e.preventDefault();
@@ -3235,7 +3230,7 @@ class T_M_G {
         disabled: false,
         rewind: true,
         gesture: {
-          touch: { disabled: false, volume: false, brightness: false, timeline: false, threshold: 200, axesRatio: 3, inset: 20, sliderTimeout: 1000, xRatio: 1, yRatio: 1 },
+          touch: { disabled: false, volume: true, brightness: true, timeline: true, threshold: 200, axesRatio: 3, inset: 20, sliderTimeout: 1000, xRatio: 1, yRatio: 1 },
           wheel: { disabled: false, volume: { normal: true, slider: true }, brightness: { normal: true, slider: true }, timeline: { normal: true, slider: true }, timeout: 2000, xRatio: 12, yRatio: 6 },
         },
         floatingPlayer: { disabled: false, width: 270, height: 145, disallowReturnToOpener: false, preferInitialWindowPlacement: false },
