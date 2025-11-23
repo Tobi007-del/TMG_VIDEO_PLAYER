@@ -104,7 +104,7 @@ class T_M_G_Video_Controller {
   fire = (eventName, detail = null, el = this.video, bubbles = true, cancelable = true) => el?.dispatchEvent(new CustomEvent(eventName, { detail, bubbles, cancelable }));
   notify = (event) => this.settings.notifiers && this.fire(event, null, this.DOM.notifiersContainer);
   get toast() {
-    return !this.settings.toasts.disabled ? t007.toaster({ ...this.settings.toasts, rootElement: this.videoContainer }) : null;
+    return !this.settings.toasts.disabled ? t007.toaster({ rootElement: this.videoContainer, ...this.settings.toasts }) : null;
   }
   throttle(key, fn, delay = 30, strict = true) {
     if (strict) {
@@ -1150,7 +1150,7 @@ class T_M_G_Video_Controller {
       el.addEventListener("click", this._handleAnyClick, true);
       el.addEventListener("focusin", this._handleFocusIn, true);
       el.addEventListener("keydown", this._handleKeyFocusIn, true);
-      ["pointermove", "dragenter"].forEach((e) => el.addEventListener(e, this._handleHoverPointerActive, true));
+      ["pointermove", "dragenter", "wheel"].forEach((e) => el.addEventListener(e, this._handleHoverPointerActive, true));
       el.addEventListener("mouseleave", this._handleHoverPointerOut, true);
     });
     tmg.onSafeClicks(this.DOM.controlsContainer, this._handleClick, this._handleDoubleClick, true);
@@ -1439,7 +1439,7 @@ class T_M_G_Video_Controller {
     }
     return null;
   }
-  getMediaBrandColor = async (time, poster = this.video.poster || this.media?.artwork?.[0]?.src, config = {}) => await tmg.getDominantColor(poster ? poster : (await this.getVideoFrame(!time ? await this.findGoodFrameTime(config) : time, "", true)).canvas);
+  getMediaBrandColor = async (time, poster = this.video.poster || this.media?.artwork?.[0]?.src, config = {}) => await tmg.getDominantColor(poster ? poster : (await this.getVideoFrame(time ? time : await this.findGoodFrameTime(config), "", true)).canvas);
   syncMediaBrandColor = async () => (this.settings.css.brandColor = (this.loaded ? await this.getMediaBrandColor() : null) ?? this.CSSPropsCache.brandColor);
   deactivate(message) {
     this.showOverlay();
@@ -2565,9 +2565,9 @@ class T_M_G_Video_Controller {
     this.skipPersist = false;
     this.skipPersistPosition = null;
   }
-  _handleHoverPointerActive({ target }) {
-    if (!this.isMediaMobile) this.showOverlay();
-    if (this.DOM.tRightSideControlsWrapper.contains(target) || this.DOM.bottomControlsWrapper.contains(target)) clearTimeout(this.overlayDelayId);
+  _handleHoverPointerActive({ target, pointerType }) {
+    !this.isMediaMobile && this.showOverlay();
+    pointerType && (this.DOM.tRightSideControlsWrapper.contains(target) || this.DOM.bottomControlsWrapper.contains(target)) && clearTimeout(this.overlayDelayId); // better ux
   }
   _handleHoverPointerOut = () => setTimeout(() => !this.isMediaMobile && !this.videoContainer.matches(":hover") && this.removeOverlay());
   showOverlay() {

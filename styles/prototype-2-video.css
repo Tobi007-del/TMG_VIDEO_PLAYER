@@ -1155,7 +1155,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   display: none;
 }
 .T_M_G-media-container[data-size-tier^="xxx"] .T_M_G-video-big-controls-wrapper {
-  gap: calc(var(--T_M_G-video-current-unit) * 2);
+  gap: calc(var(--T_M_G-video-current-unit) * 2.125);
 }
 .T_M_G-media-container[data-size-tier^="xxxx"] .T_M_G-video-big-controls-wrapper {
   gap: calc(var(--T_M_G-video-current-unit) * 1.5);
