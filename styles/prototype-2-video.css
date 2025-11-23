@@ -1019,7 +1019,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   font-weight: 500;
   text-align: left;
   white-space: nowrap;
-  margin-block: calc(var(--T_M_G-video-current-unit) / 2.75);
+  margin-block: calc(var(--T_M_G-video-current-unit) / 2.5);
   margin-inline-start: var(--T_M_G-video-current-controls-gap);
 }
 .T_M_G-video-top-controls-wrapper:has([data-control-displayed="true"]) .T_M_G-video-title-wrapper-cover {
