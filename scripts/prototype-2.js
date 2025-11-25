@@ -19,8 +19,8 @@ class T_M_G_Video_Controller {
     if (sources.length) videoOptions.sources = sources;
     if (tracks.length) videoOptions.tracks = tracks;
     this.log(videoOptions);
-    this.audioSetup = this.loaded = this.locked = this.inFullScreen = this.isScrubbing = this.buffering = this.inFloatingPlayer = this.overTimeline = this.overVolume = this.overBrightness = this.gestureTouchXCheck = this.gestureTouchYCheck = this.gestureWheelXCheck = this.gestureWheelYCheck = this.shouldSetLastVolume = this.shouldSetLastBrightness = this.speedPointerCheck = this.speedCheck = this.skipPersist = false;
-    this.parentIntersecting = this.isIntersecting = this.gestureTouchCanCancel = this.canAutoMovePlaylist = true;
+    this.audioSetup = this.loaded = this.locked = this.inFullScreen = this.isScrubbing = this.buffering = this.inFloatingPlayer = this.overTimeline = this.overVolume = this.overBrightness = this.gestureTouchXCheck = this.gestureTouchYCheck = this.gestureWheelXCheck = this.gestureWheelYCheck = this.shouldSetLastVolume = this.shouldSetLastBrightness = this.speedPointerCheck = this.speedCheck = this.skipPersist = this.shouldCancelScrub = false;
+    this.parentIntersecting = this.isIntersecting = this.gestureTouchCanCancel = this.canAutoMovePlaylist = this.stallCancelTimeScrub = true;
     this.skipDuration = this.textTrackIndex = this.playTriggerCounter = 0;
     this.lastCueText = "";
     this.isMediaMobile = tmg.queryMediaMobile();
@@ -162,6 +162,7 @@ class T_M_G_Video_Controller {
     setTimeout(() => (this.mutatingDOM = false));
   }
   _destroy() {
+    this.video.cancelVideoFrameCallback?.(this.frameCallbackId);
     this.cancelAudio();
     this.cancelAllLoops();
     this.leaveSettingsView();
@@ -493,6 +494,11 @@ class T_M_G_Video_Controller {
       </div>
       `
         : null,
+      cancelscrubnotifier: ui.notifiers
+        ? `
+      <div class="T_M_G-video-notifier T_M_G-video-cancel-scrub-notifier">Release to cancel</div>
+      `
+        : null,
       touchtimelinenotifier: ui.notifiers
         ? `
         <div class="T_M_G-video-notifier T_M_G-video-touch-timeline-notifier T_M_G-video-touch-notifier"></div>
@@ -626,7 +632,7 @@ class T_M_G_Video_Controller {
               <div class="T_M_G-video-seek-bar T_M_G-video-preview-seek-bar"></div>
               <div class="T_M_G-video-seek-bar T_M_G-video-played-seek-bar"></div>
             </div>
-            <div class="T_M_G-video-thumb-indicator T_M_G-video-rippler"></div>
+            <div class="T_M_G-video-thumb-indicator"></div>
             <div class="T_M_G-video-preview-container">
               <img class="T_M_G-video-preview" alt="Preview image" src="${TMG_VIDEO_ALT_IMG_SRC}">
               <canvas class="T_M_G-video-preview"></canvas>
@@ -824,7 +830,7 @@ class T_M_G_Video_Controller {
       (this.videoContainer = tmg.createEl(
         "div",
         {
-          className: `T_M_G-video-container T_M_G-media-container${this.isMediaMobile ? " T_M_G-video-mobile" : ""}${this.video.paused ? " T_M_G-video-paused" : ""}${this.settings.time.progressBar ? "T_M_G-video-progress-bar" : ""}`,
+          className: `T_M_G-video-container T_M_G-media-container${this.isMediaMobile ? " T_M_G-video-mobile" : ""}${this.video.paused ? " T_M_G-video-paused" : ""}${this.settings.time.progressBar ? " T_M_G-video-progress-bar" : ""}`,
         },
         { volumeLevel: "muted", brightnessLevel: "dark" }
       )),
@@ -893,7 +899,7 @@ class T_M_G_Video_Controller {
       bLeftSideControls = spacerIndex > -1 ? this.settings.controlPanel.bottom?.slice?.(0, spacerIndex) : null,
       bRightSideControls = spacerIndex > -1 ? this.settings.controlPanel.bottom?.slice?.(spacerIndex + 1) : null,
       controlsContainerBuild = this.queryDOM(".T_M_G-video-controls-container"),
-      notifiersContainerBuild = this.settings.status.ui.notifiers ? tmg.createEl("div", { className: "T_M_G-video-notifiers-container", innerHTML: ``.concat(HTML.playpausenotifier ?? "", HTML.prevnextnotifier ?? "", HTML.captionsnotifier ?? "", HTML.capturenotifier ?? "", HTML.objectfitnotifier ?? "", HTML.playbackratenotifier ?? "", HTML.volumenotifier ?? "", HTML.brightnessnotifier ?? "", HTML.fwdnotifier ?? "", HTML.bwdnotifier ?? "", HTML.scrubnotifier ?? "", HTML.touchtimelinenotifier ?? "", HTML.touchvolumenotifier ?? "", HTML.touchbrightnessnotifier ?? ""), "data-notify": "" }) : null,
+      notifiersContainerBuild = this.settings.status.ui.notifiers ? tmg.createEl("div", { className: "T_M_G-video-notifiers-container", innerHTML: ``.concat(HTML.playpausenotifier ?? "", HTML.prevnextnotifier ?? "", HTML.captionsnotifier ?? "", HTML.capturenotifier ?? "", HTML.objectfitnotifier ?? "", HTML.playbackratenotifier ?? "", HTML.volumenotifier ?? "", HTML.brightnessnotifier ?? "", HTML.fwdnotifier ?? "", HTML.bwdnotifier ?? "", HTML.scrubnotifier ?? "", HTML.cancelscrubnotifier ?? "", HTML.touchtimelinenotifier ?? "", HTML.touchvolumenotifier ?? "", HTML.touchbrightnessnotifier ?? ""), "data-notify": "" }) : null,
       bigControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-big-controls-wrapper", innerHTML: ``.concat(HTML.bigprev ?? "", HTML.bigplaypause ?? "", HTML.bignext ?? "") }),
       topControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-top-controls-wrapper", innerHTML: HTML.videotitle ?? "" }),
       tRightSideControlsWrapperBuild = this.settings.status.ui.tRightSideControls ? tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-right-side-controls-wrapper-cover" }) : null,
@@ -919,7 +925,7 @@ class T_M_G_Video_Controller {
       bSubControlsWrapperBuild.append(bRightSideControlsWrapperBuild);
     }
     bottomControlsWrapperBuild.append(bSubControlsWrapperBuild);
-    bSubControlsWrapperBuild.insertAdjacentHTML(this.settings.time.linePosition === "top" ? "beforebegin" : "afterend", HTML.timeline ?? "");
+    bSubControlsWrapperBuild.insertAdjacentHTML(this.settings.time.line.position === "top" ? "beforebegin" : "afterend", HTML.timeline ?? "");
     controlsContainerBuild.insertAdjacentHTML("afterbegin", ``.concat(HTML.expandminiplayer ?? "", HTML.removeminiplayer ?? "", HTML.pictureinpicturewrapper ?? "", HTML.thumbnail ?? "", HTML.videobuffer ?? "", HTML.cueContainer ?? ""));
     this.pseudoVideoContainer.insertAdjacentHTML("beforeend", ``.concat(HTML.pictureinpicturewrapper ?? "")); // running some pseudo build
   }
@@ -957,6 +963,7 @@ class T_M_G_Video_Controller {
       brightnessNotifierContent: ui.notifiers ? this.queryDOM(".T_M_G-video-brightness-notifier-content") : null,
       objectFitNotifierContent: ui.notifiers ? this.queryDOM(".T_M_G-video-object-fit-notifier-content") : null,
       scrubNotifier: ui.notifiers ? this.queryDOM(".T_M_G-video-scrub-notifier") : null,
+      cancelScrubNotifier: ui.notifiers ? this.queryDOM(".T_M_G-video-cancel-scrub-notifier") : null,
       fwdNotifier: ui.notifiers ? this.queryDOM(".T_M_G-video-fwd-notifier") : null,
       bwdNotifier: ui.notifiers ? this.queryDOM(".T_M_G-video-bwd-notifier") : null,
       touchTimelineNotifier: ui.notifiers ? this.queryDOM(".T_M_G-video-touch-timeline-notifier") : null,
@@ -1057,8 +1064,6 @@ class T_M_G_Video_Controller {
     this.setControlsState();
     this.setCaptionsState();
     this.setPreviewsState();
-    this.pseudoVideo.src = this.video.src || this.video.currentSrc;
-    this.pseudoVideo.crossOrigin = this.video.crossOrigin;
   }
   setTitleState(title, artist) {
     if (this.DOM.videoTitle) this.DOM.videoTitle.textContent = this.DOM.videoTitle.dataset.videoTitle = (title ?? this.media?.title) || "";
@@ -1433,7 +1438,8 @@ class T_M_G_Video_Controller {
     frame?.url && tmg.createEl("a", { href: frame.url, download: `${this.media?.title ?? "Video"}_${m ? `black&white_` : ""}at_${tTxt}.png`.replace(/[\/:*?"<>|\s]+/g, "_") })?.click?.(); // system filename safe
   }
   async findGoodFrameTime({ time: t = this.currentTime, secondsLimit: s = 25, saturation: sat = 12, brightness: bri = 40 }) {
-    for (; t <= t + s; t += 0.333) {
+    const end = tmg.clamp(0, t + s, this.duration);
+    for (; t <= end; t += 0.333) {
       const rgb = await tmg.getDominantColor((await this.getVideoFrame(t, "", true)).canvas, "rgb", true); // ~3 frames per second
       if (rgb && tmg.getRGBBri(rgb) > bri && tmg.getRGBSat(rgb) > sat) return t; // <= FIRST legit content frame
     }
@@ -1574,7 +1580,7 @@ class T_M_G_Video_Controller {
         <button type="button">
           <svg viewBox="0 0 25 25"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg>
         </button>
-        <video class="T_M_G-video-playlist-next-video-preview" src="${v.src}" autoplay muted loop playsinline webkit-playsinline></video>
+        <video class="T_M_G-video-playlist-next-video-preview" src="${v.src || v.sources?.[0]?.src || ""}" autoplay muted loop playsinline webkit-playsinline></video>
       </span>
       <span class="T_M_G-video-playlist-next-video-info">
         <h2>Next Video in <span class="T_M_G-video-playlist-next-video-countdown">${count}</span></h2>
@@ -1658,13 +1664,15 @@ class T_M_G_Video_Controller {
   }
   _handleLoadedMetadata() {
     this.loaded = true;
-    this.stats = { fps: 30 };
     if (this.settings.time.start && !this.initialState) this.currentTime = this.settings.time.start;
+    this.pseudoVideo.src = this.video.src || this.video.currentSrc;
+    this.pseudoVideo.crossOrigin = this.video.crossOrigin;
+    this.stats = { fps: 30 };
     this.syncAspectRatio();
     // this.syncMediaBrandColor();
     this.setCaptionsState();
     if (this.DOM.totalTimeElement) this.DOM.totalTimeElement.textContent = this.toTimeText(this.video.duration);
-    this.settings.css.currentPlayedPosition = this.currentTime < 1 ? (this.settings.css.currentBufferedPosition = 0) : tmg.parseNumber(this.video.currentTime / this.video.duration);
+    this.settings.css.currentPlayedPosition = this.settings.css.currentThumbPosition = this.currentTime < 1 ? (this.settings.css.currentBufferedPosition = 0) : tmg.parseNumber(this.video.currentTime / this.video.duration);
     this.reactivate();
   }
   _handleLoadedData() {
@@ -1702,7 +1710,7 @@ class T_M_G_Video_Controller {
     this.setMediaSession();
     this.leaveSettingsView();
     this.toggleMiniPlayerMode();
-    this.video.requestVideoFrameCallback?.(this._handleFrameUpdate);
+    this.frameCallbackId = this.video.requestVideoFrameCallback?.(this._handleFrameUpdate);
     if (!this.loaded || !this.video.currentSrc) return;
     this.loaded = true;
     !this.video.error && this.reactivate();
@@ -1760,12 +1768,16 @@ class T_M_G_Video_Controller {
   stopTimeScrubbing() {
     if (!this.isScrubbing) return;
     this.isScrubbing = false;
-    this.currentTime = Number(this.settings.css.currentPlayedPosition) * this.duration;
+    this.settings.css.currentPlayedPosition = this.settings.css.currentThumbPosition = this.shouldCancelTimeScrub ? this.settings.css.currentPlayedPosition : this.settings.css.currentThumbPosition;
+    if (this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(Number(this.settings.css.currentPlayedPosition) * this.duration, true);
+    if (!this.shouldCancelTimeScrub) this.currentTime = Number(this.settings.css.currentPlayedPosition) * this.duration;
     clearTimeout(this.scrubbingId);
     this.togglePlay(!this.wasPaused);
     this.videoContainer.classList.remove("T_M_G-video-scrubbing");
     this.DOM.scrubNotifier?.classList.remove("T_M_G-video-control-active");
     this.stopTimePreviewing();
+    this.allowTimeScrubbing();
+    this.stallCancelTimeScrub = true;
     this.DOM.timelineContainer?.removeEventListener("pointermove", this._handleTimelineInput);
     this.DOM.timelineContainer?.removeEventListener("pointerup", this.stopTimeScrubbing);
   }
@@ -1773,18 +1785,35 @@ class T_M_G_Video_Controller {
     this.overTimeline = false;
     setTimeout(() => this.videoContainer.classList.remove("T_M_G-video-previewing"));
   }
+  cancelTimeScrubbing() {
+    if (this.stallCancelTimeScrub || this.shouldCancelTimeScrub || this.cancelScrubTimeoutId) return;
+    this.shouldCancelTimeScrub = true;
+    this.DOM.cancelScrubNotifier.classList.add("T_M_G-video-control-active");
+    this.cancelScrubTimeoutId = setTimeout(this.allowTimeScrubbing, this.settings.time.line.seekCancel.timeout, false);
+  }
+  allowTimeScrubbing(reset = true) {
+    this.stallCancelTimeScrub = this.shouldCancelTimeScrub = false;
+    this.DOM.cancelScrubNotifier.classList.remove("T_M_G-video-control-active");
+    clearTimeout(this.cancelScrubTimeoutId);
+    if (reset) this.cancelScrubTimeoutId = null;
+  }
   _handleTimelineInput({ clientX: x }) {
     this.overTimeline = true;
     if (!this.isMediaMobile) this.videoContainer.classList.add("T_M_G-video-previewing");
     this.throttle(
       "timelineInput",
       () => {
+        x = tmg.clamp(0, x, window.innerWidth);
         const rect = this.DOM.timelineContainer?.getBoundingClientRect(),
-          percent = tmg.clamp(0, x - rect.left, rect.width) / rect.width,
+          currX = tmg.clamp(0, x - rect.left, rect.width),
+          percent = currX / rect.width,
           previewImgMin = this.DOM.previewContainer.offsetWidth / 2 / rect.width;
         this.DOM.previewContainer?.setAttribute("data-preview-time", this.toTimeText(percent * this.video.duration, true));
         if (this.isScrubbing) {
-          this.settings.css.currentPlayedPosition = percent;
+          this.settings.css.currentThumbPosition = percent;
+          if (this.settings.time.seekSync) this.settings.css.currentPlayedPosition = percent;
+          if (this.settings.time.seekSync && this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(percent * this.duration, true);
+          Math.abs(currX - (this.currentTime / this.duration) * rect.width) < this.settings.time.line.seekCancel.delta ? this.cancelTimeScrubbing() : this.allowTimeScrubbing();
           this.delayOverlay();
         }
         this.settings.css.currentPreviewPosition = percent;
@@ -1828,7 +1857,7 @@ class T_M_G_Video_Controller {
   _handleTimeUpdate() {
     if (this.isScrubbing) return;
     this.video.volume = 1; // just in case
-    this.settings.css.currentPlayedPosition = tmg.parseNumber(this.video.currentTime / tmg.parseNumber(this.video.duration, 60)); // progress fallback, shouldn't take more than a min for duration to be available
+    this.settings.css.currentPlayedPosition = this.settings.css.currentThumbPosition = tmg.parseNumber(this.video.currentTime / tmg.parseNumber(this.video.duration, 60)); // progress fallback, shouldn't take more than a min for duration to be available
     if (this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(this.video.currentTime, true);
     if (this.speedCheck && !this.video.paused) this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.toTimeText(this.video.currentTime, true));
     if (this.playlist && this.currentTime > 3) this.playlistCurrentTime = this.currentTime;
@@ -1850,7 +1879,7 @@ class T_M_G_Video_Controller {
     const notifier = duration > 0 ? this.DOM.fwdNotifier : this.DOM.bwdNotifier;
     duration = Math.sign(duration) === 1 ? (this.duration - this.currentTime > duration ? duration : this.duration - this.currentTime) : Math.sign(duration) === -1 ? (this.currentTime > Math.abs(duration) ? duration : -this.currentTime) : 0;
     duration = Math.trunc(duration);
-    this.settings.css.currentPlayedPosition = tmg.parseNumber((this.video.currentTime += duration) / this.video.duration);
+    this.settings.css.currentPlayedPosition = this.settings.css.currentThumbPosition = tmg.parseNumber((this.video.currentTime += duration) / this.video.duration);
     if (this.skipPersist) {
       if (this.currentSkipNotifier && notifier !== this.currentSkipNotifier) {
         this.skipDuration = 0;
@@ -1866,7 +1895,7 @@ class T_M_G_Video_Controller {
         this.skipDuration = 0;
         notifier?.classList.remove("T_M_G-video-control-persist");
         this.currentSkipNotifier = null;
-        this.removeOverlay();
+        !this.video.paused ? this.removeOverlay() : this.showOverlay();
       }, tmg.parseCSSTime(this.settings.css.notifiersAnimationTime));
       return notifier?.setAttribute("data-skip", this.skipDuration);
     } else this.currentSkipNotifier?.classList.remove("T_M_G-video-control-persist");
@@ -1890,7 +1919,7 @@ class T_M_G_Video_Controller {
       droppedFrames = (this.stats?.droppedFrames ?? 0) + (diff > 1 ? diff - 1 : 0);
     this.stats = { ...m, now, fps, droppedFrames };
     // this.throttle("statsLogging", () => this.log(` STATS FOR NERDS: \n Now: ${now} ms\n Media Time: ${m.mediaTime} s\n Expected Display Time: ${m.expectedDisplayTime} ms\n Presented Frames: ${m.presentedFrames}\n Dropped Frames (detected): ${droppedFrames}\n FPS (real-time): ${fps}\n Processing Duration: ${m.processingDuration} ms\n Capture Time: ${m.captureTime}\n Width: ${m.width}\n Height: ${m.height}\n Painted Frames: ${m.paintedFrames}\n`), 1000, false);
-    this.video.requestVideoFrameCallback?.(this._handleFrameUpdate);
+    this.frameCallbackId = this.video.requestVideoFrameCallback?.(this._handleFrameUpdate);
   }
   moveVideoFrame(dir = "forwards") {
     this.video.paused && this.throttle("frameStepping", () => (this.currentTime = tmg.clamp(0, Math.round(this.currentTime * this.pfps) + (dir === "backwards" ? -1 : 1), Math.floor(this.duration * this.pfps)) / this.pfps), this.pframeDelay);
@@ -1953,9 +1982,9 @@ class T_M_G_Video_Controller {
     this.speedIntervalId = setInterval(this.rewindVideo, this.pframeDelay - 20); // minus due to browser async lag
   }
   rewindVideo() {
-    this.togglePlay(false);
+    !this.video.paused && this.togglePlay(false);
     this.currentTime -= this.rewindPlaybackRate / this.pfps;
-    this.settings.css.currentPlayedPosition = tmg.parseNumber(this.video.currentTime / this.video.duration);
+    this.settings.css.currentPlayedPosition = this.settings.css.currentThumbPosition = tmg.parseNumber(this.video.currentTime / this.video.duration);
     this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.toTimeText(this.video.currentTime, true));
   }
   rewindReset() {
@@ -1987,7 +2016,7 @@ class T_M_G_Video_Controller {
     this.settings.css.currentCueY = this.CSSPropsCache.currentCueY;
     if (this.video.textTracks[this.textTrackIndex]) {
       this.settings.captions.disabled = !this.settings.captions.disabled;
-      this.videoContainer.classList.toggle("T_M_G-video-captions", this.settings.captions.disabled);
+      this.videoContainer.classList.toggle("T_M_G-video-captions", !this.settings.captions.disabled);
     } else this.previewCaptions("No captions available for this video");
   }
   previewCaptions(preview = `${tmg.capitalize(this.videoContainer.dataset.trackKind || "captions")} look like this`) {
@@ -2521,7 +2550,7 @@ class T_M_G_Video_Controller {
   _handleClick({ target }) {
     if (target !== this.DOM.controlsContainer) return;
     if (this.speedCheck && this.playTriggerCounter < 1) return;
-    if (this.isMediaMobile && !this.buffering && !this.video.ended && !this.isUIActive("pictureInPicture") ? true : !this.isUIActive("overlay")) this.settings.overlay.behavior !== "persistent" && this.videoContainer.classList.toggle("T_M_G-video-overlay");
+    if (this.isMediaMobile && !this.isUIActive("pictureInPicture") && !this.buffering && !this.video.ended ? true : !this.isUIActive("overlay")) !this.settings.overlay.behavior.match(/hidden|persistent/) && this.videoContainer.classList.toggle("T_M_G-video-overlay");
     if (this.isMediaMobile || this.isUIActive("miniPlayer")) return;
     this.togglePlay();
     this.video.paused ? this.notify("videopause") : this.notify("videoplay");
@@ -3200,7 +3229,7 @@ class T_M_G_Media_Player {
       sIndex = s.controlPanel.bottom?.indexOf?.("spacer");
     s.status.ui = {
       notifiers: s.notifiers || notifiersO,
-      timeline: /top|bottom/.test(s.time.linePosition),
+      timeline: /top|bottom/.test(s.time.line.position),
       previews: s.time.previews?.address && s.time.previews?.spf,
       tRightSideControls: s.controlPanel.top?.length || panelO,
       bLeftSideControls: (sIndex > -1 ? s.controlPanel.bottom?.slice?.(0, sIndex)?.length : false) || panelO,
@@ -3217,228 +3246,7 @@ class T_M_G_Media_Player {
 }
 
 class T_M_G {
-  static DEFAULT_VIDEO_BUILD = {
-    mediaPlayer: "TMG",
-    mediaType: "video",
-    disabled: false,
-    initialState: true,
-    debug: true,
-    settings: {
-      allowOverride: true,
-      auto: { next: 20 },
-      beta: {
-        disabled: false,
-        rewind: true,
-        gesture: {
-          touch: { disabled: false, volume: true, brightness: true, timeline: true, threshold: 200, axesRatio: 3, inset: 20, sliderTimeout: 1000, xRatio: 1, yRatio: 1 },
-          wheel: { disabled: false, volume: { normal: true, slider: true }, brightness: { normal: true, slider: true }, timeline: { normal: true, slider: true }, timeout: 2000, xRatio: 12, yRatio: 6 },
-        },
-        floatingPlayer: { disabled: false, width: 270, height: 145, disallowReturnToOpener: false, preferInitialWindowPlacement: false },
-      },
-      css: {},
-      brightness: { min: 0, max: 150, value: 100, skip: 5 },
-      captions: {
-        disabled: false,
-        font: {
-          family: {
-            value: "inherit",
-            options: [
-              { value: "inherit", display: "Default" },
-              { value: "monospace", display: "Monospace" },
-              { value: "sans-serif", display: "Sans Serif" },
-              { value: "serif", display: "Serif" },
-              { value: "cursive", display: "Cursive" },
-              { value: "fantasy", display: "Fantasy" },
-              { value: "system-ui", display: "System UI" },
-              { value: "arial", display: "Arial" },
-              { value: "verdana", display: "Verdana" },
-              { value: "tahoma", display: "Tahoma" },
-              { value: "times new roman", display: "Times New Roman" },
-              { value: "georgia", display: "Georgia" },
-              { value: "impact", display: "Impact" },
-              { value: "comic sans ms", display: "Comic Sans MS" },
-            ],
-          },
-          size: {
-            min: 100,
-            max: 400,
-            value: 100,
-            skip: 100,
-            options: [
-              { value: 25, display: "25%" },
-              { value: 50, display: "50%" },
-              { value: 100, display: "100%" },
-              { value: 150, display: "150%" },
-              { value: 200, display: "200%" },
-              { value: 300, display: "300%" },
-              { value: 400, display: "400%" },
-            ],
-          },
-          color: {
-            value: "white",
-            options: [
-              { value: "white", display: "White" },
-              { value: "yellow", display: "Yellow" },
-              { value: "green", display: "Green" },
-              { value: "cyan", display: "Cyan" },
-              { value: "blue", display: "Blue" },
-              { value: "magenta", display: "Magenta" },
-              { value: "red", display: "Red" },
-              { value: "black", display: "Black" },
-            ],
-          },
-          opacity: {
-            value: 1,
-            options: [
-              { value: 0.25, display: "25%" },
-              { value: 0.5, display: "50%" },
-              { value: 0.75, display: "75%" },
-              { value: 1, display: "100%" },
-            ],
-          },
-          weight: {
-            value: "400",
-            options: [
-              { value: "100", display: "Thin" },
-              { value: "200", display: "Extra Light" },
-              { value: "300", display: "Light" },
-              { value: "400", display: "Normal" },
-              { value: "500", display: "Medium" },
-              { value: "600", display: "Semi Bold" },
-              { value: "700", display: "Bold" },
-              { value: "800", display: "Extra Bold" },
-              { value: "900", display: "Black" },
-            ],
-          },
-          variant: {
-            value: "normal",
-            options: [
-              { value: "normal", display: "Normal" },
-              { value: "small-caps", display: "Small Caps" },
-              { value: "all-small-caps", display: "All Small Caps" },
-            ],
-          },
-        },
-        background: {
-          color: {
-            value: "black",
-            options: [
-              { value: "white", display: "White" },
-              { value: "yellow", display: "Yellow" },
-              { value: "green", display: "Green" },
-              { value: "cyan", display: "Cyan" },
-              { value: "blue", display: "Blue" },
-              { value: "magenta", display: "Magenta" },
-              { value: "red", display: "Red" },
-              { value: "black", display: "Black" },
-            ],
-          },
-          opacity: {
-            value: 0.75,
-            options: [
-              { value: 0, display: "0%" },
-              { value: 0.25, display: "25%" },
-              { value: 0.5, display: "50%" },
-              { value: 0.75, display: "75%" },
-              { value: 1, display: "100%" },
-            ],
-          },
-        },
-        window: {
-          color: {
-            value: "black",
-            options: [
-              { value: "white", display: "White" },
-              { value: "yellow", display: "Yellow" },
-              { value: "green", display: "Green" },
-              { value: "cyan", display: "Cyan" },
-              { value: "blue", display: "Blue" },
-              { value: "magenta", display: "Magenta" },
-              { value: "red", display: "Red" },
-              { value: "black", display: "Black" },
-            ],
-          },
-          opacity: {
-            value: 0,
-            options: [
-              { value: 0, display: "0%" },
-              { value: 0.25, display: "25%" },
-              { value: 0.5, display: "50%" },
-              { value: 0.75, display: "75%" },
-              { value: 1, display: "100%" },
-            ],
-          },
-        },
-        characterEdgeStyle: {
-          value: "none",
-          options: [
-            { value: "none", display: "None" },
-            { value: "drop-shadow", display: "Drop Shadow" },
-            { value: "raised", display: "Raised" },
-            { value: "depressed", display: "Depressed" },
-            { value: "outline", display: "Outline" },
-          ],
-        },
-      },
-      controlPanel: {
-        top: ["capture", "fullscreenlock", "fullscreenorientation"],
-        bottom: ["prev", "playpause", "next", "brightness", "volume", "timeandduration", "spacer", "captions", "settings", "objectfit", "pictureinpicture", "theater", "fullscreen"],
-      },
-      errorMessages: { 1: "The video playback was aborted :(", 2: "The video failed due to a network error :(", 3: "The video could not be decoded :(", 4: "The video source is not supported :(" },
-      fastPlay: { disabled: false, playbackRate: 2, key: true, pointer: { type: "all", threshold: 1000, inset: 20 } },
-      keys: {
-        disabled: false,
-        strictMatches: false,
-        overrides: [" ", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"],
-        shortcuts: {
-          prev: "Shift+p",
-          next: "Shift+n",
-          playPause: "k",
-          skipBwd: "j",
-          skipFwd: "l",
-          stepFwd: ".",
-          stepBwd: ",",
-          mute: "m",
-          dark: "d",
-          volumeUp: "ArrowUp",
-          volumeDown: "ArrowDown",
-          brightnessUp: "y",
-          brightnessDown: "h",
-          playbackRateUp: ">",
-          playbackRateDown: "<",
-          timeFormat: "z",
-          timeMode: "q",
-          capture: "s",
-          objectFit: "a",
-          pictureInPicture: "i",
-          theater: "t",
-          fullScreen: "f",
-          captions: "c",
-          captionsFontSizeUp: "=",
-          captionsFontSizeDown: "-",
-          captionsFontFamily: "u",
-          captionsFontWeight: "g",
-          captionsFontVariant: "v",
-          captionsFontOpacity: "o",
-          captionsBackgroundOpacity: "b",
-          captionsWindowOpacity: "w",
-          captionsCharacterEdgeStyle: "e",
-          settings: "?",
-        },
-        // prettier-ignore
-        blocks: ["Ctrl+Tab","Ctrl+Shift+Tab","Ctrl+PageUp","Ctrl+PageDown","Cmd+Option+ArrowRight","Cmd+Option+ArrowLeft","Ctrl+1","Ctrl+2","Ctrl+3","Ctrl+4","Ctrl+5","Ctrl+6","Ctrl+7","Ctrl+8","Ctrl+9","Cmd+1","Cmd+2","Cmd+3","Cmd+4","Cmd+5","Cmd+6","Cmd+7","Cmd+8","Cmd+9","Alt+ArrowLeft","Alt+ArrowRight","Cmd+ArrowLeft","Cmd+ArrowRight","Ctrl+r","Ctrl+Shift+r","F5","Shift+F5","Cmd+r","Cmd+Shift+r","Ctrl+h","Ctrl+j","Ctrl+d","Ctrl+f","Cmd+y","Cmd+Option+b","Cmd+d","Cmd+f","Ctrl+Shift+i","Ctrl+Shift+j","Ctrl+Shift+c","Ctrl+u","F12","Cmd+Option+i","Cmd+Option+j","Cmd+Option+c","Cmd+Option+u","Ctrl+=","Ctrl+-","Ctrl+0","Cmd+=","Cmd+-","Cmd+0","Ctrl+p","Ctrl+s","Ctrl+o","Cmd+p","Cmd+s","Cmd+o"],
-      },
-      modes: { fullScreen: true, theater: true, pictureInPicture: true, miniPlayer: { disabled: false, minWindowWidth: 240 } },
-      notifiers: true,
-      overlay: { delay: 3000, behavior: "strict" },
-      persist: true,
-      playbackRate: { min: 0.25, max: 8, skip: 0.25 },
-      playsInline: true,
-      time: { linePosition: "top", previews: false, mode: "elapsed", format: "digital", skip: 10 },
-      toasts: { disabled: false, maxToasts: 7, position: "bottom-left", hideProgressBar: true, animation: "slide-up" },
-      volume: { min: 0, max: 300, skip: 5 },
-    },
-  };
+  static DEFAULT_VIDEO_BUILD = {};
   static ALLOWED_CONTROLS = ["capture", "fullScreenOrientation", "fullScreenLock", "prev", "playPause", "next", "brightness", "volume", "timeAndDuration", "spacer", "playbackRate", "captions", "settings", "objectFit", "pictureInPicture", "theater", "fullScreen"];
   static NOTIFIER_EVENTS = ["videoplay", "videopause", "videoprev", "videonext", "playbackrateup", "playbackratedown", "volumeup", "volumedown", "volumemuted", "brightnessup", "brightnessdown", "brightnessdark", "objectfitcontain", "objectfitcover", "objectfitfill", "captions", "capture", "theater", "fullScreen", "fwd", "bwd"];
   static WHITE_LISTED_KEYS = [" ", "Enter", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].map((k) => k.toLowerCase());
@@ -4078,6 +3886,228 @@ class T_M_G {
 
 if (typeof window !== "undefined") {
   window.tmg = T_M_G;
+  tmg.DEFAULT_VIDEO_BUILD = {
+    mediaPlayer: "TMG",
+    mediaType: "video",
+    disabled: false,
+    initialState: true,
+    debug: true,
+    settings: {
+      allowOverride: true,
+      auto: { next: 20 },
+      beta: {
+        disabled: false,
+        rewind: true,
+        gesture: {
+          touch: { disabled: false, volume: true, brightness: true, timeline: true, threshold: 200, axesRatio: 3, inset: 20, sliderTimeout: 1000, xRatio: 1, yRatio: 1 },
+          wheel: { disabled: false, volume: { normal: true, slider: true }, brightness: { normal: true, slider: true }, timeline: { normal: true, slider: true }, timeout: 2000, xRatio: 12, yRatio: 6 },
+        },
+        floatingPlayer: { disabled: false, width: 270, height: 145, disallowReturnToOpener: false, preferInitialWindowPlacement: false },
+      },
+      css: {},
+      brightness: { min: 0, max: 150, value: 100, skip: 5 },
+      captions: {
+        disabled: false,
+        font: {
+          family: {
+            value: "inherit",
+            options: [
+              { value: "inherit", display: "Default" },
+              { value: "monospace", display: "Monospace" },
+              { value: "sans-serif", display: "Sans Serif" },
+              { value: "serif", display: "Serif" },
+              { value: "cursive", display: "Cursive" },
+              { value: "fantasy", display: "Fantasy" },
+              { value: "system-ui", display: "System UI" },
+              { value: "arial", display: "Arial" },
+              { value: "verdana", display: "Verdana" },
+              { value: "tahoma", display: "Tahoma" },
+              { value: "times new roman", display: "Times New Roman" },
+              { value: "georgia", display: "Georgia" },
+              { value: "impact", display: "Impact" },
+              { value: "comic sans ms", display: "Comic Sans MS" },
+            ],
+          },
+          size: {
+            min: 100,
+            max: 400,
+            value: 100,
+            skip: 100,
+            options: [
+              { value: 25, display: "25%" },
+              { value: 50, display: "50%" },
+              { value: 100, display: "100%" },
+              { value: 150, display: "150%" },
+              { value: 200, display: "200%" },
+              { value: 300, display: "300%" },
+              { value: 400, display: "400%" },
+            ],
+          },
+          color: {
+            value: "white",
+            options: [
+              { value: "white", display: "White" },
+              { value: "yellow", display: "Yellow" },
+              { value: "green", display: "Green" },
+              { value: "cyan", display: "Cyan" },
+              { value: "blue", display: "Blue" },
+              { value: "magenta", display: "Magenta" },
+              { value: "red", display: "Red" },
+              { value: "black", display: "Black" },
+            ],
+          },
+          opacity: {
+            value: 1,
+            options: [
+              { value: 0.25, display: "25%" },
+              { value: 0.5, display: "50%" },
+              { value: 0.75, display: "75%" },
+              { value: 1, display: "100%" },
+            ],
+          },
+          weight: {
+            value: "400",
+            options: [
+              { value: "100", display: "Thin" },
+              { value: "200", display: "Extra Light" },
+              { value: "300", display: "Light" },
+              { value: "400", display: "Normal" },
+              { value: "500", display: "Medium" },
+              { value: "600", display: "Semi Bold" },
+              { value: "700", display: "Bold" },
+              { value: "800", display: "Extra Bold" },
+              { value: "900", display: "Black" },
+            ],
+          },
+          variant: {
+            value: "normal",
+            options: [
+              { value: "normal", display: "Normal" },
+              { value: "small-caps", display: "Small Caps" },
+              { value: "all-small-caps", display: "All Small Caps" },
+            ],
+          },
+        },
+        background: {
+          color: {
+            value: "black",
+            options: [
+              { value: "white", display: "White" },
+              { value: "yellow", display: "Yellow" },
+              { value: "green", display: "Green" },
+              { value: "cyan", display: "Cyan" },
+              { value: "blue", display: "Blue" },
+              { value: "magenta", display: "Magenta" },
+              { value: "red", display: "Red" },
+              { value: "black", display: "Black" },
+            ],
+          },
+          opacity: {
+            value: 0.75,
+            options: [
+              { value: 0, display: "0%" },
+              { value: 0.25, display: "25%" },
+              { value: 0.5, display: "50%" },
+              { value: 0.75, display: "75%" },
+              { value: 1, display: "100%" },
+            ],
+          },
+        },
+        window: {
+          color: {
+            value: "black",
+            options: [
+              { value: "white", display: "White" },
+              { value: "yellow", display: "Yellow" },
+              { value: "green", display: "Green" },
+              { value: "cyan", display: "Cyan" },
+              { value: "blue", display: "Blue" },
+              { value: "magenta", display: "Magenta" },
+              { value: "red", display: "Red" },
+              { value: "black", display: "Black" },
+            ],
+          },
+          opacity: {
+            value: 0,
+            options: [
+              { value: 0, display: "0%" },
+              { value: 0.25, display: "25%" },
+              { value: 0.5, display: "50%" },
+              { value: 0.75, display: "75%" },
+              { value: 1, display: "100%" },
+            ],
+          },
+        },
+        characterEdgeStyle: {
+          value: "none",
+          options: [
+            { value: "none", display: "None" },
+            { value: "drop-shadow", display: "Drop Shadow" },
+            { value: "raised", display: "Raised" },
+            { value: "depressed", display: "Depressed" },
+            { value: "outline", display: "Outline" },
+          ],
+        },
+      },
+      controlPanel: {
+        top: ["capture", "fullscreenlock", "fullscreenorientation"],
+        bottom: ["prev", "playpause", "next", "brightness", "volume", "timeandduration", "spacer", "captions", "settings", "objectfit", "pictureinpicture", "theater", "fullscreen"],
+      },
+      errorMessages: { 1: "The video playback was aborted :(", 2: "The video failed due to a network error :(", 3: "The video could not be decoded :(", 4: "The video source is not supported :(" },
+      fastPlay: { disabled: false, playbackRate: 2, key: true, pointer: { type: "all", threshold: 800, inset: 20 } },
+      keys: {
+        disabled: false,
+        strictMatches: false,
+        overrides: [" ", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"],
+        shortcuts: {
+          prev: "Shift+p",
+          next: "Shift+n",
+          playPause: "k",
+          skipBwd: "j",
+          skipFwd: "l",
+          stepFwd: ".",
+          stepBwd: ",",
+          mute: "m",
+          dark: "d",
+          volumeUp: "ArrowUp",
+          volumeDown: "ArrowDown",
+          brightnessUp: "y",
+          brightnessDown: "h",
+          playbackRateUp: ">",
+          playbackRateDown: "<",
+          timeFormat: "z",
+          timeMode: "q",
+          capture: "s",
+          objectFit: "a",
+          pictureInPicture: "i",
+          theater: "t",
+          fullScreen: "f",
+          captions: "c",
+          captionsFontSizeUp: "=",
+          captionsFontSizeDown: "-",
+          captionsFontFamily: "u",
+          captionsFontWeight: "g",
+          captionsFontVariant: "v",
+          captionsFontOpacity: "o",
+          captionsBackgroundOpacity: "b",
+          captionsWindowOpacity: "w",
+          captionsCharacterEdgeStyle: "e",
+          settings: "?",
+        },
+        // prettier-ignore
+        blocks: ["Ctrl+Tab","Ctrl+Shift+Tab","Ctrl+PageUp","Ctrl+PageDown","Cmd+Option+ArrowRight","Cmd+Option+ArrowLeft","Ctrl+1","Ctrl+2","Ctrl+3","Ctrl+4","Ctrl+5","Ctrl+6","Ctrl+7","Ctrl+8","Ctrl+9","Cmd+1","Cmd+2","Cmd+3","Cmd+4","Cmd+5","Cmd+6","Cmd+7","Cmd+8","Cmd+9","Alt+ArrowLeft","Alt+ArrowRight","Cmd+ArrowLeft","Cmd+ArrowRight","Ctrl+r","Ctrl+Shift+r","F5","Shift+F5","Cmd+r","Cmd+Shift+r","Ctrl+h","Ctrl+j","Ctrl+d","Ctrl+f","Cmd+y","Cmd+Option+b","Cmd+d","Cmd+f","Ctrl+Shift+i","Ctrl+Shift+j","Ctrl+Shift+c","Ctrl+u","F12","Cmd+Option+i","Cmd+Option+j","Cmd+Option+c","Cmd+Option+u","Ctrl+=","Ctrl+-","Ctrl+0","Cmd+=","Cmd+-","Cmd+0","Ctrl+p","Ctrl+s","Ctrl+o","Cmd+p","Cmd+s","Cmd+o"],
+      },
+      modes: { fullScreen: true, theater: true, pictureInPicture: true, miniPlayer: { disabled: false, minWindowWidth: 240 } },
+      notifiers: true,
+      overlay: { delay: 3000, behavior: "strict" },
+      persist: true,
+      playbackRate: { min: 0.25, max: 8, skip: 0.25 },
+      playsInline: true,
+      time: { line: { position: "top", seekCancel: { delta: 15, timeout: 2000 } }, previews: false, progressBar: tmg.queryMediaMobile(), mode: "elapsed", format: "digital", skip: 10, seekSync: false },
+      toasts: { disabled: false, maxToasts: 7, position: "bottom-left", hideProgressBar: true, animation: "slide-up" },
+      volume: { min: 0, max: 300, skip: 5 },
+    },
+  };
   window.TMG_VIDEO_ALT_IMG_SRC ??= "/TMG_MEDIA_PROTOTYPE/assets/icons/movie-tape.png";
   window.TMG_VIDEO_CSS_SRC ??= "/TMG_MEDIA_PROTOTYPE/prototype-2/prototype-2-video.css";
   window.T007_TOAST_JS_SRC ??= "/T007_TOOLS/T007_toast_library/T007_toast.js";
