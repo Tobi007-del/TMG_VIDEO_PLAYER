@@ -1806,16 +1806,19 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   position: absolute;
   top: calc(var(--T_M_G-video-current-unit) / -1.5);
   left: calc(var(--T_M_G-video-current-preview-img-position) * 100%);
-  display: none;
-  transform: translate(-50%, -100%);
+  display: flex;
+  translate: -50% -100%;
   border: calc(var(--T_M_G-video-current-unit) / 12.5) solid var(--T_M_G-video-preview-border-color);
   border-radius: calc(var(--T_M_G-video-current-unit) / 2.5);
   background: var(--T_M_G-video-background);
   pointer-events: none;
+  transition:
+    opacity var(--T_M_G-video-fade-transition-time) var(--T_M_G-video-bounce-timing),
+    transform var(--T_M_G-video-fade-transition-time) var(--T_M_G-video-bounce-timing);
 }
-.T_M_G-video-container.T_M_G-video-scrubbing .T_M_G-video-thumbnail,
-.T_M_G-video-container:is(.T_M_G-video-scrubbing, .T_M_G-video-previewing) .T_M_G-video-preview-container {
-  display: flex;
+.T_M_G-video-container:not(.T_M_G-video-scrubbing, .T_M_G-video-previewing) .T_M_G-video-preview-container {
+  opacity: 0;
+  transform: translateY(calc(var(--T_M_G-video-current-unit) / 2)) scale(0.85);
 }
 .T_M_G-media-container:is([data-size-tier^="xxxx"], .T_M_G-video-mobile, .T_M_G-video-no-previews) .T_M_G-video-preview-container {
   min-width: calc(var(--T_M_G-video-current-unit) * 2);
@@ -1863,10 +1866,6 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   text-shadow: none;
   box-shadow: none;
 }
-.T_M_G-video-thumbnail {
-  display: none;
-  pointer-events: none;
-}
 .T_M_G-video-preview {
   height: calc(var(--T_M_G-video-current-unit) * 5);
   aspect-ratio: var(--T_M_G-video-aspect-ratio);
@@ -1882,6 +1881,10 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 .T_M_G-media-container:is([data-size-tier^="xxxx"], .T_M_G-video-mobile, .T_M_G-video-no-previews) .T_M_G-video-preview {
   display: none;
 }
+.T_M_G-video-thumbnail {
+  pointer-events: none;
+}
+.T_M_G-video-container:not(.T_M_G-video-scrubbing) .T_M_G-video-thumbnail,
 .T_M_G-video-container[data-preview-type="image"] canvas:is(.T_M_G-video-thumbnail, .T_M_G-video-preview),
 .T_M_G-video-container[data-preview-type="canvas"] img:is(.T_M_G-video-thumbnail, .T_M_G-video-preview) {
   display: none;

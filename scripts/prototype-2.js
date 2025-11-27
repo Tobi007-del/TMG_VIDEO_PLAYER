@@ -602,7 +602,7 @@ class T_M_G_Video_Controller {
         </button>      
       `,
       bigplaypause: `
-        <button type="button" class="T_M_G-video-big-play-pause-btn" tabindex="${this.initialState ? "0" : "-1"}" data-control-id="bigplaypause">
+        <button type="button" class="T_M_G-video-big-play-pause-btn" data-control-id="bigplaypause">
           <svg viewBox="0 0 25 25" class="T_M_G-video-play-icon" data-control-title="Play${keyShortcuts["playPause"]}">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
           </svg>
@@ -2449,10 +2449,10 @@ class T_M_G_Video_Controller {
   }
   async initFloatingPlayer() {
     if (this.inFloatingPlayer) return;
-    this.inFloatingPlayer = true;
     documentPictureInPicture.window?.close?.();
     this.toggleMiniPlayerMode(false);
     this.floatingPlayer = await documentPictureInPicture.requestWindow(this.settings.beta.floatingPlayer);
+    this.inFloatingPlayer = true;
     this.activatePseudoMode();
     this.videoContainer.classList.add("T_M_G-video-progress-bar", "T_M_G-video-floating-player");
     let cssText = "";
