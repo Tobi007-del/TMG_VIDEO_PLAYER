@@ -2968,19 +2968,19 @@ class T_M_G_Video_Controller {
             this.isUIActive("floatingPlayer") && this.togglePictureInPictureMode();
             break;
           case "arrowup": // -w
-            e.shiftKey ? this.changeVolume(10) : this.changeVolume(5);
+            this.changeVolume(e.ctrlKey ? 50 : e.shiftKey ? 10 : 5);
             break;
           case "arrowdown": // -w
-            e.shiftKey ? this.changeVolume(-10) : this.changeVolume(-5);
+            this.changeVolume(e.ctrlKey ? -50 : e.shiftKey ? -10 : -5);
             break;
           case "arrowleft": // -w
             this.deactivateSkipPersist();
-            e.shiftKey ? this.skip(-10) : this.skip(-5);
+            this.skip(e.ctrlKey ? -60 : e.shiftKey ? -10 : -5);
             this.notify("bwd");
             break;
           case "arrowright": // -w
             this.deactivateSkipPersist();
-            e.shiftKey ? this.skip(10) : this.skip(5);
+            this.skip(e.ctrlKey ? 60 : e.shiftKey ? 10 : 5);
             this.notify("fwd");
             break;
         }
@@ -4069,8 +4069,6 @@ if (typeof window !== "undefined") {
           stepBwd: ",",
           mute: "m",
           dark: "d",
-          volumeUp: "ArrowUp",
-          volumeDown: "ArrowDown",
           brightnessUp: "y",
           brightnessDown: "h",
           playbackRateUp: ">",
@@ -4083,8 +4081,8 @@ if (typeof window !== "undefined") {
           theater: "t",
           fullScreen: "f",
           captions: "c",
-          captionsFontSizeUp: "=",
-          captionsFontSizeDown: "-",
+          captionsFontSizeUp: ["+", "="],
+          captionsFontSizeDown: ["-", "_"],
           captionsFontFamily: "u",
           captionsFontWeight: "g",
           captionsFontVariant: "v",
