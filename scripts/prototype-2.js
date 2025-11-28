@@ -1814,7 +1814,7 @@ class T_M_G_Video_Controller {
           if (this.settings.time.seekSync) this.settings.css.currentPlayedPosition = percent;
           if (this.settings.time.seekSync && this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(percent * this.duration, true);
           Math.abs(currX - (this.currentTime / this.duration) * rect.width) < this.settings.time.line.seekCancel.delta ? this.cancelTimeScrubbing() : this.allowTimeScrubbing();
-          this.delayOverlay();
+          this.showOverlay();
         }
         this.settings.css.currentPreviewPosition = percent;
         this.settings.css.currentPreviewImgPosition = tmg.clamp(previewImgMin, percent, 1 - previewImgMin);
