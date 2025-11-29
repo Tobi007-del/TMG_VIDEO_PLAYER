@@ -1155,7 +1155,7 @@ class T_M_G_Video_Controller {
       el.addEventListener("click", this._handleAnyClick, true);
       el.addEventListener("focusin", this._handleFocusIn, true);
       el.addEventListener("keydown", this._handleKeyFocusIn, true);
-      ["pointermove", "dragenter", "wheel"].forEach((e) => el.addEventListener(e, this._handleHoverPointerActive, true));
+      ["pointermove", "dragenter", "scroll"].forEach((e) => el.addEventListener(e, this._handleHoverPointerActive, true));
       el.addEventListener("mouseleave", this._handleHoverPointerOut, true);
     });
     tmg.onSafeClicks(this.DOM.controlsContainer, this._handleClick, this._handleDoubleClick, true);
@@ -2183,7 +2183,6 @@ class T_M_G_Video_Controller {
     if (volume > 5) this.sliderVolume = volume;
     this.shouldSetLastVolume = false;
     this.delayVolumeActive();
-    this.delayOverlay();
   }
   _handleGestureVolumeSliderInput({ percent, sign }) {
     let volume = sign === "+" ? this.volume + percent * this.settings.volume.max : this.volume - percent * this.settings.volume.max;
@@ -2253,6 +2252,7 @@ class T_M_G_Video_Controller {
     this.delayVolumeActive();
   }
   delayVolumeActive() {
+    this.delayOverlay();
     clearTimeout(this.delayVolumeActiveId);
     this.delayVolumeActiveId = setTimeout(this.stopVolumeActive, this.settings.overlay.delay);
   }
@@ -2297,7 +2297,6 @@ class T_M_G_Video_Controller {
     if (brightness > 5) this.sliderBrightness = brightness;
     this.shouldSetLastBrightness = false;
     this.delayBrightnessActive();
-    this.delayOverlay();
   }
   _handleGestureBrightnessSliderInput({ percent, sign }) {
     let brightness = sign === "+" ? this.brightness + percent * this.settings.brightness.max : this.brightness - percent * this.settings.brightness.max;
@@ -2368,6 +2367,7 @@ class T_M_G_Video_Controller {
     this.delayBrightnessActive();
   }
   delayBrightnessActive() {
+    this.delayOverlay();
     clearTimeout(this.brightnessActiveDelayId);
     this.brightnessActiveDelayId = setTimeout(this.stopBrightnessActive, this.settings.overlay.delay);
   }
@@ -2596,7 +2596,7 @@ class T_M_G_Video_Controller {
     this.skipPersistPosition = null;
   }
   _handleHoverPointerActive({ target, pointerType }) {
-    !this.isMediaMobile && this.showOverlay();
+    (!this.isMediaMobile ? true : !pointerType) && this.showOverlay();
     pointerType && (this.DOM.tRightSideControlsWrapper.contains(target) || this.DOM.bottomControlsWrapper.contains(target)) && clearTimeout(this.overlayDelayId); // better ux
   }
   _handleHoverPointerOut = () => setTimeout(() => !this.isMediaMobile && !this.videoContainer.matches(":hover") && this.removeOverlay());
@@ -2658,6 +2658,7 @@ class T_M_G_Video_Controller {
       if ((!wc.timeline.slider && this.overTimeline) || (!wc.timeline.normal && !this.overTimeline) || this.gestureWheelYCheck) return this._handleGestureWheelStop();
       this.gestureWheelXCheck = true;
       !this.overTimeline && this.DOM.touchTimelineNotifier.classList.add("T_M_G-video-control-active");
+      if (this.overTimeline) this.delayOverlay();
       this._handleGestureTimelineInput({
         percent: xPercent,
         sign: xSign,
