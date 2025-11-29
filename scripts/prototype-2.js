@@ -25,7 +25,7 @@ class T_M_G_Video_Controller {
     this.lastCueText = "";
     this.isMediaMobile = tmg.queryMediaMobile();
     this.pfps = 30; // pseudo fps: just for frame stepping
-    this.pframeDelay = Math.floor(1000 / this.pfps);
+    this.pframeDelay = Math.round(1000 / this.pfps);
     this.currentPlaylistIndex = this.playlist ? 0 : null;
     this.wasPaused = !this.video.autoplay;
     this.throttleMap = new Map();
@@ -654,7 +654,7 @@ class T_M_G_Video_Controller {
       playpause: ui.playPause
         ? `
         <button type="button" class="T_M_G-video-play-pause-btn" data-draggable-control="${ui.draggable}" data-control-id="playpause">
-          <svg viewBox="0 0 25 25" class="T_M_G-video-play-icon" data-control-title="Play${keyShortcuts["playPause"]}" style="scale: 1.35;">
+          <svg viewBox="0 0 25 25" class="T_M_G-video-play-icon" data-control-title="Play${keyShortcuts["playPause"]}" style="scale: 1.25;">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
           </svg>
           <svg viewBox="0 0 25 25" class="T_M_G-video-pause-icon" data-control-title="Pause${keyShortcuts["playPause"]}" style="scale: 1.25;">
@@ -1570,7 +1570,7 @@ class T_M_G_Video_Controller {
   autonextVideo() {
     if (!this.loaded || !this.playlist || this.settings.auto.next < 0 || !this.canAutoMovePlaylist || this.currentPlaylistIndex >= this.playlist.length - 1 || this.video.paused) return;
     this.canAutoMovePlaylist = false;
-    const count = Math.floor((this.settings.time.end ?? this.duration) - this.currentTime);
+    const count = Math.max(1, Math.round((this.settings.time.end ?? this.duration) - this.currentTime));
     const v = this.playlist[this.currentPlaylistIndex + 1];
     const nextVideoToastId = this.toast?.("", {
       autoClose: count * 1000,
@@ -2186,7 +2186,7 @@ class T_M_G_Video_Controller {
   }
   _handleGestureVolumeSliderInput({ percent, sign }) {
     let volume = sign === "+" ? this.volume + percent * this.settings.volume.max : this.volume - percent * this.settings.volume.max;
-    volume = tmg.clamp(0, Math.floor(volume), this.settings.volume.max);
+    volume = tmg.clamp(0, Math.round(volume), this.settings.volume.max);
     this.volume = volume;
     this.shouldSetLastVolume = false;
   }
@@ -2300,7 +2300,7 @@ class T_M_G_Video_Controller {
   }
   _handleGestureBrightnessSliderInput({ percent, sign }) {
     let brightness = sign === "+" ? this.brightness + percent * this.settings.brightness.max : this.brightness - percent * this.settings.brightness.max;
-    brightness = tmg.clamp(0, Math.floor(brightness), this.settings.brightness.max);
+    brightness = tmg.clamp(0, Math.round(brightness), this.settings.brightness.max);
     this.brightness = brightness;
     this.shouldSetLastBrightness = false;
   }
