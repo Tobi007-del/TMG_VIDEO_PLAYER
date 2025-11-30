@@ -325,7 +325,7 @@ export const Toaster = (defOptions = {}) => {
   ["info", "success", "warn", "error"].forEach((action) => Toasting.message(base, defaults, action));
   base.loading = (render, options) => Toasting.loading(base, render, options);
   base.promise = (promise, options) => Toasting.promise(base, promise, options);
-  base.dismiss =  Toasting.dismiss;
+  base.dismiss = Toasting.dismiss;
   return base;
 };
 const Toast = Toaster();

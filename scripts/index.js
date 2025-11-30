@@ -489,7 +489,10 @@ function handleFiles(files) {
         objectURLs.forEach((url, i) => {
           const item = {
             src: url,
-            media: { title: files[i].name, artist: "TMG Video Player" },
+            media: {
+              title: files[i].name.replace(/\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v|mpg|mpeg|3gp|ogv|ts)/gi, ""),
+              artist: "TMG Video Player",
+            },
             settings: { time: { previews: true } },
           };
           playlist.push(item);
@@ -501,6 +504,8 @@ function handleFiles(files) {
           mP = new tmg.Player({
             tracks: [],
             playlist,
+            // "settings.auto.play": true,
+            "settings.overlay.behavior": "auto",
             "settings.captions.font.size.value": 200,
             "settings.captions.font.weight.value": 700,
             "settings.captions.background.opacity.value": 0,

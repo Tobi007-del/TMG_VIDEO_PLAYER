@@ -85,11 +85,12 @@
 
 *:focus-visible {
   outline-width: 0.15rem;
-  transition: none!important;
+  transition: none !important;
 }
 
 html {
   background-color: #0b1012;
+  overflow-x: hidden;
 }
 
 body {
