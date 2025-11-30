@@ -3514,7 +3514,7 @@ class T_M_G {
       (p) => tmg.camelize(p)
     );
   static assignDottedConfig(obj = {}, prop, value, separator = ".", keyFunc = (p) => p) {
-    if (!tmg.isObj(obj) || !prop?.includes?.(separator)) return;
+    if (!tmg.isObj(obj)) return;
     const keys = prop.split(separator).map(keyFunc);
     let currObj = obj;
     keys.forEach((key, i) => {
