@@ -1570,7 +1570,7 @@ class T_M_G_Video_Controller {
   autonextVideo() {
     if (!this.loaded || !this.playlist || this.settings.auto.next < 0 || !this.canAutoMovePlaylist || this.currentPlaylistIndex >= this.playlist.length - 1 || this.video.paused) return;
     this.canAutoMovePlaylist = false;
-    const count = Math.max(1, Math.round((this.settings.time.end ?? this.duration) - this.currentTime));
+    const count = tmg.clamp(1, Math.round((this.settings.time.end ?? this.duration) - this.currentTime), this.settings.auto.next);
     const v = this.playlist[this.currentPlaylistIndex + 1];
     const nextVideoToastId = this.toast?.("", {
       autoClose: count * 1000,
