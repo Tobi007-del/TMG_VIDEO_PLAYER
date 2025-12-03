@@ -867,9 +867,7 @@ class T_M_G_Video_Controller {
                 <span>Close Settings</span>
               </button>                     
             </div>
-            <div class="T_M_G-video-settings-bottom-panel">
-              No Settings Available Yet!
-            </div>
+            <div class="T_M_G-video-settings-bottom-panel">No Settings Available Yet!</div>
           </div>
         </div>         
       </div>
@@ -1586,7 +1584,7 @@ class T_M_G_Video_Controller {
         <h2>Next Video in <span class="T_M_G-video-playlist-next-video-countdown">${count}</span></h2>
         ${v.media.title ? `<p class="T_M_G-video-playlist-next-video-title">${v.media.title}</p>` : ""}
       </span>`,
-      onTimeUpdate: (time) => this.throttle("nextVideoCountdown", () => (this.queryDOM(".T_M_G-video-playlist-next-video-countdown").textContent = Math.max(1, Math.round((count * 1000 - time) / 1000))), 500),
+      onTimeUpdate: (time) => this.throttle("nextVideoCountdown", () => (this.queryDOM(".T_M_G-video-playlist-next-video-countdown").textContent = Math.max(1, Math.round((count * 1000 - time) / 1000))), 250),
       onClose: (timeElapsed) => timeElapsed && cleanUp(true) && this.nextVideo(),
     });
     const cleanUpWhenNeeded = () => !this.video.ended && cleanUp(),
@@ -1601,7 +1599,7 @@ class T_M_G_Video_Controller {
     this.video.addEventListener("pause", cleanUpWhenNeeded);
     this.video.addEventListener("waiting", cleanUpWhenNeeded);
     this.video.addEventListener("timeupdate", autoCleanUpToast);
-    this.queryDOM(".T_M_G-video-playlist-next-video-preview-wrapper").addEventListener("click", () => cleanUp(true) && this.nextVideo());
+    this.queryDOM(".T_M_G-video-playlist-next-video-preview-wrapper")?.addEventListener("click", () => cleanUp(true) && this.nextVideo());
   }
   setMediaSession() {
     if (!navigator.mediaSession || (tmg._pictureInPictureActive && !this.isUIActive("pictureInPicture"))) return;
