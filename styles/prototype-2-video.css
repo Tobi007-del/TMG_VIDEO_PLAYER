@@ -649,7 +649,7 @@ body:where(:has(.T_M_G-video-floating-player)) {
 }
 .T_M_G-video-container:is(.T_M_G-video-overlay, :has(:focus-visible)) {
   --c-b-p: calc(var(--T_M_G-video-controls-padding) * 2); /* controls block padding */
-  --T_M_G-video-current-safe-inset-bottom: calc((var(--T_M_G-video-current-unit) * 2.25) + var(--c-b-p));
+  --T_M_G-video-current-safe-inset-bottom: calc((var(--T_M_G-video-current-unit) * 2.5) + var(--c-b-p));
 }
 .T_M_G-media-container:where([data-size-tier^="xxxxx"]):is(.T_M_G-video-overlay, :has(:focus-visible)) {
   --T_M_G-video-current-safe-inset-bottom: calc((var(--T_M_G-video-current-unit) * 1.4) + var(--c-b-p));
@@ -679,7 +679,7 @@ body:where(:has(.T_M_G-video-floating-player)) {
 .T_M_G-media-container:has(.T_M_G-video-cancel-scrub-notifier.T_M_G-video-control-active) {
   --T_M_G-video-current-thumb-indicator-scale: 1;
 }
-.T_M_G-video-container:not(.T_M_G-video-overlay, :has(:focus-visible, .T_M_G-video-playback-rate-notifier.T_M_G-video-control-active)).T_M_G-video-progress-bar {
+.T_M_G-video-container:is([data-thumb-indicator="false"], [data-thumb-indicator="auto"]:has(.T_M_G-video-timeline-container:not(:hover)), :not(.T_M_G-video-overlay, :has(:focus-visible, .T_M_G-video-playback-rate-notifier.T_M_G-video-control-active)).T_M_G-video-progress-bar) {
   --T_M_G-video-current-thumb-indicator-scale: 0;
 }
 .T_M_G-video-container:has(.T_M_G-video-notifier.T_M_G-video-control-persist) {
@@ -1342,7 +1342,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   display: flex;
   align-items: center;
   gap: var(--T_M_G-video-current-controls-gap);
-  padding-block: calc(var(--T_M_G-video-current-unit) / 2.75);
+  padding-block: calc(var(--T_M_G-video-current-unit) / 2.25);
 }
 .T_M_G-video-left-side-controls-wrapper:has([data-control-displayed="true"]) {
   padding-inline: var(--T_M_G-video-current-controls-gap) calc(var(--T_M_G-video-current-controls-gap) / 2);

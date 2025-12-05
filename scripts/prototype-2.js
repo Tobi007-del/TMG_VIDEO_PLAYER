@@ -832,7 +832,7 @@ class T_M_G_Video_Controller {
         {
           className: `T_M_G-video-container T_M_G-media-container${this.isMediaMobile ? " T_M_G-video-mobile" : ""}${this.video.paused ? " T_M_G-video-paused" : ""}${this.settings.time.progressBar ? " T_M_G-video-progress-bar" : ""}`,
         },
-        { volumeLevel: "muted", brightnessLevel: "dark" }
+        { volumeLevel: "muted", brightnessLevel: "dark", thumbIndicator: this.settings.time.line.thumbIndicator }
       )),
       this.video
     );
@@ -1753,6 +1753,8 @@ class T_M_G_Video_Controller {
     this.isScrubbing = true;
     this.DOM.timelineContainer?.setPointerCapture(e.pointerId);
     this.wasPaused = this.video.paused;
+    this.lastTimelinePointerX = e.clientX;
+    this.lastTimelineThumbPosition = Number(this.settings.css.currentThumbPosition);
     this.scrubbingId = setTimeout(() => {
       this.togglePlay(false);
       this.videoContainer.classList.add("T_M_G-video-scrubbing");
@@ -1787,7 +1789,7 @@ class T_M_G_Video_Controller {
     if (this.stallCancelTimeScrub || this.shouldCancelTimeScrub || this.cancelScrubTimeoutId) return;
     this.shouldCancelTimeScrub = true;
     this.DOM.cancelScrubNotifier.classList.add("T_M_G-video-control-active");
-    this.cancelScrubTimeoutId = setTimeout(this.allowTimeScrubbing, this.settings.time.line.seekCancel.timeout, false);
+    this.cancelScrubTimeoutId = setTimeout(this.allowTimeScrubbing, this.settings.time.line.seek.cancel.timeout, false);
   }
   allowTimeScrubbing(reset = true) {
     this.stallCancelTimeScrub = this.shouldCancelTimeScrub = false;
@@ -1795,34 +1797,33 @@ class T_M_G_Video_Controller {
     clearTimeout(this.cancelScrubTimeoutId);
     if (reset) this.cancelScrubTimeoutId = null;
   }
-  _handleTimelineInput({ clientX: x }) {
+  _handleTimelineInput({ clientX }) {
     this.overTimeline = true;
     if (!this.isMediaMobile) this.videoContainer.classList.add("T_M_G-video-previewing");
     this.throttle(
       "timelineInput",
       () => {
-        x = tmg.clamp(0, x, window.innerWidth);
         const rect = this.DOM.timelineContainer?.getBoundingClientRect(),
-          currX = tmg.clamp(0, x - rect.left, rect.width),
-          percent = currX / rect.width,
+          currX = tmg.clamp(0, !this.isScrubbing || this.settings.time.line.seek.relative ? clientX - rect.left : this.lastTimelineThumbPosition * rect.width + (clientX - this.lastTimelinePointerX), rect.width),
+          p = currX / rect.width,
           previewImgMin = this.DOM.previewContainer.offsetWidth / 2 / rect.width;
-        this.DOM.previewContainer?.setAttribute("data-preview-time", this.toTimeText(percent * this.video.duration, true));
+        this.DOM.previewContainer?.setAttribute("data-preview-time", this.toTimeText(p * this.video.duration, true));
         if (this.isScrubbing) {
-          this.settings.css.currentThumbPosition = percent;
-          if (this.settings.time.seekSync) this.settings.css.currentPlayedPosition = percent;
-          if (this.settings.time.seekSync && this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(percent * this.duration, true);
-          Math.abs(currX - (this.currentTime / this.duration) * rect.width) < this.settings.time.line.seekCancel.delta ? this.cancelTimeScrubbing() : this.allowTimeScrubbing();
+          this.settings.css.currentThumbPosition = p;
+          if (this.settings.time.seekSync) this.settings.css.currentPlayedPosition = p;
+          if (this.settings.time.seekSync && this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(p * this.duration, true);
+          Math.abs(currX - (this.currentTime / this.duration) * rect.width) < this.settings.time.line.seek.cancel.delta ? this.cancelTimeScrubbing() : this.allowTimeScrubbing();
           this.showOverlay();
         }
-        this.settings.css.currentPreviewPosition = percent;
-        this.settings.css.currentPreviewImgPosition = tmg.clamp(previewImgMin, percent, 1 - previewImgMin);
+        this.settings.css.currentPreviewPosition = p;
+        this.settings.css.currentPreviewImgPosition = tmg.clamp(previewImgMin, p, 1 - previewImgMin);
         let arrowBW = tmg.parseCSSUnit(getComputedStyle(this.DOM.previewContainer, "::before").borderWidth),
           arrowPositionMin = Math.max(arrowBW / 5, tmg.parseCSSUnit(getComputedStyle(this.DOM.previewContainer).borderRadius) / 2);
-        this.settings.css.currentPreviewImgArrowPosition = percent < previewImgMin ? `${Math.max(percent * rect.width, arrowPositionMin + arrowBW / 2 + 1)}px` : percent > 1 - previewImgMin ? `${Math.min(this.DOM.previewContainer.offsetWidth / 2 + percent * rect.width - this.DOM.previewContainer.offsetLeft, this.DOM.previewContainer.offsetWidth - arrowPositionMin - arrowBW - 1)}px` : "50%";
+        this.settings.css.currentPreviewImgArrowPosition = p < previewImgMin ? `${Math.max(p * rect.width, arrowPositionMin + arrowBW / 2 + 1)}px` : p > 1 - previewImgMin ? `${Math.min(this.DOM.previewContainer.offsetWidth / 2 + p * rect.width - this.DOM.previewContainer.offsetLeft, this.DOM.previewContainer.offsetWidth - arrowPositionMin - arrowBW - 1)}px` : "50%";
         if (this.settings.status.ui.previews) {
-          if (!this.isMediaMobile) this.DOM.previewImg.src = this.settings.time.previews.address.replace("$", Math.max(1, Math.floor((percent * this.duration) / this.settings.time.previews.spf)));
+          if (!this.isMediaMobile) this.DOM.previewImg.src = this.settings.time.previews.address.replace("$", Math.max(1, Math.floor((p * this.duration) / this.settings.time.previews.spf)));
           if (this.isScrubbing) this.DOM.thumbnailImg.src = this.DOM.previewImg.src;
-        } else if (this.settings.time.previews) this.pseudoVideo.currentTime = percent * this.duration;
+        } else if (this.settings.time.previews) this.pseudoVideo.currentTime = p * this.duration;
       },
       30,
       false
@@ -4101,7 +4102,15 @@ if (typeof window !== "undefined") {
       persist: true,
       playbackRate: { min: 0.25, max: 8, skip: 0.25 },
       playsInline: true,
-      time: { line: { position: "top", seekCancel: { delta: 15, timeout: 2000 } }, previews: false, progressBar: tmg.queryMediaMobile(), mode: "elapsed", format: "digital", skip: 10, seekSync: false },
+      time: {
+        line: { position: "top", seek: { relative: !tmg.queryMediaMobile(), cancel: { delta: 15, timeout: 2000 } }, thumbIndicator: true },
+        previews: false,
+        progressBar: tmg.queryMediaMobile(),
+        mode: "elapsed",
+        format: "digital",
+        skip: 10,
+        seekSync: false,
+      },
       toasts: { disabled: false, maxToasts: 7, position: "bottom-left", hideProgressBar: true, animation: "slide-up" },
       volume: { min: 0, max: 300, skip: 5 },
     },
