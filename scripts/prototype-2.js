@@ -2043,7 +2043,7 @@ class T_M_G_Video_Controller {
     const cueWrapper = existing || tmg.createEl("div", { className: "T_M_G-video-cue-wrapper" });
     cueWrapper.innerHTML = "";
     const maxChars = Math.floor(this.videoContainer.offsetWidth / this.cueCharW);
-    const paragraphs = cue.text.replace(/<br\s*\/?>/gi, "\n").split(/\n/);
+    const paragraphs = cue.text.replace(/(<br\s*\/?>)|\\N/gi, "\n").split(/\n/);
     paragraphs.forEach((p) => {
       let line = [],
         lineLen = 0,

@@ -392,6 +392,7 @@ body:has(#video.stall) #clear-button {
 }
 
 #file-list-wrapper {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -440,11 +441,14 @@ body:has(#video.stall) #clear-button {
   text-decoration: underline;
 }
 
+#file-list {
+  width: 100%;
+}
+
 #file-list ul {
   position: relative;
   display: flex;
   flex-direction: column;
-  flex: 0 1 100%;
 }
 
 #file-list:has(.content-line.dragging.playing) .drag-placeholder {

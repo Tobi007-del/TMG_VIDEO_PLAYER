@@ -327,13 +327,13 @@ function handleFiles(files) {
             if (!f) return;
             const ext = f.name.split(".").pop().toLowerCase();
             if (!["srt", "vtt"].includes(ext)) return Toast.warn("Only .srt and .vtt files are supported");
-            thumbnail.dataset.captionState = "loading";
             let txt = await f.text();
             if (ext === "srt") txt = srtToVtt(txt);
             thumbnail.playlistItem.tracks = [{ id: uid(), kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
             if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = thumbnail.playlistItem.tracks;
             thumbnail.dataset.captionState = "filled";
           },
+          oncancel: () => (thumbnail.dataset.captionState = "empty"),
         });
         const captionsBtn = tmg.createEl("button", {
           title: "(Toggle / DblClick→Load) Captions",
@@ -348,8 +348,10 @@ function handleFiles(files) {
           captionsBtn,
           ({ target }) => {
             if (target.matches("input")) return;
-            if (thumbnail.dataset.captionState === "empty") return captionsBtn.querySelector("input").click();
-            else if (thumbnail.dataset.captionState === "filled") {
+            if (thumbnail.dataset.captionState === "empty") {
+              setTimeout(() => (thumbnail.dataset.captionState = "loading"), 1000);
+              return captionsBtn.querySelector("input").click();
+            } else if (thumbnail.dataset.captionState === "filled") {
               if (thumbnail.playlistItem?.tracks?.[0]?.src?.startsWith("blob:")) URL.revokeObjectURL(thumbnail.playlistItem.tracks[0].src);
               thumbnail.playlistItem.tracks = [];
               if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = [];
@@ -748,28 +750,17 @@ function isWebkitDirectorySupported() {
 }
 
 function srtToVtt(srt) {
-  // Normalize line endings and trim
-  let input = srt.replace(/\r\n?/g, "\n").trim();
-  // Split into cue blocks (blank separator)
-  const blocks = input.split(/\n{2,}/);
+  let input = srt.replace(/\r\n?/g, "\n").trim(); // Normalize line endings and trim
+  const blocks = input.split(/\n{2,}/); // Split into cue blocks (blank separator)
   const vttLines = ["WEBVTT", ""]; // header + blank line
   for (const block of blocks) {
     const lines = block.split("\n");
     let idx = 0;
-    // If first line is just a number (cue index), skip it
-    if (/^\d+$/.test(lines[0].trim())) {
-      idx = 1;
-    }
-    if (idx >= lines.length) {
-      continue; // malformed block
-    }
+    if (/^\d+$/.test(lines[0].trim())) idx = 1; // If first line is just a number (cue index), skip it
+    if (idx >= lines.length) continue; // malformed block
     const timing = lines[idx].trim().replace(/\s+/g, " "); // ← Normalize;
-    // Match times with optional ms, comma or dot
-    const m = timing.match(/(\d{1,2}:\d{2}:\d{2})(?:[.,](\d{1,3}))?\s*-->\s*(\d{1,2}:\d{2}:\d{2})(?:[.,](\d{1,3}))?/);
-    if (!m) {
-      // invalid timing line, skip block
-      continue;
-    }
+    const m = timing.match(/(\d{1,2}:\d{2}:\d{2})(?:[.,](\d{1,3}))?\s*-->\s*(\d{1,2}:\d{2}:\d{2})(?:[.,](\d{1,3}))?/); // Match times with optional ms, comma or dot
+    if (!m) continue; // invalid timing line, skip block
     const [, startHms, startMsRaw = "0", endHms, endMsRaw = "0"] = m;
     const to3 = (msRaw) => {
       let ms = msRaw;
@@ -781,9 +772,8 @@ function srtToVtt(srt) {
     const endMs = to3(endMsRaw);
     const vttTime = `${startHms}.${startMs} --> ${endHms}.${endMs}`;
     vttLines.push(vttTime);
-    // The rest of lines in block are subtitle text
     for (let t = idx + 1; t < lines.length; t++) {
-      vttLines.push(lines[t]);
+      vttLines.push(lines[t]); // The rest of lines in block are subtitle text
     }
     vttLines.push(""); // blank line after cue
   }
