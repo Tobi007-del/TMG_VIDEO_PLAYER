@@ -434,6 +434,7 @@ body:has(#video.stall) #clear-button {
 #no-files-text {
   margin-block: 30px;
   color: grey;
+  text-align: center;
   text-shadow: 0.5px 0.5px 2px #0b1012e8;
 }
 
