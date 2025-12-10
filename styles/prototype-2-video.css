@@ -1274,7 +1274,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   border-bottom-right-radius: inherit;
 }
 .T_M_G-video-container:has(.T_M_G-video-timeline-container:last-child) .T_M_G-video-bottom-controls-wrapper {
-  padding-block-end: calc(var(--T_M_G-video-current-unit) / 1.385);
+  padding-block-end: calc(var(--T_M_G-video-current-unit) / 1.125);
 }
 .T_M_G-video-container:is(:not(.T_M_G-video-overlay, :has(:focus-visible, .T_M_G-video-playback-rate-notifier.T_M_G-video-control-active)).T_M_G-video-progress-bar, [data-size-tier^="xxxxx"]) .T_M_G-video-bottom-controls-wrapper {
   padding-block-end: 0;

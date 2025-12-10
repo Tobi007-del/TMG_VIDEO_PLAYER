@@ -2101,20 +2101,25 @@ class T_M_G_Video_Controller {
   rotateCaptionsBackgroundOpacity = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).background.opacity.values, "captions.background.opacity.value");
   rotateCaptionsWindowOpacity = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).window.opacity.values, "captions.window.opacity.value");
   rotateCaptionsCharacterEdgeStyle = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).characterEdgeStyle.values, "captions.characterEdgeStyle.value", false);
-  _handleCueDragStart(e) {
-    this.DOM.cueContainer?.setPointerCapture(e.pointerId);
+  _handleCueDragStart({ pointerId, clientX, clientY }) {
+    this.DOM.cueContainer?.setPointerCapture(pointerId);
+    const { left, bottom } = getComputedStyle(this.DOM.cueContainer);
+    this.lastCueXPos = Number(left.replace("px", ""));
+    this.lastCueYPos = Number(bottom.replace("px", ""));
+    this.lastCuePointerX = clientX;
+    this.lastCuePointerY = clientY;
     this.DOM.cueContainer?.addEventListener("pointermove", this._handleCueDragging);
     this.DOM.cueContainer?.addEventListener("pointerup", this._handleCueDragEnd);
   }
   _handleCueDragging({ clientX, clientY }) {
     this.videoContainer.classList.add("T_M_G-video-cue-dragging");
     this.RAFLoop("cueDragging", () => {
-      const rect = this.videoContainer.getBoundingClientRect(),
+      const { offsetWidth: ww, offsetHeight: hh } = this.videoContainer,
         { offsetWidth: w, offsetHeight: h } = this.DOM.cueContainer,
-        posX = tmg.clamp(w / 2, clientX - rect.left, rect.width - w / 2),
-        posY = tmg.clamp(h / 2, rect.height - (clientY - rect.top), rect.height - h / 2);
-      this.settings.css.currentCueX = `${(posX / rect.width) * 100}%`;
-      this.settings.css.currentCueY = `${(posY / rect.height) * 100}%`;
+        posX = tmg.clamp(w / 2, this.lastCueXPos + (clientX - this.lastCuePointerX), ww - w / 2),
+        posY = tmg.clamp(h / 2, this.lastCueYPos - (clientY - this.lastCuePointerY), hh - h / 2);
+      this.settings.css.currentCueX = `${(posX / ww) * 100}%`;
+      this.settings.css.currentCueY = `${(posY / hh) * 100}%`;
     });
   }
   _handleCueDragEnd(e) {
@@ -2508,8 +2513,13 @@ class T_M_G_Video_Controller {
       this.videoContainer.removeEventListener("touchstart", this._handleMiniPlayerDragStart);
     }
   }
-  _handleMiniPlayerDragStart({ target }) {
+  _handleMiniPlayerDragStart({ target, clientX, clientY, targetTouches }) {
     if (!this.isUIActive("miniPlayer") || this.DOM.topControlsWrapper.contains(target) || this.DOM.bottomControlsWrapper.contains(target) || this.DOM.cueContainer?.contains(target) || target.closest("[class$='toast-container']")) return;
+    const { left, bottom } = getComputedStyle(this.videoContainer);
+    this.lastMiniPlayerXPos = Number(left.replace("px", ""));
+    this.lastMiniPlayerYPos = Number(bottom.replace("px", ""));
+    this.lastMiniPlayerDragX = clientX ?? targetTouches[0].clientX;
+    this.lastMiniPlayerDragY = clientY ?? targetTouches[0].clientY;
     document.addEventListener("mousemove", this._handleMiniPlayerDragging);
     document.addEventListener("mouseup", this._handleMiniPlayerDragEnd);
     document.addEventListener("mouseleave", this._handleMiniPlayerDragEnd);
@@ -2527,8 +2537,8 @@ class T_M_G_Video_Controller {
         { offsetWidth: w, offsetHeight: h } = this.videoContainer;
       const x = e.clientX ?? e.changedTouches[0].clientX,
         y = e.clientY ?? e.changedTouches[0].clientY,
-        posX = tmg.clamp(w / 2, x, ww - w / 2),
-        posY = tmg.clamp(h / 2, wh - y, wh - h / 2);
+        posX = tmg.clamp(w / 2, this.lastMiniPlayerXPos + (x - this.lastMiniPlayerDragX), ww - w / 2),
+        posY = tmg.clamp(h / 2, this.lastMiniPlayerYPos - (y - this.lastMiniPlayerDragY), wh - h / 2);
       this.settings.css.currentMiniPlayerX = `${(posX / ww) * 100}%`;
       this.settings.css.currentMiniPlayerY = `${(posY / wh) * 100}%`;
     });
