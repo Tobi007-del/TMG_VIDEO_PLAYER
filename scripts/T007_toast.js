@@ -198,49 +198,48 @@ class T007_Toast {
     this.toastElement?.parentElement?.[value ? "prepend" : "append"](this.toastElement);
   }
   set dragToClose(value) {
-    this.toastElement.dataset.pointerType = this._pointerType = value;
+    this.toastElement.dataset.pointerType = this._ptrType = value;
     this.toastElement.onpointerdown = value ? this._handleToastPointerStart : null;
     this.toastElement.onpointerup = value ? this._handleToastPointerUp : null;
   }
   _handleToastPointerStart(e) {
-    if (typeof this._pointerType === "string" && e.pointerType !== this._pointerType) return;
+    if (typeof this._ptrType === "string" && e.pointerType !== this._ptrType) return;
     if (e.touches?.length > 1) return;
-    e.stopImmediatePropagation();
     !e.target?.matches('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') && this.toastElement.setPointerCapture(e.pointerId);
-    this._pointerStartX = this.opts.dragToCloseDir.includes("x") ? (e.clientX ?? e.targetTouches[0]?.clientX) : 0;
-    this._pointerStartY = this.opts.dragToCloseDir.includes("y") ? (e.clientY ?? e.targetTouches[0]?.clientY) : 0;
-    this._pointerTicker = false;
-    this.toastElement.addEventListener("pointermove", this._handleToastPointerMove, { passive: false });
     this.#isPaused = true;
+    this._ptrTicker = false;
+    this._ptrStartX = e.clientX ?? e.targetTouches[0]?.clientX;
+    this._ptrStartY = e.clientY ?? e.targetTouches[0]?.clientY;
+    this.toastElement.addEventListener("pointermove", this._handleToastPointerMove, { passive: false });
   }
   _handleToastPointerMove(e) {
     e.preventDefault();
-    e.stopImmediatePropagation();
-    if (this._pointerTicker) return;
-    this._pointerRAF = requestAnimationFrame(() => {
+    if (this._ptrTicker) return;
+    this._ptrRAF = requestAnimationFrame(() => {
       const x = e.clientX ?? e.targetTouches[0]?.clientX,
         y = e.clientY ?? e.targetTouches[0]?.clientY;
-      this._pointerDeltaX = this.opts.dragToCloseDir.includes("x") ? x - this._pointerStartX : 0;
-      this._pointerDeltaY = this.opts.dragToCloseDir.includes("y") ? y - this._pointerStartY : 0;
+      this._ptrDir ||= Math.abs(x - this._ptrStartX) >= Math.abs(y - this._ptrStartY) ? "x" : "y";
+      this._ptrDeltaX = (this.opts.dragToCloseDir.includes("|") ? this._ptrDir == "x" : this.opts.dragToCloseDir.includes("x")) ? x - this._ptrStartX : 0;
+      this._ptrDeltaY = (this.opts.dragToCloseDir.includes("|") ? this._ptrDir == "y" : this.opts.dragToCloseDir.includes("y")) ? y - this._ptrStartY : 0;
       this.toastElement.style.setProperty("transition", "none", "important");
-      this.toastElement.style.setProperty("transform", `translate(${this._pointerDeltaX}px, ${this._pointerDeltaY}px)`, "important");
-      const xR = Math.abs(this._pointerDeltaX) / this.toastElement.offsetWidth,
-        yR = Math.abs(this._pointerDeltaY) / this.toastElement.offsetHeight;
+      this.toastElement.style.setProperty("transform", `translate(${this._ptrDeltaX}px, ${this._ptrDeltaY}px)`, "important");
+      const xR = Math.abs(this._ptrDeltaX) / this.toastElement.offsetWidth,
+        yR = Math.abs(this._ptrDeltaY) / this.toastElement.offsetHeight;
       this.toastElement.style.setProperty("opacity", clamp(0, 1 - (yR > 0.5 ? yR : xR), 1), "important");
-      this._pointerTicker = false;
+      this._ptrDir = yR || xR ? this._ptrDir : false;
+      this._ptrTicker = false;
     });
-    this._pointerTicker = true;
+    this._ptrTicker = true;
   }
   _handleToastPointerUp(e) {
-    if (typeof this._pointerType === "string" && e.pointerType !== this._pointerType) return;
-    cancelAnimationFrame(this._pointerRAF);
-    if (this.opts.dragToCloseDir.includes("x") ? Math.abs(this._pointerDeltaX) > this.toastElement.offsetWidth * (this.opts.dragToClosePercent.x ?? this.opts.dragToClosePercent / 100) : Math.abs(this._pointerDeltaY) > this.toastElement.offsetHeight * (this.opts.dragToClosePercent.y ?? this.opts.dragToClosePercent / 100)) return this._remove("instant");
-    this._pointerTicker = false;
+    if (typeof this._ptrType === "string" && e.pointerType !== this._ptrType) return;
+    cancelAnimationFrame(this._ptrRAF);
+    if (Math.abs(this._ptrDeltaX) > this.toastElement.offsetWidth * (this.opts.dragToClosePercent.x ?? this.opts.dragToClosePercent / 100) || Math.abs(this._ptrDeltaY) > this.toastElement.offsetHeight * (this.opts.dragToClosePercent.y ?? this.opts.dragToClosePercent / 100)) return this._remove("instant");
+    this.#isPaused = this._ptrTicker = this._ptrDir = false;
     this.toastElement.removeEventListener("pointermove", this._handleToastPointerMove, { passive: false });
     this.toastElement.style.removeProperty("transition");
     this.toastElement.style.removeProperty("transform");
     this.toastElement.style.removeProperty("opacity");
-    this.#isPaused = false;
   }
   _remove(manner = "smooth", timeElapsed = false) {
     document.removeEventListener("visibilitychange", this.#visiblityChange);
@@ -356,7 +355,7 @@ if (typeof window !== "undefined") {
   t007.TOAST_DEFAULT_OPTIONS.pauseOnFocusLoss ??= true;
   t007.TOAST_DEFAULT_OPTIONS.dragToClose ??= true; // mouse, pen, touch, boolean
   t007.TOAST_DEFAULT_OPTIONS.dragToClosePercent ??= 40;
-  t007.TOAST_DEFAULT_OPTIONS.dragToCloseDir ??= "x"; // x, y, xy
+  t007.TOAST_DEFAULT_OPTIONS.dragToCloseDir ??= "x"; // x, y, xy, x|y
   t007.TOAST_DEFAULT_OPTIONS.renotify ??= true;
   t007.TOAST_DEFAULT_OPTIONS.vibrate ??= false;
   t007.TOAST_DEFAULT_OPTIONS.animation ??= true; // "fade", "zoom", "slide"|"slide-left"|"slide-right"|"slide-up"|"slide-down"

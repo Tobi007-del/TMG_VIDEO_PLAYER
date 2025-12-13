@@ -98,6 +98,7 @@ body {
   padding: 0;
   padding-bottom: 30px;
   font-family: "Segoe UI", system-ui, sans-serif;
+  overflow-x: hidden;
 }
 
 body::before {
