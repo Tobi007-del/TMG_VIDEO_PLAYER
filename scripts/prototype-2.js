@@ -893,37 +893,27 @@ class T_M_G_Video_Controller {
   }
   buildControllerStructure() {
     const HTML = this.getPlayerHTML(), // breaking HTML into smaller units to use as building blocks
-      spacerIndex = this.settings.controlPanel.bottom?.indexOf?.("spacer"),
-      bLeftSideControls = spacerIndex > -1 ? this.settings.controlPanel.bottom?.slice?.(0, spacerIndex) : null,
-      bRightSideControls = spacerIndex > -1 ? this.settings.controlPanel.bottom?.slice?.(spacerIndex + 1) : null,
+      s1Index = this.settings.controlPanel.bottom?.[0]?.indexOf?.("spacer"),
+      s2Index = this.settings.controlPanel.bottom?.[1]?.indexOf?.("spacer"),
+      b1LeftSideControls = s1Index > -1 ? this.settings.controlPanel.bottom?.[0]?.slice?.(0, s1Index) : null,
+      b1RightSideControls = s1Index > -1 ? this.settings.controlPanel.bottom?.[0]?.slice?.(s1Index + 1) : null,
+      b2LeftSideControls = s2Index > -1 ? this.settings.controlPanel.bottom?.[1]?.slice?.(0, s2Index) : null,
+      b2RightSideControls = s2Index > -1 ? this.settings.controlPanel.bottom?.[1]?.slice?.(s2Index + 1) : null,
       controlsContainerBuild = this.queryDOM(".T_M_G-video-controls-container"),
-      notifiersContainerBuild = this.settings.status.ui.notifiers ? tmg.createEl("div", { className: "T_M_G-video-notifiers-container", innerHTML: ``.concat(HTML.playpausenotifier ?? "", HTML.prevnextnotifier ?? "", HTML.captionsnotifier ?? "", HTML.capturenotifier ?? "", HTML.objectfitnotifier ?? "", HTML.playbackratenotifier ?? "", HTML.volumenotifier ?? "", HTML.brightnessnotifier ?? "", HTML.fwdnotifier ?? "", HTML.bwdnotifier ?? "", HTML.scrubnotifier ?? "", HTML.cancelscrubnotifier ?? "", HTML.touchtimelinenotifier ?? "", HTML.touchvolumenotifier ?? "", HTML.touchbrightnessnotifier ?? ""), "data-notify": "" }) : null,
+      notifiersContainerBuild = this.settings.status.ui.notifiers ? tmg.createEl("div", { className: "T_M_G-video-notifiers-container", innerHTML: ``.concat(HTML.playpausenotifier ?? "", HTML.prevnextnotifier ?? "", HTML.captionsnotifier ?? "", HTML.capturenotifier ?? "", HTML.objectfitnotifier ?? "", HTML.playbackratenotifier ?? "", HTML.volumenotifier ?? "", HTML.brightnessnotifier ?? "", HTML.fwdnotifier ?? "", HTML.bwdnotifier ?? "", HTML.scrubnotifier ?? "", HTML.cancelscrubnotifier ?? "", HTML.touchtimelinenotifier ?? "", HTML.touchvolumenotifier ?? "", HTML.touchbrightnessnotifier ?? "") }, { notify: "" }) : null,
       bigControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-big-controls-wrapper", innerHTML: ``.concat(HTML.bigprev ?? "", HTML.bigplaypause ?? "", HTML.bignext ?? "") }),
       topControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-top-controls-wrapper", innerHTML: HTML.videotitle ?? "" }),
-      tRightSideControlsWrapperBuild = this.settings.status.ui.tRightSideControls ? tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-right-side-controls-wrapper-cover" }) : null,
       bottomControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-bottom-controls-wrapper" }),
-      bSubControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-bottom-sub-controls-wrapper" }),
-      bLeftSideControlsWrapperBuild = this.settings.status.ui.bLeftSideControls ? tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-left-side-controls-wrapper-cover" }) : null,
-      bRightSideControlsWrapperBuild = this.settings.status.ui.bRightSideControls ? tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-right-side-controls-wrapper-cover" }) : null;
-    this.settings.status.ui.notifiers && controlsContainerBuild.prepend(notifiersContainerBuild);
-    controlsContainerBuild.prepend(topControlsWrapperBuild, bigControlsWrapperBuild, bottomControlsWrapperBuild);
-    if (this.settings.status.ui.tRightSideControls) {
-      const tRightSideControlsWrapper = tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper T_M_G-video-right-side-controls-wrapper", innerHTML: ``.concat(...Array.from(this.settings.controlPanel.top || [], (el) => HTML[el] || "")) }, { dropZone: this.settings.status.ui.draggable });
-      tRightSideControlsWrapperBuild.append(tRightSideControlsWrapper);
-      topControlsWrapperBuild.append(tRightSideControlsWrapperBuild);
-    }
-    if (this.settings.status.ui.bLeftSideControls) {
-      const bLeftSideControlsWrapper = tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper T_M_G-video-left-side-controls-wrapper", innerHTML: ``.concat(...Array.from(bLeftSideControls || [], (el) => HTML[el] || "")) }, { dropZone: this.settings.status.ui.draggable });
-      bLeftSideControlsWrapperBuild.append(bLeftSideControlsWrapper);
-      bSubControlsWrapperBuild.append(bLeftSideControlsWrapperBuild);
-    }
-    if (this.settings.status.ui.bRightSideControls) {
-      const bRightSideControlsWrapper = tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper T_M_G-video-right-side-controls-wrapper", innerHTML: ``.concat(...Array.from(bRightSideControls || [], (el) => HTML[el] || "")) }, { dropZone: this.settings.status.ui.draggable });
-      bRightSideControlsWrapperBuild.append(bRightSideControlsWrapper);
-      bSubControlsWrapperBuild.append(bRightSideControlsWrapperBuild);
-    }
-    bottomControlsWrapperBuild.append(bSubControlsWrapperBuild);
-    bSubControlsWrapperBuild.insertAdjacentHTML(this.settings.time.line.position === "top" ? "beforebegin" : "afterend", HTML.timeline ?? "");
+      b1SubControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-bottom-sub-controls-wrapper T_M_G-video-bottom-1-sub-controls-wrapper" }),
+      b2SubControlsWrapperBuild = tmg.createEl("div", { className: "T_M_G-video-bottom-sub-controls-wrapper T_M_G-video-bottom-2-sub-controls-wrapper" });
+    controlsContainerBuild.prepend(notifiersContainerBuild ?? "", topControlsWrapperBuild, bigControlsWrapperBuild, bottomControlsWrapperBuild);
+    if (this.settings.status.ui.tRightSideControls) topControlsWrapperBuild.append(tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-right-side-controls-wrapper-cover" }).appendChild(tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper T_M_G-video-right-side-controls-wrapper", innerHTML: ``.concat(...Array.from(this.settings.controlPanel.top || [], (el) => HTML[el] || "")) }, { dropZone: this.settings.status.ui.draggable })).parentElement);
+    if (this.settings.status.ui.b1LeftSideControls) b1SubControlsWrapperBuild.append(tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-left-side-controls-wrapper-cover" }).appendChild(tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper T_M_G-video-left-side-controls-wrapper", innerHTML: ``.concat(...Array.from(b1LeftSideControls || [], (el) => HTML[el] || "")) }, { dropZone: this.settings.status.ui.draggable })).parentElement);
+    if (this.settings.status.ui.b1RightSideControls) b1SubControlsWrapperBuild.append(tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-right-side-controls-wrapper-cover" }).appendChild(tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper T_M_G-video-right-side-controls-wrapper", innerHTML: ``.concat(...Array.from(b1RightSideControls || [], (el) => HTML[el] || "")) }, { dropZone: this.settings.status.ui.draggable })).parentElement);
+    if (this.settings.status.ui.b2LeftSideControls) b2SubControlsWrapperBuild.append(tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-left-side-controls-wrapper-cover" }).appendChild(tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper T_M_G-video-left-side-controls-wrapper", innerHTML: ``.concat(...Array.from(b2LeftSideControls || [], (el) => HTML[el] || "")) }, { dropZone: this.settings.status.ui.draggable })).parentElement);
+    if (this.settings.status.ui.b2RightSideControls) b2SubControlsWrapperBuild.append(tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper-cover T_M_G-video-right-side-controls-wrapper-cover" }).appendChild(tmg.createEl("div", { className: "T_M_G-video-side-controls-wrapper T_M_G-video-right-side-controls-wrapper", innerHTML: ``.concat(...Array.from(b2RightSideControls || [], (el) => HTML[el] || "")) }, { dropZone: this.settings.status.ui.draggable })).parentElement);
+    bottomControlsWrapperBuild.append(b1SubControlsWrapperBuild, b2SubControlsWrapperBuild);
+    b1SubControlsWrapperBuild.insertAdjacentHTML("afterend", HTML.timeline ?? "");
     controlsContainerBuild.insertAdjacentHTML("afterbegin", ``.concat(HTML.expandminiplayer ?? "", HTML.removeminiplayer ?? "", HTML.pictureinpicturewrapper ?? "", HTML.thumbnail ?? "", HTML.videobuffer ?? "", HTML.cueContainer ?? ""));
     this.pseudoVideoContainer.insertAdjacentHTML("beforeend", ``.concat(HTML.pictureinpicturewrapper ?? "")); // running some pseudo build
   }
@@ -943,9 +933,12 @@ class T_M_G_Video_Controller {
       topControlsWrapper: this.queryDOM(".T_M_G-video-top-controls-wrapper"),
       tRightSideControlsWrapper: ui.tRightSideControls ? this.queryDOM(".T_M_G-video-top-controls-wrapper .T_M_G-video-right-side-controls-wrapper") : null,
       bottomControlsWrapper: this.queryDOM(".T_M_G-video-bottom-controls-wrapper"),
-      bSubControlsWrapper: ui.bLeftSideControls || ui.bRightSideControls ? this.queryDOM(".T_M_G-video-bottom-sub-controls-wrapper") : null,
-      bLeftSideControlsWrapper: ui.bLeftSideControls ? this.queryDOM(".T_M_G-video-bottom-controls-wrapper .T_M_G-video-left-side-controls-wrapper") : null,
-      bRightSideControlsWrapper: ui.bRightSideControls ? this.queryDOM(".T_M_G-video-bottom-controls-wrapper .T_M_G-video-right-side-controls-wrapper") : null,
+      b1SubControlsWrapper: ui.b1LeftSideControls || ui.b1RightSideControls ? this.queryDOM(".T_M_G-video-bottom-1-sub-controls-wrapper") : null,
+      b2SubControlsWrapper: ui.b2LeftSideControls || ui.b2RightSideControls ? this.queryDOM(".T_M_G-video-bottom-2-sub-controls-wrapper") : null,
+      b1LeftSideControlsWrapper: ui.b1LeftSideControls ? this.queryDOM(".T_M_G-video-bottom-1-sub-controls-wrapper .T_M_G-video-left-side-controls-wrapper") : null,
+      b1RightSideControlsWrapper: ui.b1RightSideControls ? this.queryDOM(".T_M_G-video-bottom-1-sub-controls-wrapper .T_M_G-video-right-side-controls-wrapper") : null,
+      b2LeftSideControlsWrapper: ui.b2LeftSideControls ? this.queryDOM(".T_M_G-video-bottom-2-sub-controls-wrapper .T_M_G-video-left-side-controls-wrapper") : null,
+      b2RightSideControlsWrapper: ui.b2RightSideControls ? this.queryDOM(".T_M_G-video-bottom-2-sub-controls-wrapper .T_M_G-video-right-side-controls-wrapper") : null,
       pictureInPictureWrapper: this.queryDOM(".T_M_G-video-picture-in-picture-wrapper"),
       pictureInPictureIconWrapper: this.queryDOM(".T_M_G-video-picture-in-picture-icon-wrapper"),
       videoTitle: this.queryDOM(".T_M_G-video-title"),
@@ -1320,7 +1313,7 @@ class T_M_G_Video_Controller {
     this._handleMediaParentResize();
     tmg.initScrollAssist(this.DOM.videoTitle, { pxPerSecond: 60 });
     tmg.initScrollAssist(this.DOM.videoArtist, { pxPerSecond: 30 });
-    [this.DOM.tRightSideControlsWrapper, this.DOM.bLeftSideControlsWrapper, this.DOM.bRightSideControlsWrapper].forEach((el) => {
+    [this.DOM.tRightSideControlsWrapper, this.DOM.b1LeftSideControlsWrapper, this.DOM.b1RightSideControlsWrapper, this.DOM.b2LeftSideControlsWrapper, this.DOM.b2RightSideControlsWrapper].forEach((el) => {
       this._handleSideControlsWrapperResize(el);
       tmg.initScrollAssist(el, { pxPerSecond: 60 });
       el && tmg.resizeObserver.observe(el);
@@ -1330,7 +1323,7 @@ class T_M_G_Video_Controller {
   unobserveResize() {
     tmg.removeScrollAssist(this.DOM.videoTitle);
     tmg.removeScrollAssist(this.DOM.videoArtist);
-    [this.DOM.tRightSideControlsWrapper, this.DOM.bLeftSideControlsWrapper, this.DOM.bRightSideControlsWrapper].forEach((el) => {
+    [this.DOM.tRightSideControlsWrapper, this.DOM.b1LeftSideControlsWrapper, this.DOM.b1RightSideControlsWrapper, this.DOM.b2LeftSideControlsWrapper, this.DOM.b2RightSideControlsWrapper].forEach((el) => {
       tmg.removeScrollAssist(el);
       el && tmg.resizeObserver.unobserve(el);
     });
@@ -1392,7 +1385,7 @@ class T_M_G_Video_Controller {
       c.dataset.controlDisplayed = getComputedStyle(c).display !== "none" ? "true" : "false";
       if (c.dataset.controlDisplayed === "true" && !spacer) spacer = c;
     } while ((c = c?.nextElementSibling));
-    if (wrapper === this.DOM.bLeftSideControlsWrapper) return;
+    if (wrapper === this.DOM.b1LeftSideControlsWrapper || wrapper === this.DOM.b2LeftSideControlsWrapper) return;
     spacer?.setAttribute("data-spacer", true);
   }
   svgSetup() {
@@ -1552,7 +1545,7 @@ class T_M_G_Video_Controller {
     this.loaded = false;
     this.currentPlaylistIndex = index;
     const v = this.playlist[index];
-    this.media = v.media ? { ...this.media, ...v.media } : v.media ?? null;
+    this.media = v.media ? { ...this.media, ...v.media } : (v.media ?? null);
     this.setPosterState();
     this.settings.time.start = v.settings.time.start;
     this.settings.time.end = v.settings.time.end;
@@ -3088,7 +3081,13 @@ class T_M_G_Video_Controller {
   _handleDragEnd({ target }) {
     target.classList.remove("T_M_G-video-control-dragging");
     this.dragging = null;
-    this.settings.controlPanel = { top: Array.from(this.DOM.tRightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId), bottom: [...Array.from(this.DOM.bLeftSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId), "spacer", ...Array.from(this.DOM.bRightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId)] };
+    this.settings.controlPanel = {
+      top: Array.from(this.DOM.tRightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId),
+      bottom: [
+        [...Array.from(this.DOM.b1LeftSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId), "spacer", ...Array.from(this.DOM.b1RightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId)],
+        [...Array.from(this.DOM.b2LeftSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId), "spacer", ...Array.from(this.DOM.b2RightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId)],
+      ],
+    };
   }
   _handleDragEnter = ({ target }) => target.dataset.dropZone && this.dragging && target.classList.add("T_M_G-video-dragover");
   _handleDragOver(e) {
@@ -3242,17 +3241,20 @@ class T_M_G_Media_Player {
       if (k !== "allowOverride") s.status.allowOverride[k] = s.allowOverride.includes?.(k.toLowerCase()) ?? s.allowOverride;
     });
     const { controlPanel: panelO, notifers: notifiersO } = s.status.allowOverride,
-      sIndex = s.controlPanel.bottom?.indexOf?.("spacer");
+      s1Index = s.controlPanel.bottom?.[0]?.indexOf?.("spacer"),
+      s2Index = s.controlPanel.bottom?.[1]?.indexOf?.("spacer");
     s.status.ui = {
       notifiers: s.notifiers || notifiersO,
-      timeline: /top|bottom/.test(s.time.line.position),
+      timeline: s.time.line.shown,
       previews: s.time.previews?.address && s.time.previews?.spf,
       tRightSideControls: s.controlPanel.top?.length || panelO,
-      bLeftSideControls: (sIndex > -1 ? s.controlPanel.bottom?.slice?.(0, sIndex)?.length : false) || panelO,
-      bRightSideControls: (sIndex > -1 ? s.controlPanel.bottom?.slice?.(sIndex + 1)?.length : false) || panelO,
+      b1LeftSideControls: (s1Index > -1 ? s.controlPanel.bottom?.[0]?.slice?.(0, s1Index)?.length : false) || panelO,
+      b1RightSideControls: (s1Index > -1 ? s.controlPanel.bottom?.[0]?.slice?.(s1Index + 1)?.length : false) || panelO,
+      b2LeftSideControls: (s2Index > -1 ? s.controlPanel.bottom?.[1]?.slice?.(0, s2Index)?.length : false) || panelO,
+      b2RightSideControls: (s2Index > -1 ? s.controlPanel.bottom?.[1]?.slice?.(s2Index + 1)?.length : false) || panelO,
       draggable: panelO,
     };
-    tmg.ALLOWED_CONTROLS.forEach((c) => (s.status.ui[c] = Object.entries(s.controlPanel).some(([k, v]) => v.includes?.(c.toLowerCase()) ?? s.controlPanel[k])));
+    tmg.ALLOWED_CONTROLS.forEach((c) => (s.status.ui[c] = Object.entries(s.controlPanel).some(([k, v]) => (tmg.isArr(v?.[0]) ? [...v[0], ...v[1]] : v).includes?.(c.toLowerCase()) ?? s.controlPanel[k])));
     this.#build.video = this.#medium;
     await tmg.loadResource(TMG_VIDEO_CSS_SRC);
     await tmg.loadResource(T007_TOAST_JS_SRC, "script", { module: true });
@@ -4067,7 +4069,7 @@ if (typeof window !== "undefined") {
       },
       controlPanel: {
         top: ["capture", "fullscreenlock", "fullscreenorientation"],
-        bottom: ["prev", "playpause", "next", "brightness", "volume", "timeandduration", "spacer", "captions", "settings", "objectfit", "pictureinpicture", "theater", "fullscreen"],
+        bottom: [[], ["prev", "playpause", "next", "brightness", "volume", "timeandduration", "spacer", "captions", "settings", "objectfit", "pictureinpicture", "theater", "fullscreen"]],
       },
       errorMessages: { 1: "The video playback was aborted :(", 2: "The video failed due to a network error :(", 3: "The video could not be decoded :(", 4: "The video source is not supported :(" },
       fastPlay: { playbackRate: 2, key: true, pointer: { type: "all", threshold: 800, inset: 20 }, reset: true },
@@ -4118,7 +4120,7 @@ if (typeof window !== "undefined") {
       playbackRate: { min: 0.25, max: 8, skip: 0.25 },
       playsInline: true,
       time: {
-        line: { position: "top", seek: { relative: !tmg.queryMediaMobile(), cancel: { delta: 15, timeout: 2000 } }, thumbIndicator: true },
+        line: { shown: true, seek: { relative: !tmg.queryMediaMobile(), cancel: { delta: 15, timeout: 2000 } }, thumbIndicator: true },
         previews: false,
         progressBar: tmg.queryMediaMobile(),
         mode: "elapsed",

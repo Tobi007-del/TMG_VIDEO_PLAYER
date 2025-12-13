@@ -474,10 +474,11 @@
   translate: -50% -50%;
 }
 .T_M_G-video-picture-in-picture-wrapper,
-.T_M_G-video-buffer {
+.T_M_G-video-buffer,
+.T_M_G-video-next-preview-wrapper > button {
   position: absolute;
-  margin: auto;
   inset: 0;
+  margin: auto;
 }
 :where(.T_M_G-media) {
   border-radius: inherit;
@@ -1069,51 +1070,59 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   flex-grow: 0;
   margin-inline-end: 0;
 }
-.T_M_G-video-playlist-next-video-preview-wrapper {
+.T_M_G-video-next-preview-wrapper {
+  position: relative;
   flex: 0 0 var(--t007-toast-image-width);
   width: var(--t007-toast-image-width);
   height: var(--t007-toast-image-height);
   display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
   background: var(--T_M_G-video-background);
   border-radius: var(--t007-toast-image-border-radius);
 }
-.T_M_G-video-playlist-next-video-preview-wrapper video {
+.T_M_G-video-next-preview {
   max-width: 100%;
   max-height: 100%;
   cursor: pointer;
 }
-.T_M_G-video-playlist-next-video-preview-wrapper button {
+.T_M_G-video-next-preview-wrapper > p {
   position: absolute;
-  width: calc(var(--T_M_G-video-current-unit) / 2);
-  height: calc(var(--T_M_G-video-current-unit) / 2);
-  padding-inline: calc(var(--T_M_G-video-current-unit) / 10);
+  right: 0;
+  bottom: 0;
+  color: var(--T_M_G-video-controls-color);
+  font-size: calc(var(--t007-toast-unit) / 1.25);
+  padding: calc(var(--t007-toast-unit) / 15) calc(var(--t007-toast-unit) / 5);
+  margin: calc(var(--t007-toast-unit) / 5);
+  background-color: var(--T_M_G-video-curtain-color);
+  border-radius: calc(var(--t007-toast-image-border-radius) - (var(--t007-toast-unit) / 5));
+}
+.T_M_G-video-next-preview-wrapper > button {
+  width: var(--t007-toast-unit);
+  height: var(--t007-toast-unit);
+  padding-inline: calc(var(--t007-toast-unit) / 5);
   background-color: var(--T_M_G-video-brand-complement-color);
   border-radius: 50%;
-  z-index: 1;
   transition: transform var(--T_M_G-video-slow-transition-time) ease;
   animation: T_M_G-beat 1s infinite ease-out;
 }
-.T_M_G-video-playlist-next-video-preview-wrapper button:hover {
+.T_M_G-video-next-preview-wrapper > button:hover {
   animation: none;
   transform: scale(var(--T_M_G-video-large-scale));
 }
-.T_M_G-video-playlist-next-video-info {
+.T_M_G-video-next-info {
   flex-grow: 1;
   min-width: 0;
-  padding-block: calc(var(--T_M_G-video-current-unit) / 7.5);
+  padding-block: calc(var(--t007-toast-unit) / 3.75);
 }
-.T_M_G-video-playlist-next-video-info h2 {
-  font-size: calc(var(--T_M_G-video-current-unit) / 1.5);
+.T_M_G-video-next-info h2 {
+  font-size: calc(var(--t007-toast-unit) / 0.75);
 }
-.T_M_G-video-playlist-next-video-countdown {
+.T_M_G-video-next-countdown {
   -webkit-text-stroke: 0.5px var(--T_M_G-video-brand-color);
   font-size: 120%;
 }
-.T_M_G-video-playlist-next-video-title {
-  font-size: calc(var(--T_M_G-video-current-unit) / 2);
+.T_M_G-video-next-title {
+  font-size: var(--t007-toast-unit);
   word-break: break-all;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1272,12 +1281,6 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   flex-direction: column;
   border-bottom-left-radius: inherit;
   border-bottom-right-radius: inherit;
-}
-.T_M_G-video-container:has(.T_M_G-video-timeline-container:last-child) .T_M_G-video-bottom-controls-wrapper {
-  padding-block-end: calc(var(--T_M_G-video-current-unit) / 1.25);
-}
-.T_M_G-video-container:is(:not(.T_M_G-video-overlay, :has(:focus-visible, .T_M_G-video-playback-rate-notifier.T_M_G-video-control-active)).T_M_G-video-progress-bar, [data-size-tier^="xxxxx"]) .T_M_G-video-bottom-controls-wrapper {
-  padding-block-end: 0;
 }
 .T_M_G-video-curtain {
   position: absolute;
