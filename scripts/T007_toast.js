@@ -6,8 +6,6 @@ class T007_Toast {
   #timeVisible = 0;
   #isPaused = false;
   #shouldUnPause;
-  #unpause = () => (this.#isPaused = false);
-  #pause = () => (this.#isPaused = true);
   #visiblityChange = () => (this.#shouldUnPause = document.visibilityState === "visible");
   constructor(options) {
     this.bindMethods();
@@ -38,6 +36,8 @@ class T007_Toast {
       return this.id;
     }
   }
+  play = () => setTimeout(() => (this.#isPaused = false));
+  pause = () => (this.#isPaused = true);
   set rootElement(value) {
     const container = value?.querySelector(`.t007-toast-container[data-position="${this.opts.position}"]`);
     container?.style.setProperty("--t007-toast-container-position", value === document.body ? "fixed" : "absolute");
@@ -56,9 +56,21 @@ class T007_Toast {
     const bodyText = () => this.toastElement.querySelector(".t007-toast-body-text");
     if (value) {
       this._setUpBodyHTML();
-      this.toastElement.querySelector(".t007-toast-body").append(bodyText() || Object.assign(document.createElement("p"), { className: "t007-toast-body-text" }));
+      this.toastElement.querySelector(".t007-toast-body").prepend(bodyText() || Object.assign(document.createElement("p"), { className: "t007-toast-body-text" }));
       bodyText().innerHTML = typeof value === "function" ? value() : value;
     } else bodyText()?.remove();
+  }
+  set actions(value) {
+    const actionsWrapper = () => this.toastElement.querySelector(".t007-toast-actions-wrapper"),
+      values = value ? Object.entries(value) : [];
+    if (values.length) {
+      this._setUpBodyHTML();
+      this.toastElement.querySelector(".t007-toast-body").insertAdjacentElement("afterend", actionsWrapper() || Object.assign(document.createElement("div"), { className: "t007-toast-actions-wrapper" }));
+      actionsWrapper().innerHTML = values.map(([label]) => (label ? `<button class="t007-toast-action-button">${label}</button>` : "")).join("");
+      actionsWrapper()
+        .querySelectorAll(".t007-toast-action-button")
+        .forEach((btn, i) => (btn.onclick = (e) => values[i][1]?.(e, this)));
+    } else actionsWrapper()?.remove();
   }
   set image(value) {
     const image = () => this.toastElement.querySelector(".t007-toast-image");
@@ -172,8 +184,9 @@ class T007_Toast {
     this.toastElement.style.setProperty("--progress", value);
   }
   set pauseOnHover(value) {
-    this.toastElement.onmouseover = value ? this.#pause : null;
-    this.toastElement.onmouseleave = value ? this.#unpause : null;
+    this.toastElement.onmouseover = value ? this.pause : null;
+    this.toastElement.onmouseleave = value ? this.play : null;
+    this.toastElement[value ? "addEventListener" : "removeEventListener"]("touchend", this.play);
   }
   set pauseOnFocusLoss(value) {
     value ? document.addEventListener("visibilitychange", this.#visiblityChange) : document.removeEventListener("visibilitychange", this.#visiblityChange);
@@ -260,7 +273,7 @@ class T007_Toast {
     return container;
   }
   _setUpBodyHTML() {
-    this.toastElement.querySelectorAll(".t007-toast > *:not(.t007-toast-image-wrapper, .t007-toast-body, .t007-toast-cancel-button)").forEach((el) => el.remove());
+    this.toastElement.querySelectorAll(".t007-toast > *:not(.t007-toast-image-wrapper, .t007-toast-body, .t007-toast-actions-wrapper, .t007-toast-cancel-button)").forEach((el) => el.remove());
     const imageWrapper = () => this.toastElement.querySelector(".t007-toast-image-wrapper");
     if (!imageWrapper()) this.toastElement.prepend(Object.assign(document.createElement("div"), { className: "t007-toast-image-wrapper" }));
     if (!this.toastElement.querySelector(".t007-toast-body")) imageWrapper().insertAdjacentElement("afterend", Object.assign(document.createElement("div"), { className: "t007-toast-body" }));
@@ -282,12 +295,11 @@ export const Toasting = {
   message: (base, defaults, action) =>
     (base[action] = (renderOrId, options = {}) => {
       options = { ...options, type: action === "warn" ? "warning" : action };
-      const toast = t007.toasts.get(renderOrId);
-      if (!toast) return base(renderOrId, options);
+      if (!t007.toasts.get(renderOrId)) return base(renderOrId, options);
       const { autoClose, closeButton, closeOnClick, dragToClose } = defaults();
-      return base.update(renderOrId, { ...(toast.opts.isLoading ? { autoClose, closeButton, closeOnClick, dragToClose } : {}), ...options, isLoading: false });
+      return base.update(renderOrId, { ...(t007.toasts.get(renderOrId)?.opts.isLoading ? { autoClose, closeButton, closeOnClick, dragToClose } : {}), ...options, isLoading: false });
     }),
-  loading: (base, render, options = {}) => base(render, { autoClose: false, closeButton: false, closeOnClick: false, dragToClose: false, ...options, isLoading: options.isLoading || true }),
+  loading: (base, renderOrId, options = {}) => (t007.toasts.get(renderOrId) ? base.update : base)(renderOrId, { autoClose: false, closeButton: false, closeOnClick: false, dragToClose: false, ...options, isLoading: options.isLoading || true, type: "" }),
   promise(base, promise = new Promise((res, rej) => setTimeout(Math.round(Math.random()) ? res : rej, 3000)), { pending, success, error } = {}) {
     if (!promise || typeof promise.then !== "function") return console.error("Toast.promise() requires a valid promise");
     const NFC = (input, type) => (typeof input === "string" ? { render: input, type } : typeof input === "object" ? { ...input, type } : { type });
@@ -319,7 +331,7 @@ export const Toasting = {
 };
 export const Toaster = (defOptions = {}) => {
   const defaults = () => ({ ...t007.TOAST_DEFAULT_OPTIONS, ...defOptions });
-  const base = (render, options = {}) => new T007_Toast({ ...defaults(), ...options, render }).id;
+  const base = (render, options = {}) => new T007_Toast({ ...defaults(), ...options, render: render.startsWith("t007_toast_") ? options.render : render }).id;
   base.update = (id, options) => Toasting.update(base, id, options);
   ["info", "success", "warn", "error"].forEach((action) => Toasting.message(base, defaults, action));
   base.loading = (render, options) => Toasting.loading(base, render, options);
