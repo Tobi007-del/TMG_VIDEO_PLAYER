@@ -183,6 +183,10 @@ body .T_M_G-media-container {
   --T_M_G-video-current-mini-player-y: calc((var(--T_M_G-video-current-container-height) / 2) + 7.5px);
 }
 
+.T_M_G-media {
+  aspect-ratio: 16 / 9;
+}
+
 #video-player-container:not(.loading):has(#video.stall) {
   margin-bottom: 0px;
 }

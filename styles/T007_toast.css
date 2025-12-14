@@ -4,6 +4,8 @@
   --t007-toast-success-color: #27ae60;
   --t007-toast-error-color: #e74c3c;
   --t007-toast-warning-color: #f1c40f;
+  --t007-toast-focus-visible-color: var(--t007-toast-font-color);
+  --t007-toast-focus-visible-outline: 2px solid var(--t007-toast-focus-visible-color);
   --t007-toast-background: rgb(from black r g b/.4);
   --t007-toast-background-blur: 10px;
   --t007-toast-animation-duration: 250ms;
@@ -15,13 +17,15 @@
   --t007-toast-text-stroke: 0.15px rgba(0, 0, 0, 0.35);
   --t007-toast-text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.5);
   --t007-toast-max-lines: 7;
+  --t007-toast-action-button-border: none;
+  --t007-toast-action-button-font-weight: 500;
   --t007-toast-x-color: red;
 }
 
 :where(:root, .t007-toast-container) {
   --t007-toast-type-color: whitesmoke;
   --t007-toast-progress-background: var(--t007-toast-type-color);
-  --t007-toast-progress-backdrop-background: rgb(from var(--t007-toast-type-color) r g b/0);
+  --t007-toast-progress-backdrop-background: rgb(from var(--t007-toast-type-color) r g b / 0);
   --t007-toast-font-color: var(--t007-toast-type-color);
   --t007-toast-unit: 1rem;
   --t007-toast-container-margin-top: calc(var(--t007-toast-unit) / 2);
@@ -42,6 +46,16 @@
   --t007-toast-image-width: calc(var(--t007-toast-unit) * 3.5);
   --t007-toast-image-height: calc(var(--t007-toast-unit) * 3.5);
   --t007-toast-image-border-radius: calc(var(--t007-toast-border-radius) - (var(--t007-toast-padding) / 2));
+  --t007-toast-actions-container-width: 65%;
+  --t007-toast-actions-container-max-width: fit-content;
+  --t007-toast-actions-container-gap: calc(var(--t007-toast-unit) / 4);
+  --t007-toast-action-button-color: var(--t007-toast-font-color);
+  --t007-toast-action-button-active-color: var(--t007-toast-font-color);
+  --t007-toast-action-button-background: rgba(from var(--t007-toast-font-color) r g b / 0.1);
+  --t007-toast-action-button-active-background: rgba(from var(--t007-toast-font-color) r g b / 0.2);
+  --t007-toast-action-button-font-size: calc(var(--t007-toast-font-size) / 1.1);
+  --t007-toast-action-button-padding: calc(var(--t007-toast-unit) / 3.3) calc(var(--t007-toast-unit) / 2.2);
+  --t007-toast-action-button-border-radius: calc(var(--t007-toast-unit) / 6);
   --t007-toast-icon-width: calc(var(--t007-toast-unit) * 1.4);
   --t007-toast-icon-height: calc(var(--t007-toast-unit) * 1.4);
   --t007-toast-icon-font-size: calc(var(--t007-toast-icon-height) * 0.8);
@@ -131,6 +145,11 @@
   font-family: var(--t007-toast-font-family);
 }
 
+.t007-toast-container *:focus-visible {
+  outline: var(--t007-toast-focus-visible-outline);
+  outline-offset: calc(var(--t007-toast-unit) / 7.5);
+}
+
 .t007-toast-container {
   position: var(--t007-toast-container-position);
   margin-top: var(--t007-toast-container-margin-top);
@@ -145,6 +164,11 @@
   flex-direction: column;
   gap: var(--t007-toast-container-gap);
   z-index: 2147483647;
+}
+
+.t007-toast-container *:disabled {
+  filter: grayscale(100%);
+  cursor: not-allowed;
 }
 
 .t007-toast-container[data-position^="top-"] {
@@ -314,8 +338,9 @@
   flex: 0 0 var(--t007-toast-icon-width);
   width: var(--t007-toast-icon-width);
   height: var(--t007-toast-icon-height);
-  background: transparent;
   margin-left: calc(var(--t007-toast-unit) / 5);
+  background: transparent;
+  border-radius: 0;
 }
 
 .t007-toast-image-wrapper:not(:has(.t007-toast-image), :has(.t007-toast-icon:not(:empty))) {
@@ -348,6 +373,7 @@
   min-width: 100%;
   width: 100%;
   object-fit: cover;
+  color: transparent;
 }
 
 .t007-toast-body {
@@ -363,9 +389,40 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: var(--t007-toast-max-lines);
   line-clamp: var(--t007-toast-max-lines);
-  word-break: break-word;
   margin: 0;
   z-index: 1;
+}
+
+.t007-toast-actions-wrapper {
+  width: var(--t007-toast-actions-container-width);
+  max-width: var(--t007-toast-actions-container-max-width);
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--t007-toast-actions-container-gap);
+  align-self: flex-end;
+}
+
+.t007-toast-action-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--t007-toast-action-button-color);
+  font-size: var(--t007-toast-action-button-font-size);
+  font-weight: var(--t007-toast-action-button-font-weight);
+  padding: var(--t007-toast-action-button-padding);
+  background: var(--t007-toast-action-button-background);
+  border: var(--t007-toast-action-button-border);
+  border-radius: var(--t007-toast-action-button-border-radius);
+  opacity: 0.9;
+  transition: all 200ms ease;
+}
+
+.t007-toast-action-button:is(:hover, :focus-visible) {
+  cursor: pointer;
+  opacity: 1;
+  color: var(--t007-toast-action-button-active-color);
+  background-color: var(--t007-toast-action-button-active-background);
 }
 
 .t007-toast-cancel-button {
@@ -380,7 +437,7 @@
   opacity: 0.6;
 }
 
-.t007-toast-cancel-button:hover {
+.t007-toast-cancel-button:is(:hover, :focus-visible) {
   cursor: pointer;
   opacity: 1;
 }

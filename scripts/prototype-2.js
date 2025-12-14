@@ -1056,9 +1056,9 @@ class T_M_G_Video_Controller {
     this.setCaptionsState();
     this.setPreviewsState();
   }
-  setTitleState(title, artist) {
-    if (this.DOM.videoTitle) this.DOM.videoTitle.textContent = this.DOM.videoTitle.dataset.videoTitle = (title ?? this.media?.title) || "";
-    if (this.DOM.videoArtist) this.DOM.videoArtist.textContent = (artist ?? this.media?.artist) || "";
+  setTitleState(title = this.settings.controlPanel.title, artist = this.settings.controlPanel.artist) {
+    if (this.DOM.videoTitle) this.DOM.videoTitle.textContent = this.DOM.videoTitle.dataset.videoTitle = (title === true ? this.media?.title : title) || "";
+    if (this.DOM.videoArtist) this.DOM.videoArtist.textContent = (artist === true ? this.media?.artist : artist) || "";
   }
   setPosterState() {
     if (this.media?.artwork && !tmg.isSameURL(this.media.artwork[0]?.src, this.video.poster)) this.video.poster = this.media.artwork[0].src;
@@ -1406,37 +1406,49 @@ class T_M_G_Video_Controller {
     }
     canvas.getContext("2d").putImageData(frame, 0, 0);
   }
-  async getVideoFrame(time = this.currentTime, display, raw = false) {
+  async getVideoFrame(time = this.currentTime, display, raw = false, min = 0) {
     if (Math.abs(this.pseudoVideo.currentTime - time) > 0.01) this.frameReadyPromise ??= new Promise((res) => this.pseudoVideo.addEventListener("timeupdate", () => res(null), { once: true }));
     this.pseudoVideo.currentTime = time; // small tolerance for video time comparison - 0.01(10ms)
     this.frameReadyPromise = await this.frameReadyPromise;
-    this.exportCanvas.width = this.video.videoWidth || 1;
-    this.exportCanvas.height = this.video.videoHeight || 1;
+    this.exportCanvas.width = this.video.videoWidth || min;
+    this.exportCanvas.height = this.video.videoHeight || min;
     this.exportContext.drawImage(this.pseudoVideo, 0, 0, this.exportCanvas.width, this.exportCanvas.height);
     display === "monochrome" && this.convertToMonoChrome(this.exportCanvas, this.exportContext);
     if (raw === true) return { canvas: this.exportCanvas, context: this.exportContext };
     const blob = await new Promise((res) => this.exportCanvas.toBlob(res));
     return { blob, url: blob && URL.createObjectURL(blob) };
   }
-  async exportVideoFrame(display) {
+  async exportVideoFrame(display = "") {
     this.notify("capture");
-    const m = display === "monochrome",
-      t = this.currentTime,
-      tTxt = tmg.formatTime(t, "human", true),
-      frameToastId = this.toast?.loading(`Capturing video frame ${m ? "in b&w " : ""}at ${tTxt}...`, { image: TMG_VIDEO_ALT_IMG_SRC, tag: `T_M_G-fcpa${tTxt}` }),
-      frame = await this.getVideoFrame(t, display);
-    frame?.url ? this.toast?.success(frameToastId, { render: `Captured video frame ${m ? "in b&w " : ""}at ${tTxt}`, image: frame.url, onClose: () => URL.revokeObjectURL(frame.url) }) : this.toast?.error(frameToastId, { render: `Failed video frame capture ${m ? "in b&w " : ""}at ${tTxt}` });
-    frame?.url && tmg.createEl("a", { href: frame.url, download: `${this.media?.title ?? "Video"}_${m ? `black&white_` : ""}at_${tTxt}.png`.replace(/[\/:*?"<>|\s]+/g, "_") })?.click?.(); // system filename safe
+    await tmg.mockAsync(tmg.parseCSSTime(this.settings.css.notifiersAnimationTime));
+    const tTxt = tmg.formatTime(this.currentTime, "human", true),
+      fTxt = `video frame ${display === "monochrome" ? "in b&w " : ""}at ${tTxt}`,
+      frameToastId = this.toast?.loading(`Capturing ${fTxt}...`, { image: TMG_VIDEO_ALT_IMG_SRC, tag: `T_M_G-fcpa${tTxt}${display}` }),
+      frame = await this.getVideoFrame(this.currentTime, display),
+      filename = `${this.media?.title ?? "Video"}_${display === "monochrome" ? `black&white_` : ""}at_${tTxt}.png`.replace(/[\/:*?"<>|\s]+/g, "_"), // system filename safe
+      Save = () => {
+        this.toast?.loading(frameToastId, { render: `Saving ${fTxt}`, actions: {} });
+        tmg.createEl("a", { href: frame.url, download: filename })?.click?.();
+        setTimeout(() => this.toast?.success(frameToastId, { render: `Saved ${fTxt}`, actions: {} }), 1000);
+      },
+      Share = () => {
+        this.toast?.loading(frameToastId, { render: `Sharing ${fTxt}`, actions: {} });
+        navigator.share?.({ title: this.media?.title ?? "Video", text: `Captured ${fTxt}`, files: [new File([frame.blob], filename, { type: frame.blob.type })] }).then(
+          () => this.toast?.success(frameToastId, { render: `Shared ${fTxt}`, actions: {} }),
+          () => this.toast?.error(frameToastId, { render: `Failed sharing ${fTxt}`, actions: { Save } })
+        ) || setTimeout(() => this.toast?.warn(frameToastId, { render: `Couldn't share ${fTxt}`, actions: { Save } }), 1000);
+      };
+    frame?.url ? this.toast?.success(frameToastId, { render: `Captured ${fTxt}`, image: frame.url, autoClose: 15000, actions: { Save, Share }, onClose: () => URL.revokeObjectURL(frame.url) }) : this.toast?.error(frameToastId, { render: `Failed capturing ${fTxt}` });
   }
   async findGoodFrameTime({ time: t = this.currentTime, secondsLimit: s = 25, saturation: sat = 12, brightness: bri = 40 }) {
     const end = tmg.clamp(0, t + s, this.duration);
     for (; t <= end; t += 0.333) {
-      const rgb = await tmg.getDominantColor((await this.getVideoFrame(t, "", true)).canvas, "rgb", true); // ~3 frames per second
+      const rgb = await tmg.getDominantColor((await this.getVideoFrame(t, "", true, 1)).canvas, "rgb", true); // ~3 frames per second
       if (rgb && tmg.getRGBBri(rgb) > bri && tmg.getRGBSat(rgb) > sat) return t; // <= FIRST legit content frame
     }
     return null;
   }
-  getMediaBrandColor = async (time, poster = this.video.poster || this.media?.artwork?.[0]?.src, config = {}) => await tmg.getDominantColor(poster ? poster : (await this.getVideoFrame(time ? time : await this.findGoodFrameTime(config), "", true)).canvas);
+  getMediaBrandColor = async (time, poster = this.video.poster || this.media?.artwork?.[0]?.src, config = {}) => await tmg.getDominantColor(poster ? poster : (await this.getVideoFrame(time ? time : await this.findGoodFrameTime(config), "", true, 1)).canvas);
   syncMediaBrandColor = async () => (this.settings.css.brandColor = (this.loaded ? await this.getMediaBrandColor() : null) ?? this.CSSPropsCache.brandColor);
   deactivate(message) {
     this.showOverlay();
@@ -1572,7 +1584,7 @@ class T_M_G_Video_Controller {
           <svg viewBox="0 0 25 25"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg>
         </button>
         <video class="T_M_G-video-next-preview" src="${v.src || v.sources?.[0]?.src || ""}" autoplay muted loop playsinline webkit-playsinline></video>
-        <p></p>
+        <p>${this.toTimeText(NaN)}</p>
       </span>
       <span class="T_M_G-video-next-info">
         <h2>Next Video in <span class="T_M_G-video-next-countdown">${count}</span></h2>
@@ -3780,8 +3792,8 @@ class T_M_G {
       .slice(0, 3) // take top 3 buckets
       .map(([k]) => ({ key: k, rgb: pt[k].map((v) => Math.round(v / ct[k])) }));
     if (!clrs.length) return null;
-    const [r, g, b] = tmg.clampRGBBri(clrs.reduce((sat, curr) => (tmg.getRGBSat(sat.rgb) > tmg.getRGBSat(curr.rgb) ? sat : curr), clrs[0]).rgb); // vibrancy test to avoid muddy colors
-    // console.log(clrs.map((c) => [c, tmg.getRGBSat(c.rgb)]));
+    const [r, g, b] = tmg.clampRGBBri(clrs.reduce((sat, curr) => (tmg.getRGBBri(sat.rgb) > tmg.getRGBBri(curr.rgb) ? sat : curr), clrs[0]).rgb); // vibrancy test to avoid muddy colors
+    // console.log(clrs.map((c) => [c, tmg.getRGBSat(c.rgb), tmg.getRGBBri(c.rgb)]));
     return format === "hex" ? `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}` : raw == false ? `rgb(${r},${g},${b})` : [r, g, b];
   }
   static _SCROLLER_R_OBSERVER = typeof window !== "undefined" && new ResizeObserver((entries) => entries.forEach(({ target }) => tmg._SCROLLERS.get(target)?.update()));
@@ -4068,6 +4080,8 @@ if (typeof window !== "undefined") {
         },
       },
       controlPanel: {
+        title: true,
+        artist: true,
         top: ["capture", "fullscreenlock", "fullscreenorientation"],
         bottom: [[], ["prev", "playpause", "next", "brightness", "volume", "timeandduration", "spacer", "captions", "settings", "objectfit", "pictureinpicture", "theater", "fullscreen"]],
       },
