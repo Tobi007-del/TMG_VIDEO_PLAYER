@@ -32,9 +32,8 @@ class T007_Toast {
       Object.entries(options).forEach(([key, value]) => (this[key] = value));
     } catch (err) {
       console.error("Toast update failed:", err);
-    } finally {
-      return this.id;
     }
+    return this.id;
   }
   play = () => setTimeout(() => (this.#isPaused = false));
   pause = () => (this.#isPaused = true);
@@ -288,9 +287,9 @@ class T007_Toast {
 
 export const Toasting = {
   update(base, id, options) {
-    const toast = t007.toasts.get(id),
-      allOpts = { ...toast?.opts, ...options };
-    return !!toast && (toast.destroyed ? base(allOpts.render, allOpts) : toast.update(options));
+    const toast = t007.toasts.get(id);
+    options = { ...(toast?.opts || {}), id, ...options };
+    return !!toast && (toast.destroyed ? base(options.render, options) : toast.update(options));
   },
   message: (base, defaults, action) =>
     (base[action] = (renderOrId, options = {}) => {
