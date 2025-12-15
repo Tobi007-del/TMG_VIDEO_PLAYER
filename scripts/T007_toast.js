@@ -297,7 +297,7 @@ class T007_Toast {
 export const Toasting = {
   update(base, id, options) {
     const toast = t007.toasts.get(id);
-    toast.queue.forEach(clearTimeout); // remove all delays and maybe make a new toast
+    toast.destroyed && toast.queue.forEach(clearTimeout); // remove all delays and maybe make a new toast
     return !!toast && (toast.destroyed ? base(options.render, { ...toast.opts, id, ...options }) : toast.update(options));
   },
   message: (base, defaults, action) =>
@@ -339,7 +339,7 @@ export const Toasting = {
 };
 export const Toaster = (defOptions = {}) => {
   const defaults = () => ({ ...t007.TOAST_DEFAULT_OPTIONS, ...defOptions });
-  const base = (render, options = {}) => new T007_Toast({ ...defaults(), ...options, render: render.startsWith("t007_toast_") ? options.render : render }).id;
+  const base = (render, options = {}) => new T007_Toast({ ...defaults(), ...options, id: render.startsWith("t007_toast_") ? render : options.id, render: render.startsWith("t007_toast_") ? options.render : render }).id;
   base.update = (id, options) => Toasting.update(base, id, options);
   ["info", "success", "warn", "error"].forEach((action) => Toasting.message(base, defaults, action));
   base.loading = (render, options) => Toasting.loading(base, render, options);
