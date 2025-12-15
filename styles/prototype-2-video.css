@@ -652,20 +652,20 @@ body:where(:has(.T_M_G-video-floating-player)) {
 .T_M_G-media-container[data-size-tier^="xxxx"] {
   --T_M_G-video-current-unit: var(--T_M_G-video-mobile-mini-player-unit);
 }
-.T_M_G-video-container:is(.T_M_G-video-overlay, :has(:focus-visible)):has(.T_M_G-video-title:not(:empty), .T_M_G-video-artist:not(:empty), .T_M_G-video-top-controls-wrapper [data-control-displayed="true"]) {
+.T_M_G-video-container:not(.T_M_G-video-settings-view):is(.T_M_G-video-overlay, :has(:focus-visible)):has(.T_M_G-video-title:not(:empty), .T_M_G-video-artist:not(:empty), .T_M_G-video-top-controls-wrapper [data-control-displayed="true"]) {
   --T_M_G-video-current-safe-inset-top: calc((var(--T_M_G-video-current-unit) * 1.75) + var(--c-b-p));
 }
-.T_M_G-video-container:is(.T_M_G-video-overlay, :has(:focus-visible)) {
+.T_M_G-video-container:not(.T_M_G-video-settings-view):is(.T_M_G-video-overlay, :has(:focus-visible)) {
   --c-b-p: calc(var(--T_M_G-video-controls-padding) * 2); /* controls block padding */
   --T_M_G-video-current-safe-inset-bottom: calc((var(--T_M_G-video-current-unit) * 2.5) + var(--c-b-p));
 }
-.T_M_G-media-container:where([data-size-tier^="xxxxx"]):is(.T_M_G-video-overlay, :has(:focus-visible)) {
+.T_M_G-media-container:not(.T_M_G-video-settings-view):where([data-size-tier^="xxxxx"]):is(.T_M_G-video-overlay, :has(:focus-visible)) {
   --T_M_G-video-current-safe-inset-bottom: calc((var(--T_M_G-video-current-unit) * 1.4) + var(--c-b-p));
 }
-.T_M_G-video-container:is(.T_M_G-video-overlay, :has(:focus-visible)):not(:has(.T_M_G-video-bottom-controls-wrapper [data-control-displayed="true"])) {
+.T_M_G-video-container:not(.T_M_G-video-settings-view):is(.T_M_G-video-overlay, :has(:focus-visible)):not(:has(.T_M_G-video-bottom-controls-wrapper [data-control-displayed="true"])) {
   --T_M_G-video-current-safe-inset-bottom: calc(var(--T_M_G-video-current-unit) * 1.5);
 }
-.T_M_G-media-container:where([data-size-tier^="xxxxx"], .T_M_G-video-initial):is(.T_M_G-video-overlay, :has(:focus-visible)):not(:has(.T_M_G-video-bottom-controls-wrapper [data-control-displayed="true"])) {
+.T_M_G-media-container:not(.T_M_G-video-settings-view):where([data-size-tier^="xxxxx"], .T_M_G-video-initial):is(.T_M_G-video-overlay, :has(:focus-visible)):not(:has(.T_M_G-video-bottom-controls-wrapper [data-control-displayed="true"])) {
   --T_M_G-video-current-safe-inset-bottom: calc(var(--T_M_G-video-current-unit) / 1.75);
 }
 .T_M_G-video-container:is(.T_M_G-video-overlay, :has(:focus-visible)),
