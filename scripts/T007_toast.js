@@ -11,8 +11,8 @@ class T007_Toast {
   #visiblityChange = () => (this.#shouldUnPause = document.visibilityState === "visible");
   constructor(options) {
     this.bindMethods();
-    this.opts = { id: uid(), ...options };
-    this.id = this.opts.id;
+    this.opts = { ...options };
+    this.id = this.opts.id ?? uid();
     t007.toasts.set(this.id, this);
     "number" !== typeof this.opts.delay ? this.init() : this.queue.push(setTimeout(this.init, this.opts.delay));
     this.update(this.opts);
