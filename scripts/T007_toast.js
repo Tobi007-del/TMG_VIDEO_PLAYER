@@ -12,7 +12,7 @@ class T007_Toast {
   constructor(options) {
     this.bindMethods();
     this.opts = { ...options };
-    this.id = this.opts.id ?? uid();
+    this.id = this.opts.id  ??= uid();
     t007.toasts.set(this.id, this);
     "number" !== typeof this.opts.delay ? this.init() : this.queue.push(setTimeout(this.init, this.opts.delay));
     this.update(this.opts);

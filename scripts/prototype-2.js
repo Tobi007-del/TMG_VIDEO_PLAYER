@@ -1584,9 +1584,7 @@ class T_M_G_Video_Controller {
       hideProgressBar: false,
       position: "bottom-right",
       bodyHTML: `<span title="Play next video" class="T_M_G-video-next-preview-wrapper">
-        <button type="button">
-          <svg viewBox="0 0 25 25"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg>
-        </button>
+        <button type="button"><svg viewBox="0 0 25 25"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg></button>
         <video class="T_M_G-video-next-preview" src="${v.src || v.sources?.[0]?.src || ""}" autoplay muted loop playsinline webkit-playsinline></video>
         <p>${this.toTimeText(NaN)}</p>
       </span>
@@ -1595,23 +1593,23 @@ class T_M_G_Video_Controller {
         ${v.media.title ? `<p class="T_M_G-video-next-title">${v.media.title}</p>` : ""}
       </span>`,
       onTimeUpdate: (time) => this.throttle("nextVideoCountdown", () => (this.queryDOM(".T_M_G-video-next-countdown").textContent = Math.max(1, Math.round((count * 1000 - time) / 1000))), 250),
-      onClose: (timeElapsed) => timeElapsed && cleanUp(true) && this.nextVideo(),
+      onClose: (timeElapsed) => removeListeners() && timeElapsed && this.nextVideo(),
     });
     const cleanUpWhenNeeded = () => !this.video.ended && cleanUp(),
       autoCleanUpToast = () => Math.floor((this.settings.time.end ?? this.duration) - this.currentTime) > this.settings.auto.next && cleanUp(),
       cleanUp = (permanent = false) => {
         this.toast?.dismiss(nextVideoToastId, "instant");
-        this.video.removeEventListener("pause", cleanUpWhenNeeded);
-        this.video.removeEventListener("waiting", cleanUpWhenNeeded);
-        this.video.removeEventListener("timeupdate", autoCleanUpToast);
         return (this.canAutoMovePlaylist = !permanent) || true;
+      },
+      removeListeners = () => {
+        ["pause", "waiting"].forEach((e) => this.video.removeEventListener(e, cleanUpWhenNeeded));
+        return this.video.removeEventListener("timeupdate", autoCleanUpToast) || true;
       };
-    this.video.addEventListener("pause", cleanUpWhenNeeded);
-    this.video.addEventListener("waiting", cleanUpWhenNeeded);
+    ["pause", "waiting"].forEach((e) => this.video.addEventListener(e, cleanUpWhenNeeded));
     this.video.addEventListener("timeupdate", autoCleanUpToast);
     const nextVideoPreview = this.queryDOM(".T_M_G-video-next-preview");
     ["loadedmetadata", "durationchange"].forEach((e) => nextVideoPreview?.addEventListener(e, () => (nextVideoPreview.nextElementSibling.textContent = this.toTimeText(nextVideoPreview.duration))));
-    nextVideoPreview?.parentElement?.addEventListener("click", () => cleanUp(true) && this.nextVideo());
+    nextVideoPreview?.parentElement?.addEventListener("click", () => cleanUp(true) && this.nextVideo(), true);
   }
   setMediaSession() {
     if (!navigator.mediaSession || (tmg._pictureInPictureActive && !this.isUIActive("pictureInPicture"))) return;

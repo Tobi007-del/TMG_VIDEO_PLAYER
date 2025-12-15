@@ -2182,6 +2182,9 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   animation: T_M_G-ripple-fade var(--T_M_G-video-motion-transition-time) ease-in forwards;
 }
 /* some mobile enhancements for viewing pleasure */
+.T_M_G-video-container:where(.T_M_G-video-mobile:not(.T_M_G-video-floating-player, .T_M_G-video-mini-player)) {
+  --T_M_G-video-current-controls-gap: calc(var(--T_M_G-video-current-unit) / 1.25);
+}
 @media (max-width: 950px) and (max-height: 480px) and (min-width: 600px) and (orientation: landscape) {
   .T_M_G-video-container:where(.T_M_G-video-mobile:not(.T_M_G-video-floating-player, .T_M_G-video-mini-player)) {
     --T_M_G-video-current-controls-gap: calc(var(--T_M_G-video-current-unit) / 1.075);
