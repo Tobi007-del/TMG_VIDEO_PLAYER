@@ -3098,13 +3098,11 @@ class T_M_G_Video_Controller {
   _handleDragEnd({ target }) {
     target.classList.remove("T_M_G-video-control-dragging");
     this.dragging = null;
-    this.settings.controlPanel = {
-      top: Array.from(this.DOM.tRightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId),
-      bottom: [
-        [...Array.from(this.DOM.b1LeftSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId), "spacer", ...Array.from(this.DOM.b1RightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId)],
-        [...Array.from(this.DOM.b2LeftSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId), "spacer", ...Array.from(this.DOM.b2RightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId)],
-      ],
-    };
+    this.settings.controlPanel.top = Array.from(this.DOM.tRightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId);
+    this.settings.controlPanel.bottom = [
+      [...Array.from(this.DOM.b1LeftSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId), "spacer", ...Array.from(this.DOM.b1RightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId)],
+      [...Array.from(this.DOM.b2LeftSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId), "spacer", ...Array.from(this.DOM.b2RightSideControlsWrapper?.children ?? [], (el) => el.dataset.controlId)],
+    ];
   }
   _handleDragEnter = ({ target }) => target.dataset.dropZone && this.dragging && target.classList.add("T_M_G-video-dragover");
   _handleDragOver(e) {
