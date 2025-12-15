@@ -6,14 +6,15 @@ class T007_Toast {
   #timeVisible = 0;
   #isPaused = false;
   #shouldUnPause;
+  queue = [];
+  destroyed = true;
   #visiblityChange = () => (this.#shouldUnPause = document.visibilityState === "visible");
   constructor(options) {
     this.bindMethods();
-    this.opts = { ...options };
-    this.id = this.opts.id || uid();
+    this.opts = { id: uid(), ...options };
+    this.id = this.opts.id;
     t007.toasts.set(this.id, this);
-    this.toastElement = Object.assign(document.createElement("div"), { className: "t007-toast", id: this.id });
-    requestAnimationFrame(() => this.toastElement.classList.add("t007-toast-show"));
+    "number" !== typeof this.opts.delay ? this.init() : this.queue.push(setTimeout(this.init, this.opts.delay));
     this.update(this.opts);
   }
   bindMethods() {
@@ -25,15 +26,22 @@ class T007_Toast {
       proto = Object.getPrototypeOf(proto);
     }
   }
+  init() {
+    this.toastElement = Object.assign(document.createElement("div"), { className: "t007-toast", id: this.id });
+    requestAnimationFrame(() => this.toastElement.classList.add("t007-toast-show"));
+    this.destroyed = false;
+  }
   update(options) {
-    if (!options || typeof options !== "object") return;
+    if (!options || typeof options !== "object") return this.opts.id;
     try {
       this.opts = { ...this.opts, ...options };
-      Object.entries(options).forEach(([key, value]) => (this[key] = value));
+      const run = () => Object.entries(options).forEach(([key, value]) => (this[key] = value));
+      "number" !== typeof this.opts.delay ? run() : this.queue.push(setTimeout(run, this.opts.delay));
+      this.opts.delay = null;
     } catch (err) {
       console.error("Toast update failed:", err);
     }
-    return this.id;
+    return this.opts.id;
   }
   play = () => setTimeout(() => (this.#isPaused = false));
   pause = () => (this.#isPaused = true);
@@ -150,7 +158,7 @@ class T007_Toast {
       if (!this.#isPaused) {
         this.#timeVisible += time - lastTime;
         this.onTimeUpdate?.(this.#timeVisible);
-        if (this.#timeVisible >= this.autoClose) return this._remove("smooth", true);
+        if ("number" == typeof this.autoClose && this.#timeVisible >= this.autoClose) return this._remove("smooth", true);
       }
       lastTime = time;
       this.#autoCloseInterval = requestAnimationFrame(loop);
@@ -171,7 +179,7 @@ class T007_Toast {
     this.nprogress = 0;
     cancelAnimationFrame(this.#progressInterval);
     const loop = () => {
-      if (!this.#isPaused && typeof this.autoClose === "number") this.nprogress = 1 - this.#timeVisible / this.autoClose;
+      if ("number" == typeof this.autoClose && !this.#isPaused) this.nprogress = 1 - this.#timeVisible / this.autoClose;
       this.#progressInterval = requestAnimationFrame(loop);
     };
     if (!value) this.#progressInterval = requestAnimationFrame(loop);
@@ -254,14 +262,15 @@ class T007_Toast {
     this.toastElement.style.removeProperty("opacity");
   }
   _remove(manner = "smooth", timeElapsed = false) {
+    if (!this.opts.isLoading) t007.toasts.delete(this.id);
+    this.queue.forEach(clearTimeout);
     document.removeEventListener("visibilitychange", this.#visiblityChange);
     cancelAnimationFrame(this.#autoCloseInterval);
     cancelAnimationFrame(this.#progressInterval);
-    if (manner === "instant" || !this.animation) this._cleanUpToast();
+    if (this.destroyed || manner === "instant" || !this.animation) this._cleanUpToast();
     else this.toastElement.onanimationend = this._cleanUpToast;
     this.toastElement.classList.remove("t007-toast-show");
     this.onClose?.(timeElapsed);
-    if (!this.opts.isLoading) t007.toasts.delete(this.id);
   }
   _createContainer(position) {
     const container = document.createElement("div");
@@ -288,8 +297,8 @@ class T007_Toast {
 export const Toasting = {
   update(base, id, options) {
     const toast = t007.toasts.get(id);
-    options = { ...(toast?.opts || {}), id, ...options };
-    return !!toast && (toast.destroyed ? base(options.render, options) : toast.update(options));
+    toast.queue.forEach(clearTimeout); // remove all delays and maybe make a new toast
+    return !!toast && (toast.destroyed ? base(options.render, { ...toast.opts, id, ...options }) : toast.update(options));
   },
   message: (base, defaults, action) =>
     (base[action] = (renderOrId, options = {}) => {

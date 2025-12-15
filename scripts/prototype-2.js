@@ -1192,7 +1192,7 @@ class T_M_G_Video_Controller {
     this.DOM.miniPlayerRemoveBtn?.addEventListener("click", this.removeMiniPlayer);
     this.DOM.fullScreenOrientationBtn?.addEventListener("click", () => this.changeScreenOrientation());
     this.DOM.fullScreenLockBtn?.addEventListener("click", this.lock);
-    tmg.onSafeClicks(this.DOM.captureBtn, this.exportVideoFrame, () => this.exportVideoFrame("monochrome"));
+    tmg.onSafeClicks(this.DOM.captureBtn, this.captureVideoFrame, () => this.captureVideoFrame("monochrome"));
     this.DOM.bigPrevBtn?.addEventListener("click", this.previousVideo);
     this.DOM.prevBtn?.addEventListener("click", this.previousVideo);
     this.DOM.bigNextBtn?.addEventListener("click", this.nextVideo);
@@ -1406,49 +1406,53 @@ class T_M_G_Video_Controller {
     }
     canvas.getContext("2d").putImageData(frame, 0, 0);
   }
-  async getVideoFrame(time = this.currentTime, display, raw = false, min = 0) {
-    if (Math.abs(this.pseudoVideo.currentTime - time) > 0.01) this.frameReadyPromise ??= new Promise((res) => this.pseudoVideo.addEventListener("timeupdate", () => res(null), { once: true }));
-    this.pseudoVideo.currentTime = time; // small tolerance for video time comparison - 0.01(10ms)
-    this.frameReadyPromise = await this.frameReadyPromise;
-    this.exportCanvas.width = this.video.videoWidth || min;
-    this.exportCanvas.height = this.video.videoHeight || min;
-    this.exportContext.drawImage(this.pseudoVideo, 0, 0, this.exportCanvas.width, this.exportCanvas.height);
+  async getVideoFrame(display, time = this.currentTime, raw = false, min = 0, video = this.pseudoVideo) {
+    if (video !== this.video) {
+      await this.frameReadyPromise; // wait for it to get set by last getter 5 lines below
+      if (Math.abs(video.currentTime - time) > 0.01) {
+        this.frameReadyPromise ??= new Promise((res) => video.addEventListener("timeupdate", () => res(null), { once: true }));
+        video.currentTime = time; // small tolerance for video time comparison - 0.01(10ms)
+      }
+      this.frameReadyPromise = await this.frameReadyPromise;
+    }
+    this.exportCanvas.width = video.videoWidth || min;
+    this.exportCanvas.height = video.videoHeight || min;
+    this.exportContext.drawImage(video, 0, 0, this.exportCanvas.width, this.exportCanvas.height);
     display === "monochrome" && this.convertToMonoChrome(this.exportCanvas, this.exportContext);
     if (raw === true) return { canvas: this.exportCanvas, context: this.exportContext };
     const blob = await new Promise((res) => this.exportCanvas.toBlob(res));
     return { blob, url: blob && URL.createObjectURL(blob) };
   }
-  async exportVideoFrame(display = "") {
+  async captureVideoFrame(display = "", time = this.currentTime) {
     this.notify("capture");
-    await tmg.mockAsync(tmg.parseCSSTime(this.settings.css.notifiersAnimationTime));
-    const tTxt = tmg.formatTime(this.currentTime, "human", true),
+    const tTxt = tmg.formatTime(time, "human", true),
       fTxt = `video frame ${display === "monochrome" ? "in b&w " : ""}at ${tTxt}`,
-      frameToastId = this.toast?.loading(`Capturing ${fTxt}...`, { image: TMG_VIDEO_ALT_IMG_SRC, tag: `T_M_G-fcpa${tTxt}${display}` }),
-      frame = await this.getVideoFrame(this.currentTime, display),
+      frameToastId = this.toast?.loading(`Capturing ${fTxt}...`, { delay: tmg.parseCSSTime(this.settings.css.notifiersAnimationTime), image: TMG_VIDEO_ALT_IMG_SRC, tag: `T_M_G-fcpa${tTxt}${display}` }),
+      frame = await this.getVideoFrame(display, time, false, 0, this.video),
       filename = `${this.media?.title ?? "Video"}_${display === "monochrome" ? `black&white_` : ""}at_${tTxt}.png`.replace(/[\/:*?"<>|\s]+/g, "_"), // system filename safe
       Save = () => {
         this.toast?.loading(frameToastId, { render: `Saving ${fTxt}`, actions: {} });
         tmg.createEl("a", { href: frame.url, download: filename })?.click?.();
-        setTimeout(() => this.toast?.success(frameToastId, { render: `Saved ${fTxt}`, actions: {} }), 1000);
+        this.toast?.success(frameToastId, { delay: 1000, render: `Saved ${fTxt}`, actions: {} });
       },
       Share = () => {
         this.toast?.loading(frameToastId, { render: `Sharing ${fTxt}`, actions: {} });
         navigator.share?.({ title: this.media?.title ?? "Video", text: `Captured ${fTxt}`, files: [new File([frame.blob], filename, { type: frame.blob.type })] }).then(
           () => this.toast?.success(frameToastId, { render: `Shared ${fTxt}`, actions: {} }),
           () => this.toast?.error(frameToastId, { render: `Failed sharing ${fTxt}`, actions: { Save } })
-        ) || setTimeout(() => this.toast?.warn(frameToastId, { render: `Couldn't share ${fTxt}`, actions: { Save } }), 1000);
+        ) || this.toast?.warn(frameToastId, { delay: 1000, render: `Couldn't share ${fTxt}`, actions: { Save } });
       };
     frame?.url ? this.toast?.success(frameToastId, { render: `Captured ${fTxt}`, image: frame.url, autoClose: 15000, actions: { Save, Share }, onClose: () => URL.revokeObjectURL(frame.url) }) : this.toast?.error(frameToastId, { render: `Failed capturing ${fTxt}` });
   }
   async findGoodFrameTime({ time: t = this.currentTime, secondsLimit: s = 25, saturation: sat = 12, brightness: bri = 40 }) {
     const end = tmg.clamp(0, t + s, this.duration);
     for (; t <= end; t += 0.333) {
-      const rgb = await tmg.getDominantColor((await this.getVideoFrame(t, "", true, 1)).canvas, "rgb", true); // ~3 frames per second
+      const rgb = await tmg.getDominantColor((await this.getVideoFrame("", t, true, 1)).canvas, "rgb", true); // ~3 frames per second
       if (rgb && tmg.getRGBBri(rgb) > bri && tmg.getRGBSat(rgb) > sat) return t; // <= FIRST legit content frame
     }
     return null;
   }
-  getMediaBrandColor = async (time, poster = this.video.poster || this.media?.artwork?.[0]?.src, config = {}) => await tmg.getDominantColor(poster ? poster : (await this.getVideoFrame(time ? time : await this.findGoodFrameTime(config), "", true, 1)).canvas);
+  getMediaBrandColor = async (time, poster = this.video.poster || this.media?.artwork?.[0]?.src, config = {}) => await tmg.getDominantColor(poster ? poster : (await this.getVideoFrame("", time ? time : await this.findGoodFrameTime(config), true, 1)).canvas);
   syncMediaBrandColor = async () => (this.settings.css.brandColor = (this.loaded ? await this.getMediaBrandColor() : null) ?? this.CSSPropsCache.brandColor);
   deactivate(message) {
     this.showOverlay();
@@ -1557,7 +1561,7 @@ class T_M_G_Video_Controller {
     this.loaded = false;
     this.currentPlaylistIndex = index;
     const v = this.playlist[index];
-    this.media = v.media ? { ...this.media, ...v.media } : (v.media ?? null);
+    this.media = v.media ? { ...this.media, ...v.media } : v.media ?? null;
     this.setPosterState();
     this.settings.time.start = v.settings.time.start;
     this.settings.time.end = v.settings.time.end;
@@ -1739,6 +1743,7 @@ class T_M_G_Video_Controller {
     return !useMode || this.settings.time.mode !== "remaining" ? tmg.formatTime(t, this.settings.time.format, showMs) : `${tmg.formatTime(this.video.duration - t, this.settings.time.format, showMs, true)}`;
   }
   syncCanvasPreviews() {
+    if (this.frameReadyPromise) return;
     this.throttle(
       "canvasPreviewSync",
       () => {
@@ -1831,7 +1836,7 @@ class T_M_G_Video_Controller {
         if (this.settings.status.ui.previews) {
           if (!this.isMediaMobile) this.DOM.previewImg.src = this.settings.time.previews.address.replace("$", Math.max(1, Math.floor((p * this.duration) / this.settings.time.previews.spf)));
           if (this.isScrubbing) this.DOM.thumbnailImg.src = this.DOM.previewImg.src;
-        } else if (this.settings.time.previews) this.pseudoVideo.currentTime = p * this.duration;
+        } else if (this.settings.time.previews && !this.frameReadyPromise) this.pseudoVideo.currentTime = p * this.duration;
       },
       30,
       false
@@ -3015,7 +3020,7 @@ class T_M_G_Video_Controller {
     else if (action) this.showOverlay();
     switch (action) {
       case "capture":
-        this.exportVideoFrame(e.altKey ? "monochrome" : undefined);
+        this.captureVideoFrame(e.altKey ? "monochrome" : undefined);
         break;
       case "timeMode":
         this.toggleTimeMode();

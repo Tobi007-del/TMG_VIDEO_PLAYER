@@ -4,8 +4,6 @@
   --t007-toast-success-color: #27ae60;
   --t007-toast-error-color: #e74c3c;
   --t007-toast-warning-color: #f1c40f;
-  --t007-toast-focus-visible-color: var(--t007-toast-font-color);
-  --t007-toast-focus-visible-outline: 2px solid var(--t007-toast-focus-visible-color);
   --t007-toast-background: rgb(from black r g b/.4);
   --t007-toast-background-blur: 10px;
   --t007-toast-animation-duration: 250ms;
@@ -24,6 +22,8 @@
 
 :where(:root, .t007-toast-container) {
   --t007-toast-type-color: whitesmoke;
+  --t007-toast-focus-visible-color: var(--t007-toast-font-color);
+  --t007-toast-focus-visible-outline: 2px solid var(--t007-toast-focus-visible-color);
   --t007-toast-progress-background: var(--t007-toast-type-color);
   --t007-toast-progress-backdrop-background: rgb(from var(--t007-toast-type-color) r g b / 0);
   --t007-toast-font-color: var(--t007-toast-type-color);
@@ -51,8 +51,8 @@
   --t007-toast-actions-container-gap: calc(var(--t007-toast-unit) / 4);
   --t007-toast-action-button-color: var(--t007-toast-font-color);
   --t007-toast-action-button-active-color: var(--t007-toast-font-color);
-  --t007-toast-action-button-background: rgba(from var(--t007-toast-font-color) r g b / 0.1);
-  --t007-toast-action-button-active-background: rgba(from var(--t007-toast-font-color) r g b / 0.2);
+  --t007-toast-action-button-background: rgba(from currentColor r g b / 0.1);
+  --t007-toast-action-button-active-background: rgba(from currentColor r g b / 0.2);
   --t007-toast-action-button-font-size: calc(var(--t007-toast-font-size) / 1.1);
   --t007-toast-action-button-padding: calc(var(--t007-toast-unit) / 3.3) calc(var(--t007-toast-unit) / 2.2);
   --t007-toast-action-button-border-radius: calc(var(--t007-toast-unit) / 6);
@@ -373,7 +373,6 @@
   min-width: 100%;
   width: 100%;
   object-fit: cover;
-  color: transparent;
 }
 
 .t007-toast-body {
@@ -415,14 +414,14 @@
   border: var(--t007-toast-action-button-border);
   border-radius: var(--t007-toast-action-button-border-radius);
   opacity: 0.9;
-  transition: all 200ms ease;
+  transition: opacity 200ms ease, color 200ms ease, background-color 200ms ease;
 }
 
 .t007-toast-action-button:is(:hover, :focus-visible) {
   cursor: pointer;
   opacity: 1;
   color: var(--t007-toast-action-button-active-color);
-  background-color: var(--t007-toast-action-button-active-background);
+  background: var(--t007-toast-action-button-active-background);
 }
 
 .t007-toast-cancel-button {
