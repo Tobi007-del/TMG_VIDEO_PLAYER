@@ -3615,7 +3615,7 @@ class T_M_G {
     return remaining ? `${base}${msPart} left` : `${base}${msPart}`;
   }
   static capitalize = (word = "") => word.charAt(0).toUpperCase() + word.slice(1);
-  static camelize = (str = "", { source, flags = "g" } = /[\s_-]+/, { preserveInnerCase: pIC = true, upperFirst: uF = false } = {}) => (pIC ? str : str.toLowerCase()).replace(new RegExp(`${source}(\\w)`, flags), (_, c) => c.toUpperCase()).replace(/^\w/, (c) => c[uF ? "toUpperCase" : "toLowerCase"]()); // '\\w' to preserve \
+  static camelize = (str = "", { source } = /[\s_-]+/, { preserveInnerCase: pIC = true, upperFirst: uF = false } = {}) => (pIC ? str : str.toLowerCase()).replace(new RegExp(`${source}(\\w)`, "g"), (_, c) => c.toUpperCase()).replace(/^\w/, (c) => c[uF ? "toUpperCase" : "toLowerCase"]()); // '\\w' to preserve \
   static uncamelize = (str = "", separator = " ") => str.replace(/([a-z])([A-Z])/g, `$1${separator}$2`).toLowerCase();
   static parseKeyCombo(combo) {
     const parts = combo.toLowerCase().split("+");
