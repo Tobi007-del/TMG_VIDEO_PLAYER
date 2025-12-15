@@ -297,7 +297,7 @@ class T007_Toast {
 export const Toasting = {
   update(base, id, options) {
     const toast = t007.toasts.get(id);
-    toast.destroyed && toast.queue.forEach(clearTimeout); // remove all delays and maybe make a new toast
+    toast.queue.forEach(clearTimeout); // remove all delays and maybe make a new toast
     return !!toast && (toast.destroyed ? base(options.render, { ...toast.opts, id, ...options }) : toast.update(options));
   },
   message: (base, defaults, action) =>
