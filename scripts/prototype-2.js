@@ -826,16 +826,7 @@ class T_M_G_Video_Controller {
   }
   buildContainers() {
     this.setPosterState();
-    this.video.parentElement?.insertBefore(
-      (this.videoContainer = tmg.createEl(
-        "div",
-        {
-          className: `T_M_G-video-container T_M_G-media-container${this.isMediaMobile ? " T_M_G-video-mobile" : ""}${this.video.paused ? " T_M_G-video-paused" : ""}${this.settings.time.progressBar ? " T_M_G-video-progress-bar" : ""}`,
-        },
-        { volumeLevel: "muted", brightnessLevel: "dark", thumbIndicator: this.settings.time.line.thumbIndicator }
-      )),
-      this.video
-    );
+    this.video.parentElement?.insertBefore((this.videoContainer = tmg.createEl("div", { className: `T_M_G-video-container T_M_G-media-container${this.isMediaMobile ? " T_M_G-video-mobile" : ""}${this.video.paused ? " T_M_G-video-paused" : ""}${this.settings.time.progressBar ? " T_M_G-video-progress-bar" : ""}` }, { volumeLevel: "muted", brightnessLevel: "dark", thumbIndicator: this.settings.time.line.thumbIndicator })), this.video);
     (this.pseudoVideoContainer = tmg.createEl("div", { className: "T_M_G-pseudo-video-container T_M_G-media-container" })).append((this.pseudoVideo = tmg.createEl("video", { tmgPlayer: this.video.tmgPlayer, className: "T_M_G-pseudo-video T_M_G-media", muted: true, autoplay: false })));
     const css = Object.entries(this.settings.css);
     this.bindCSSProps();
@@ -1039,60 +1030,20 @@ class T_M_G_Video_Controller {
     this.videoContainer.classList.add("T_M_G-video-stall");
     this.DOM.bigPlayPauseBtn?.addEventListener("animationend", () => this.videoContainer.classList.remove("T_M_G-video-stall"), { once: true });
   }
-  initControls() {
-    if (this.video.currentSrc) this._handleLoadedMetadata();
-    this.updateAudioSettings();
-    this.updateBrightnessSettings();
-    this.updatePlaybackRateSettings();
-    this.updateCaptionsSettings();
-    this.setContainersEventListeners();
-    this.setSettingsViewEventListeners();
-    this.observeIntersection();
-  }
   setInitialStates() {
+    this.settings.css.currentPlayedPosition = this.settings.css.currentThumbPosition = this.settings.css.currentBufferedPosition = 0;
     this.showOverlay();
     this.setTitleState();
     this.setControlsState();
     this.setCaptionsState();
     this.setPreviewsState();
   }
-  setTitleState(title = this.settings.controlPanel.title, artist = this.settings.controlPanel.artist) {
-    if (this.DOM.videoTitle) this.DOM.videoTitle.textContent = this.DOM.videoTitle.dataset.videoTitle = (title === true ? this.media?.title : title) || "";
-    if (this.DOM.videoArtist) this.DOM.videoArtist.textContent = (artist === true ? this.media?.artist : artist) || "";
-  }
   setPosterState() {
     if (this.media?.artwork && !tmg.isSameURL(this.media.artwork[0]?.src, this.video.poster)) this.video.poster = this.media.artwork[0].src;
   }
-  setCaptionsState() {
-    if (this.video.textTracks.length) {
-      [...this.video.textTracks].forEach((track, index) => {
-        track.oncuechange = () => {
-          if (!this.isUIActive("captions") && this.videoContainer.classList.contains("T_M_G-video-captions-preview")) return;
-          this._handleCueChange(track.activeCues?.[0]);
-        };
-        if (track.mode === "showing") this.textTrackIndex = index;
-        track.mode = "hidden";
-      });
-    } else this.textTrackIndex = 0;
-    this.videoContainer.classList.toggle("T_M_G-video-captions", this.video.textTracks.length && !this.settings.captions.disabled);
-    this.videoContainer.setAttribute("data-track-kind", this.video.textTracks[this.textTrackIndex]?.kind || "captions");
-    this.setControlsState("captions");
-  }
-  setPreviewsState() {
-    this.settings.css.altImgSrc = `url(${TMG_VIDEO_ALT_IMG_SRC})`;
-    this.videoContainer.classList.toggle("T_M_G-video-no-previews", !this.settings.time.previews);
-    this.videoContainer.setAttribute("data-preview-type", this.settings.status.ui.previews ? "image" : "canvas");
-    if (this.settings.status.ui.previews || !this.settings.time.previews) return;
-    this.previewContext = this.DOM.previewCanvas?.getContext("2d");
-    this.thumbnailContext = this.DOM.thumbnailCanvas?.getContext("2d");
-    let dummyImg = tmg.createEl("img", {
-      src: TMG_VIDEO_ALT_IMG_SRC,
-      onload: () => {
-        this.previewContext?.drawImage(dummyImg, 0, 0, this.DOM.previewCanvas.width, this.DOM.previewCanvas.height);
-        this.thumbnailContext?.drawImage(dummyImg, 0, 0, this.DOM.thumbnailCanvas.width, this.DOM.thumbnailCanvas.height);
-        dummyImg = null;
-      },
-    });
+  setTitleState(title = this.settings.controlPanel.title, artist = this.settings.controlPanel.artist) {
+    if (this.DOM.videoTitle) this.DOM.videoTitle.textContent = this.DOM.videoTitle.dataset.videoTitle = (title === true ? this.media?.title : title) || "";
+    if (this.DOM.videoArtist) this.DOM.videoArtist.textContent = (artist === true ? this.media?.artist : artist) || "";
   }
   setControlState(btn, { hidden = false, disabled = false }) {
     btn?.classList?.toggle("T_M_G-video-control-hidden", hidden);
@@ -1122,6 +1073,43 @@ class T_M_G_Video_Controller {
     if (tmg.isArr(target)) target.forEach((g) => groups[g]?.());
     else if (target) groups[target]?.();
     else Object.values(groups).forEach((fn) => fn());
+  }
+  setCaptionsState() {
+    [...this.video.textTracks].forEach((track, i) => {
+      track.oncuechange = () => !(!this.isUIActive("captions") && this.videoContainer.classList.contains("T_M_G-video-captions-preview")) && this._handleCueChange(track.activeCues?.[0]);
+      if (track.mode === "showing") this.textTrackIndex = i;
+      track.mode = "hidden";
+    });
+    if (!this.video.textTracks.length) this.textTrackIndex = 0;
+    this.videoContainer.classList.toggle("T_M_G-video-captions", this.video.textTracks.length && !this.settings.captions.disabled);
+    this.videoContainer.setAttribute("data-track-kind", this.video.textTracks[this.textTrackIndex]?.kind || "captions");
+    this.setControlsState("captions");
+  }
+  setPreviewsState() {
+    this.settings.css.altImgSrc = `url(${TMG_VIDEO_ALT_IMG_SRC})`;
+    this.videoContainer.classList.toggle("T_M_G-video-no-previews", !this.settings.time.previews);
+    this.videoContainer.setAttribute("data-preview-type", this.settings.status.ui.previews ? "image" : "canvas");
+    if (this.settings.status.ui.previews || !this.settings.time.previews) return;
+    this.previewContext = this.DOM.previewCanvas?.getContext("2d");
+    this.thumbnailContext = this.DOM.thumbnailCanvas?.getContext("2d");
+    let dummyImg = tmg.createEl("img", {
+      src: TMG_VIDEO_ALT_IMG_SRC,
+      onload: () => {
+        this.previewContext?.drawImage(dummyImg, 0, 0, this.DOM.previewCanvas.width, this.DOM.previewCanvas.height);
+        this.thumbnailContext?.drawImage(dummyImg, 0, 0, this.DOM.thumbnailCanvas.width, this.DOM.thumbnailCanvas.height);
+        dummyImg = null;
+      },
+    });
+  }
+  initControls() {
+    this.video.currentSrc && this._handleLoadedMetadata();
+    this.updateAudioSettings();
+    this.updateBrightnessSettings();
+    this.updatePlaybackRateSettings();
+    this.updateCaptionsSettings();
+    this.setContainersEventListeners();
+    this.setSettingsViewEventListeners();
+    this.observeIntersection();
   }
   setKeyEventListeners(target) {
     if (this.disabled || this.locked) return;
@@ -1392,8 +1380,7 @@ class T_M_G_Video_Controller {
     [...this.DOM.svgs].forEach((svg) => {
       svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
       const title = svg.getAttribute("data-control-title");
-      if (!title) return;
-      svg.addEventListener("mouseover", () => (svg.parentElement.title = title));
+      if (title) svg.addEventListener("mouseover", () => (svg.parentElement.title = title));
     });
   }
   convertToMonoChrome(canvas, context) {
@@ -1456,12 +1443,12 @@ class T_M_G_Video_Controller {
   syncMediaBrandColor = async () => (this.settings.css.brandColor = (this.loaded ? await this.getMediaBrandColor() : null) ?? this.CSSPropsCache.brandColor);
   deactivate(message) {
     this.showOverlay();
-    this.showUserMessage(message);
+    this.showUIMessage(message);
     this.videoContainer.classList.add("T_M_G-video-inactive");
   }
   reactivate() {
     if (!this.videoContainer.classList.contains("T_M_G-video-inactive") || !this.loaded) return;
-    this.removeUserMessage();
+    this.removeUIMessage();
     this.videoContainer.classList.remove("T_M_G-video-inactive");
   }
   disable() {
@@ -1662,13 +1649,11 @@ class T_M_G_Video_Controller {
         return false;
     }
   }
-  showUserMessage = (message) => message && this.DOM.videoContainerContent.setAttribute("data-message", message);
-  removeUserMessage = () => this.DOM.videoContainerContent.removeAttribute("data-message");
+  showUIMessage = (message) => message && this.DOM.videoContainerContent.setAttribute("data-message", message);
+  removeUIMessage = () => this.DOM.videoContainerContent.removeAttribute("data-message");
   _handleLoadedError(error) {
-    this.loaded = false;
-    const fallbackMessage = (typeof error === "string" && error) || error?.message || this.video.error?.message || (error && "An unknown error occurred with the video :(");
-    const message = this.settings.errorMessages?.[this.video.error?.code ?? (error && 5)] || fallbackMessage;
-    this.deactivate(message);
+    this.loaded = !!(this.settings.css.currentBufferedPosition = 0);
+    this.deactivate(this.settings.errorMessages?.[this.video.error?.code ?? (error && 5)] || (typeof error === "string" && error) || error?.message || this.video.error?.message || (error && "An unknown error occurred with the video :("));
   }
   _handleLoadedMetadata() {
     this.loaded = true;
@@ -1922,7 +1907,7 @@ class T_M_G_Video_Controller {
         this.currentTime = this.duration;
         break;
       default:
-        this.currentTime = (Number(details.to) / Number(details.max)) * this.duration;
+        this.currentTime = (details.to / details.max) * this.duration;
     }
   }
   _handleFrameUpdate(now, m) {
@@ -2053,7 +2038,7 @@ class T_M_G_Video_Controller {
   _handleCueChange(cue) {
     const existing = this.DOM.cueContainer.querySelector(".T_M_G-video-cue-wrapper");
     if (!cue) return existing?.remove();
-    const cueWrapper = existing || tmg.createEl("div", { className: "T_M_G-video-cue-wrapper" });
+    const cueWrapper = existing ?? tmg.createEl("div", { className: "T_M_G-video-cue-wrapper" });
     cueWrapper.innerHTML = "";
     const maxChars = Math.floor(this.videoContainer.offsetWidth / this.cueCharW);
     const paragraphs = cue.text.replace(/(<br\s*\/?>)|\\N/gi, "\n").split(/\n/);
@@ -2071,12 +2056,7 @@ class T_M_G_Video_Controller {
         lineLen += word.length + 1;
       });
       if (line.length) parts.push(line);
-      parts.forEach((part) => {
-        const cueLine = tmg.createEl("div", { className: "T_M_G-video-cue-line" });
-        const cueEl = tmg.createEl("span", { className: "T_M_G-video-cue", innerHTML: part.join(" ") });
-        cueLine.appendChild(cueEl);
-        cueWrapper.appendChild(cueLine);
-      });
+      parts.forEach((part) => cueWrapper.appendChild(tmg.createEl("div", { className: "T_M_G-video-cue-line" }).appendChild(tmg.createEl("span", { className: "T_M_G-video-cue", innerHTML: part.join(" ") })).parentElement));
     });
     !existing && this.DOM.cueContainer.appendChild(cueWrapper);
     this.settings.css.currentCueContainerHeight = `${this.DOM.cueContainer.offsetHeight}px`;
@@ -2249,7 +2229,6 @@ class T_M_G_Video_Controller {
       default:
         if (volume < this.settings.volume.max) volume += volume % value ? value - (volume % value) : value;
         this.notify("volumeup");
-        break;
     }
     if (this.shouldSetLastVolume) {
       if (this.DOM.volumeNotifierContent) this.DOM.volumeNotifierContent.textContent = volume + "%";
@@ -2364,7 +2343,6 @@ class T_M_G_Video_Controller {
       default:
         if (brightness < this.settings.brightness.max) brightness += brightness % value ? value - (brightness % value) : value;
         this.notify("brightnessup");
-        break;
     }
     if (this.shouldSetLastBrightness) {
       if (this.DOM.brightnessNotifierContent) this.DOM.brightnessNotifierContent.textContent = brightness + "%";
@@ -2658,10 +2636,7 @@ class T_M_G_Video_Controller {
   }
   _handleGestureWheelInit({ clientX: x, clientY: y }) {
     const rect = this.videoContainer.getBoundingClientRect();
-    this.gestureWheelZone = {
-      x: x - rect.left > rect.width * 0.5 ? "right" : "left",
-      y: y - rect.top > rect.height * 0.5 ? "bottom" : "top",
-    };
+    this.gestureWheelZone = { x: x - rect.left > rect.width * 0.5 ? "right" : "left", y: y - rect.top > rect.height * 0.5 ? "bottom" : "top" };
     this.gestureWheelTimePercent = 0;
     this.gestureWheelTimeMultiplier = 1;
     this.gestureWheelDeltaY = 0;
@@ -2681,22 +2656,14 @@ class T_M_G_Video_Controller {
       this.gestureWheelXCheck = true;
       !this.overTimeline && this.DOM.touchTimelineNotifier.classList.add("T_M_G-video-control-active");
       if (this.overTimeline) this.delayOverlay();
-      this._handleGestureTimelineInput({
-        percent: xPercent,
-        sign: xSign,
-        multiplier: this.gestureWheelTimeMultiplier,
-      });
+      this._handleGestureTimelineInput({ percent: xPercent, sign: xSign, multiplier: this.gestureWheelTimeMultiplier });
       if (shiftKey || this.overTimeline) return;
     }
     if (deltaY) {
       if ((wc.timeline.slider && this.overTimeline) || this.gestureWheelXCheck) {
         const mY = tmg.clamp(0, Math.abs((this.gestureWheelDeltaY += deltaY)), height * wc.yRatio * 0.5);
         this.gestureWheelTimeMultiplier = 1 - mY / (height * wc.yRatio * 0.5);
-        return this._handleGestureTimelineInput({
-          percent: xPercent,
-          sign: xSign,
-          multiplier: this.gestureWheelTimeMultiplier,
-        });
+        return this._handleGestureTimelineInput({ percent: xPercent, sign: xSign, multiplier: this.gestureWheelTimeMultiplier });
       }
       const cancel = (!wc.volume.slider && this.overVolume) || (this.gestureWheelZone?.x === "right" && !wc.volume.normal && !this.overVolume) || (!wc.brightness.slider && this.overBrightness) || (this.gestureWheelZone?.x === "left" && !wc.brightness.normal && !this.overBrightness),
         currentXZone = x - rect.left > width * 0.5 ? "right" : "left";
@@ -2707,15 +2674,7 @@ class T_M_G_Video_Controller {
       if (this.overBrightness) this.delayBrightnessActive();
       const ySign = -deltaY >= 0 ? "+" : "-";
       const yPercent = tmg.clamp(0, Math.abs(deltaY), height * wc.yRatio) / (height * wc.yRatio);
-      this.gestureWheelZone?.x === "right" || this.overVolume
-        ? this._handleGestureVolumeSliderInput({
-            percent: yPercent,
-            sign: ySign,
-          })
-        : this._handleGestureBrightnessSliderInput({
-            percent: yPercent,
-            sign: ySign,
-          });
+      this.gestureWheelZone?.x === "right" || this.overVolume ? this._handleGestureVolumeSliderInput({ percent: yPercent, sign: ySign }) : this._handleGestureBrightnessSliderInput({ percent: yPercent, sign: ySign });
     }
   }
   _handleGestureWheelStop() {
@@ -2756,10 +2715,7 @@ class T_M_G_Video_Controller {
       y = e.clientY ?? e.targetTouches[0].clientY,
       deltaX = Math.abs(this.lastGestureTouchX - x),
       deltaY = Math.abs(this.lastGestureTouchY - y);
-    this.gestureTouchZone = {
-      x: x - rect.left > rect.width * 0.5 ? "right" : "left",
-      y: y - rect.top > rect.height * 0.5 ? "bottom" : "top",
-    };
+    this.gestureTouchZone = { x: x - rect.left > rect.width * 0.5 ? "right" : "left", y: y - rect.top > rect.height * 0.5 ? "bottom" : "top" };
     const rTop = this.lastGestureTouchX - rect.left,
       rLeft = this.lastGestureTouchY - rect.top; // relative
     if (deltaX > deltaY * tc.axesRatio && rTop > tc.inset && rTop < rect.width - tc.inset) tc.timeline && (this.gestureTouchXCheck = true) && this.videoContainer.addEventListener("touchmove", this._handleGestureTouchXMove, { passive: false });
@@ -3763,10 +3719,10 @@ class T_M_G {
   }
   static getRGBBri = ([r, g, b]) => 0.299 * r + 0.587 * g + 0.114 * b;
   static getRGBSat = ([r, g, b]) => Math.max(r, g, b) - Math.min(r, g, b);
-  static clampRGBBri([r, g, b], m = 50) {
+  static clampRGBBri([r, g, b], m = 40) {
     const br = tmg.getRGBBri([r, g, b]),
       d = br < m ? m - br : br > 255 - m ? br - (255 - m) : 0;
-    return [r + (br < m ? d : -d), g + (br < m ? d : -d), b + (br < m ? d : -d)];
+    return [tmg.clamp(0, r + (br < m ? d : -d), 255), tmg.clamp(0, g + (br < m ? d : -d), 255), tmg.clamp(0, b + (br < m ? d : -d), 255)];
   }
   static async getDominantColor(src, format = "rgb", raw = false) {
     if (typeof src == "string")
@@ -3793,7 +3749,7 @@ class T_M_G {
       .slice(0, 3) // take top 3 buckets
       .map(([k]) => ({ key: k, rgb: pt[k].map((v) => Math.round(v / ct[k])) }));
     if (!clrs.length) return null;
-    const [r, g, b] = tmg.clampRGBBri(clrs.reduce((sat, curr) => (tmg.getRGBBri(sat.rgb) > tmg.getRGBBri(curr.rgb) ? sat : curr), clrs[0]).rgb); // vibrancy test to avoid muddy colors
+    const [r, g, b] = tmg.clampRGBBri(clrs.reduce((sat, curr) => (tmg.getRGBSat(sat.rgb) > tmg.getRGBSat(curr.rgb) ? sat : curr), clrs[0]).rgb, 70); // vibrancy test to avoid muddy colors
     // console.log(clrs.map((c) => [c, tmg.getRGBSat(c.rgb), tmg.getRGBBri(c.rgb)]));
     return format === "hex" ? `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}` : raw == false ? `rgb(${r},${g},${b})` : [r, g, b];
   }
