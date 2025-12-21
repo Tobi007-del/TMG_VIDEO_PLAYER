@@ -1124,7 +1124,6 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 .T_M_G-video-next-info {
   flex-grow: 1;
   min-width: 0;
-  padding-block: calc(var(--t007-toast-unit) / 3.75);
 }
 .T_M_G-video-next-info h2 {
   font-size: calc(var(--t007-toast-unit) / 0.75);
