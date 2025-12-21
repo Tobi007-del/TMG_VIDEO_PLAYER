@@ -201,14 +201,26 @@ class T_M_G_Video_Controller {
         continue;
       }
     }
-    Object.defineProperty(this.settings.css, "captionsCharacterEdgeStyle", {
-      get() {
-        const edgeStyle = [...(self.DOM.cueContainer?.classList ?? [])].find((cls) => cls.startsWith("T_M_G-video-cue-character-edge-style"))?.replace("T_M_G-video-cue-character-edge-style-", "");
-        return tmg.parseUIObj(self.settings.captions).characterEdgeStyle.values.includes(edgeStyle) ? edgeStyle : "none";
+    Object.defineProperties(this.settings.css, {
+      captionsCharacterEdgeStyle: {
+        get() {
+          const edgeStyle = [...(self.DOM.cueContainer?.classList ?? [])].find((cls) => cls.startsWith("T_M_G-video-cue-character-edge-style"))?.replace("T_M_G-video-cue-character-edge-style-", "");
+          return tmg.parseUIObj(self.settings.captions).characterEdgeStyle.values.includes(edgeStyle) ? edgeStyle : "none";
+        },
+        set(value) {
+          self.DOM.cueContainer.classList.forEach((cls) => cls.startsWith("T_M_G-video-cue-character-edge-style") && self.DOM.cueContainer.classList.remove(cls));
+          self.DOM.cueContainer.classList.add(`T_M_G-video-cue-character-edge-style-${value}`);
+        },
       },
-      set(value) {
-        self.DOM.cueContainer.classList.forEach((cls) => cls.startsWith("T_M_G-video-cue-character-edge-style") && self.DOM.cueContainer.classList.remove(cls));
-        self.DOM.cueContainer.classList.add(`T_M_G-video-cue-character-edge-style-${value}`);
+      captionsTextAlignment: {
+        get() {
+          const alignment = [...(self.DOM.cueContainer?.classList ?? [])].find((cls) => cls.startsWith("T_M_G-video-cue-text-align"))?.replace("T_M_G-video-cue-text-align-", "");
+          return tmg.parseUIObj(self.settings.captions).textAlignment.values.includes(alignment) ? alignment : "left";
+        },
+        set(value) {
+          self.DOM.cueContainer.classList.forEach((cls) => cls.startsWith("T_M_G-video-cue-text-align") && self.DOM.cueContainer.classList.remove(cls));
+          self.DOM.cueContainer.classList.add(`T_M_G-video-cue-text-align-${value}`);
+        },
       },
     });
   }
@@ -1548,7 +1560,7 @@ class T_M_G_Video_Controller {
     this.loaded = false;
     this.currentPlaylistIndex = index;
     const v = this.playlist[index];
-    this.media = v.media ? { ...this.media, ...v.media } : v.media ?? null;
+    this.media = v.media ? { ...this.media, ...v.media } : (v.media ?? null);
     this.setPosterState();
     this.settings.time.start = v.settings.time.start;
     this.settings.time.end = v.settings.time.end;
@@ -2008,6 +2020,7 @@ class T_M_G_Video_Controller {
     Object.entries(this.settings.captions.background).forEach(([k, { value }]) => (this.settings.css[`captionsBackground${tmg.capitalize(k)}`] = value));
     Object.entries(this.settings.captions.window).forEach(([k, { value }]) => (this.settings.css[`captionsWindow${tmg.capitalize(k)}`] = value));
     this.settings.css.captionsCharacterEdgeStyle = this.settings.captions.characterEdgeStyle.value;
+    this.settings.css.captionstextAlignment = this.settings.captions.textAlignment.value;
   }
   toggleCaptions() {
     this.settings.css.currentCueX = this.CSSPropsCache.currentCueX;
@@ -2094,6 +2107,7 @@ class T_M_G_Video_Controller {
   rotateCaptionsBackgroundOpacity = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).background.opacity.values, "captions.background.opacity.value");
   rotateCaptionsWindowOpacity = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).window.opacity.values, "captions.window.opacity.value");
   rotateCaptionsCharacterEdgeStyle = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).characterEdgeStyle.values, "captions.characterEdgeStyle.value", false);
+  rotateCaptionsTextAlignment = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).textAlignment.values, "captions.textAlignment.value", false);
   _handleCueDragStart({ pointerId, clientX, clientY }) {
     this.DOM.cueContainer?.setPointerCapture(pointerId);
     const { left, bottom } = getComputedStyle(this.DOM.cueContainer);
@@ -2941,6 +2955,7 @@ class T_M_G_Video_Controller {
           case "captionsBackgroundOpacity":
           case "captionsWindowOpacity":
           case "captionsCharacterEdgeStyle":
+          case "captionsTextAlignment":
             this[`rotate${tmg.capitalize(action)}`]?.();
             break;
           case "escape": // -w
@@ -3067,8 +3082,7 @@ class T_M_G_Video_Controller {
       "dragOver",
       () => {
         const afterControl = this.getControlAfterDragging(e.target, e.clientX);
-        if (afterControl) e.target?.insertBefore(this.dragging, afterControl);
-        else e.target.appendChild(this.dragging);
+        afterControl ? e.target?.insertBefore(this.dragging, afterControl) : e.target?.appendChild(this.dragging);
         this.updateSideControls(e);
       },
       20,
@@ -3081,18 +3095,15 @@ class T_M_G_Video_Controller {
     e.target.classList.remove("T_M_G-video-dragover");
   }
   _handleDragLeave = ({ target }) => target?.dataset.dropZone && target.classList.remove("T_M_G-video-dragover");
-  getControlAfterDragging(container, x) {
-    const draggables = [...container.querySelectorAll("[draggable=true]:not(.T_M_G-video-control-dragging, .T_M_G-video-vb-btn), .T_M_G-video-vb-container:has([draggable=true])")];
-    return draggables.reduce(
+  getControlAfterDragging = (container, x) =>
+    [...container.querySelectorAll("[draggable=true]:not(.T_M_G-video-control-dragging, .T_M_G-video-vb-btn), .T_M_G-video-vb-container:has([draggable=true])")].reduce(
       (closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = x - box.left - box.width / 2;
-        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
-        else return closest;
+        const { left: cLeft, width: cWidth } = child.getBoundingClientRect();
+        const offset = x - cLeft - cWidth / 2;
+        return offset < 0 && offset > closest.offset ? { offset: offset, element: child } : closest;
       },
       { offset: -Infinity }
     ).element;
-  }
 }
 
 class T_M_G_Media_Notifier {
@@ -4035,6 +4046,14 @@ if (typeof window !== "undefined") {
             { value: "outline", display: "Outline" },
           ],
         },
+        textAlignment: {
+          value: "left",
+          options: [
+            { value: "left", display: "Left" },
+            { value: "center", display: "Center" },
+            { value: "right", display: "Right" },
+          ],
+        },
       },
       controlPanel: {
         title: true,
@@ -4079,6 +4098,7 @@ if (typeof window !== "undefined") {
           captionsBackgroundOpacity: "b",
           captionsWindowOpacity: "w",
           captionsCharacterEdgeStyle: "e",
+          captionsTextAlignment: "x",
           settings: "?",
         },
         // prettier-ignore
@@ -4099,7 +4119,7 @@ if (typeof window !== "undefined") {
         skip: 10,
         seekSync: false,
       },
-      toasts: { disabled: false, maxToasts: 7, position: "bottom-left", hideProgressBar: true, animation: "slide-up", dragToCloseDir: "x|y" },
+      toasts: { disabled: false, maxToasts: 7, position: "bottom-left", hideProgressBar: true, closeButton: !tmg.queryMediaMobile(), animation: "slide-up", dragToCloseDir: "x|y" },
       volume: { min: 0, max: 300, skip: 5 },
     },
   };

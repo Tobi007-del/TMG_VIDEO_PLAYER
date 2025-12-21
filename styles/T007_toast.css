@@ -40,6 +40,8 @@
   --t007-toast-height: fit-content;
   --t007-toast-max-height: calc(var(--t007-toast-unit) * 8.5);
   --t007-toast-padding: calc(var(--t007-toast-unit) / 2.25);
+  --t007-toast-smart-padding-left: calc(var(--t007-toast-padding) * 2.25);
+  --t007-toast-smart-padding-right: calc(var(--t007-toast-smart-padding-left) - (var(--t007-toast-action-button-padding-inline) / 2));
   --t007-toast-gap: var(--t007-toast-padding);
   --t007-toast-border-radius: calc(var(--t007-toast-unit) / 3);
   --t007-toast-progress-height: calc(var(--t007-toast-unit) / 5);
@@ -50,12 +52,13 @@
   --t007-toast-actions-container-max-width: fit-content;
   --t007-toast-actions-container-gap: calc(var(--t007-toast-unit) / 4);
   --t007-toast-action-button-color: var(--t007-toast-font-color);
-  --t007-toast-action-button-active-color: var(--t007-toast-font-color);
+  --t007-toast-action-button-active-color: var(--t007-toast-action-button-color);
   --t007-toast-action-button-background: rgba(from currentColor r g b / 0.1);
   --t007-toast-action-button-active-background: rgba(from currentColor r g b / 0.2);
   --t007-toast-action-button-font-size: calc(var(--t007-toast-font-size) / 1.1);
-  --t007-toast-action-button-padding: calc(var(--t007-toast-unit) / 3.3) calc(var(--t007-toast-unit) / 2.2);
-  --t007-toast-action-button-border-radius: calc(var(--t007-toast-unit) / 6);
+  --t007-toast-action-button-padding-inline: calc(var(--t007-toast-unit) / 2.2);
+  --t007-toast-action-button-padding-block: calc(var(--t007-toast-unit) / 3.3);
+  --t007-toast-action-button-border-radius: calc(((var(--t007-toast-action-button-padding-block) * 2) + var(--t007-toast-font-size)) / 2);
   --t007-toast-icon-width: calc(var(--t007-toast-unit) * 1.4);
   --t007-toast-icon-height: calc(var(--t007-toast-unit) * 1.4);
   --t007-toast-icon-font-size: calc(var(--t007-toast-icon-height) * 0.8);
@@ -230,6 +233,14 @@
   touch-action: none;
 }
 
+.t007-toast:not(:has(.t007-toast-image, .t007-toast-icon:not(:empty))):has(.t007-toast-body) {
+  padding-left: max(var(--t007-toast-padding), var(--t007-toast-smart-padding-left));
+}
+
+.t007-toast:not(:has(.t007-toast-cancel-button)) {
+  padding-right: max(var(--t007-toast-padding), var(--t007-toast-smart-padding-right));
+}
+
 .t007-toast:is([data-pointer-type="mouse"], [data-pointer-type="true"]) {
   cursor: grab;
 }
@@ -343,7 +354,7 @@
   border-radius: 0;
 }
 
-.t007-toast-image-wrapper:not(:has(.t007-toast-image), :has(.t007-toast-icon:not(:empty))) {
+.t007-toast-image-wrapper:not(:has(.t007-toast-image, .t007-toast-icon:not(:empty))) {
   display: none;
 }
 
@@ -399,7 +410,6 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: var(--t007-toast-actions-container-gap);
-  align-self: flex-end;
 }
 
 .t007-toast-action-button {
@@ -409,12 +419,16 @@
   color: var(--t007-toast-action-button-color);
   font-size: var(--t007-toast-action-button-font-size);
   font-weight: var(--t007-toast-action-button-font-weight);
-  padding: var(--t007-toast-action-button-padding);
+  padding-block: var(--t007-toast-action-button-padding-block);
+  padding-inline: var(--t007-toast-action-button-padding-inline);
   background: var(--t007-toast-action-button-background);
   border: var(--t007-toast-action-button-border);
   border-radius: var(--t007-toast-action-button-border-radius);
   opacity: 0.9;
-  transition: opacity 200ms ease, color 200ms ease, background-color 200ms ease;
+  transition:
+    opacity 200ms ease,
+    color 200ms ease,
+    background-color 200ms ease;
 }
 
 .t007-toast-action-button:is(:hover, :focus-visible) {
