@@ -1448,7 +1448,7 @@ class T_M_G_Video_Controller {
           () => this.toast?.error(frameToastId, { render: `Failed sharing ${fTxt}`, actions: { Save } })
         ) || this.toast?.warn(frameToastId, { delay: 1000, render: `Couldn't share ${fTxt}`, actions: { Save } });
       };
-    frame?.url ? this.toast?.success(frameToastId, { render: `Captured ${fTxt}`, image: frame.url, autoClose: 15000, actions: { Save, Share }, onClose: () => URL.revokeObjectURL(frame.url) }) : this.toast?.error(frameToastId, { render: `Failed capturing ${fTxt}` });
+    frame?.url ? this.toast?.success(frameToastId, { render: `Captured ${fTxt}`, image: frame.url, autoClose: this.settings.toasts.captureAutoClose, actions: { Save, Share }, onClose: () => URL.revokeObjectURL(frame.url) }) : this.toast?.error(frameToastId, { render: `Failed capturing ${fTxt}` });
   }
   async findGoodFrameTime({ time: t = this.currentTime, secondsLimit: s = 25, saturation: sat = 12, brightness: bri = 40 }) {
     const end = tmg.clamp(0, t + s, this.duration);
@@ -1458,7 +1458,7 @@ class T_M_G_Video_Controller {
     }
     return null;
   }
-  getMediaBrandColor = async (time, poster = this.video.poster || this.media?.artwork?.[0]?.src, config = {}) => await tmg.getDominantColor(poster ? poster : (await this.getVideoFrame("", time ? time : await this.findGoodFrameTime(config), true, 1)).canvas);
+  getMediaBrandColor = async (time, poster = this.video.poster, config = {}) => await tmg.getDominantColor(poster ? poster : (await this.getVideoFrame("", time ? time : await this.findGoodFrameTime(config), true, 1)).canvas);
   syncMediaBrandColor = async () => (this.settings.css.brandColor = (this.loaded ? await this.getMediaBrandColor() : null) ?? this.CSSPropsCache.brandColor);
   deactivate(message) {
     this.showOverlay();
@@ -1576,7 +1576,7 @@ class T_M_G_Video_Controller {
     this.settings.time.previews = tmg.isObj(v.settings.time.previews) && tmg.isObj(this.settings.time.previews) ? { ...this.settings.time.previews, ...v.settings.time.previews } : v.settings.time.previews;
     this.settings.status.ui.previews = this.settings.time.previews?.address && this.settings.time.previews?.spf;
     if (v.src) this.src = v.src;
-    else if (v.sources?.length > 0) this.sources = v.sources;
+    if (v.sources?.length) this.sources = v.sources;
     this.tracks = v.tracks ?? [];
     this.setInitialStates();
     this.togglePlay(shouldPlay);
@@ -1593,7 +1593,7 @@ class T_M_G_Video_Controller {
       position: "bottom-right",
       bodyHTML: `<span title="Play next video" class="T_M_G-video-next-preview-wrapper">
         <button type="button"><svg viewBox="0 0 25 25"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg></button>
-        <video class="T_M_G-video-next-preview" src="${v.src || v.sources?.[0]?.src || ""}" autoplay muted loop playsinline webkit-playsinline></video>
+        <video class="T_M_G-video-next-preview" poster="${v.media?.artwork?.[0]?.src}" src="${v.src || ""}"${!v.media?.artwork?.[0]?.src ? " autoplay " : " "}muted loop playsinline webkit-playsinline preload="metadata"></video>
         <p>${this.toTimeText(NaN)}</p>
       </span>
       <span class="T_M_G-video-next-info">
@@ -1616,7 +1616,9 @@ class T_M_G_Video_Controller {
     ["pause", "waiting"].forEach((e) => this.video.addEventListener(e, cleanUpWhenNeeded));
     this.video.addEventListener("timeupdate", autoCleanUpToast);
     const nextVideoPreview = this.queryDOM(".T_M_G-video-next-preview");
-    ["loadedmetadata", "durationchange"].forEach((e) => nextVideoPreview?.addEventListener(e, () => (nextVideoPreview.nextElementSibling.textContent = this.toTimeText(nextVideoPreview.duration))));
+    v.sources?.length && tmg.addSources(v.sources, nextVideoPreview);
+    ["loadedmetadata", "durationchange"].forEach((e) => nextVideoPreview?.addEventListener(e, ({ target: p }) => (p.nextElementSibling.textContent = this.toTimeText(p.duration))));
+    nextVideoPreview?.addEventListener("timeupdate", ({ target: p }) => tmg.parseNumber(p.currentTime) >= this.settings.toasts.nextVideoPreview && p.pause());
     nextVideoPreview?.parentElement?.addEventListener("click", () => cleanUp(true) && this.nextVideo(), true);
   }
   setMediaSession() {
@@ -4121,7 +4123,7 @@ if (typeof window !== "undefined") {
         skip: 10,
         seekSync: false,
       },
-      toasts: { disabled: false, maxToasts: 7, position: "bottom-left", hideProgressBar: true, closeButton: !tmg.queryMediaMobile(), animation: "slide-up", dragToCloseDir: "x|y" },
+      toasts: { disabled: false, nextVideoPreview: 2, captureAutoClose: 15000, maxToasts: 7, position: "bottom-left", hideProgressBar: true, closeButton: !tmg.queryMediaMobile(), animation: "slide-up", dragToCloseDir: "x|y" },
       volume: { min: 0, max: 300, skip: 5 },
     },
   };
