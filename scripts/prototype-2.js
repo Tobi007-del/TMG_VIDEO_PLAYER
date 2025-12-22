@@ -1322,6 +1322,7 @@ class T_M_G_Video_Controller {
       this._handleSideControlsWrapperResize(el);
       tmg.initScrollAssist(el, { pxPerSecond: 60 });
       el && tmg.resizeObserver.observe(el);
+      el?.addEventListener("scroll", this._handleDirtyScroll, { passive: true });
     });
     [this.videoContainer, this.pseudoVideoContainer].forEach((el) => tmg.resizeObserver.observe(el));
   }
@@ -1366,6 +1367,10 @@ class T_M_G_Video_Controller {
     }
   }
   _handleSideControlsWrapperResize = (wrapper) => this.updateSideControls({ target: wrapper });
+  _handleWindowResize() {
+    if (!this.isUIActive("fullScreen")) this.toggleMiniPlayerMode();
+  }
+  _handleDirtyScroll = ({ currentTarget: el }) => el.scrollLeft > 0 && (el.dataset.hasScrolled = true);
   _handleMediaIntersectionChange(isIntersecting) {
     this.isIntersecting = isIntersecting;
     this.readyState > 2 && (this.isIntersecting && !this.isUIActive("settings") ? this.setKeyEventListeners() : this.removeKeyEventListeners());
@@ -1376,24 +1381,22 @@ class T_M_G_Video_Controller {
     this.readyState > 2 && this.toggleMiniPlayerMode();
   }
   _handleMediaAptAutoPlay = (auto = this.settings.auto.play, bool = true, p = this.parentIntersecting ? "in" : "out") => (auto == `${p}-view-always` ? this.togglePlay(bool) : auto == `${p}-view` && this.readyState < 3 && this.togglePlay(bool)) || true;
-  _handleWindowResize() {
-    if (!this.isUIActive("fullScreen")) this.toggleMiniPlayerMode();
-  }
   _handleVisibilityChange() {
     if (document.visibilityState === "visible") this.stopTimeScrubbing(); // tending to some observed glitches when visibility changes
   }
   _handleImgBreak = ({ target }) => (target.src = TMG_VIDEO_ALT_IMG_SRC);
-  updateSideControls({ target: wrapper }) {
-    let c = wrapper?.children?.[0],
-      spacer;
+  updateSideControls({ target: w }, spacer) {
+    let c = w?.children?.[0];
     do {
-      if (!c) continue;
-      c.dataset.spacer = "false";
-      c.dataset.controlDisplayed = getComputedStyle(c).display !== "none" ? "true" : "false";
-      if (c.dataset.controlDisplayed === "true" && !spacer) spacer = c;
+      c?.setAttribute("data-control-displayed", getComputedStyle(c).display !== "none" ? "true" : "false");
+      c?.setAttribute("data-spacer", false);
+      if (c?.dataset.controlDisplayed === "true" && !spacer) spacer = c;
     } while ((c = c?.nextElementSibling));
-    if (wrapper === this.DOM.b1LeftSideControlsWrapper || wrapper === this.DOM.b2LeftSideControlsWrapper) return;
+    if (!w || w.className.includes("-left-side-controls-wrapper")) return;
     spacer?.setAttribute("data-spacer", true);
+    if (w.dataset.hasScrolled === "true" || w.scrollWidth <= w.clientWidth || w.scrollLeft === w.scrollWidth - w.clientWidth) return;
+    w.addEventListener("scroll", () => (w.dataset.hasScrolled = false), { once: true });
+    w.scrollLeft = w.scrollWidth - w.clientWidth;
   }
   svgSetup() {
     [...this.DOM.svgs].forEach((svg) => {
