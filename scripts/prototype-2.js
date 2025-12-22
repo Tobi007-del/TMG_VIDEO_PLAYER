@@ -1102,19 +1102,18 @@ class T_M_G_Video_Controller {
     this.videoContainer.setAttribute("data-track-kind", this.video.textTracks[this.textTrackIndex]?.kind || "captions");
     this.setControlsState("captions");
   }
-  setPreviewsState() {
+  setPreviewsState(flush = true) {
     this.settings.css.altImgSrc = `url(${TMG_VIDEO_ALT_IMG_SRC})`;
     this.videoContainer.classList.toggle("T_M_G-video-no-previews", !this.settings.time.previews);
     this.videoContainer.setAttribute("data-preview-type", this.settings.status.ui.previews ? "image" : "canvas");
     if (this.settings.status.ui.previews || !this.settings.time.previews) return;
-    this.previewContext = this.DOM.previewCanvas?.getContext("2d");
-    this.thumbnailContext = this.DOM.thumbnailCanvas?.getContext("2d");
-    let dummyImg = tmg.createEl("img", {
+    this.previewContext ??= this.DOM.previewCanvas?.getContext("2d");
+    this.thumbnailContext ??= this.DOM.thumbnailCanvas?.getContext("2d");
+    const dummyImg = tmg.createEl(flush && "img", {
       src: TMG_VIDEO_ALT_IMG_SRC,
       onload: () => {
         this.previewContext?.drawImage(dummyImg, 0, 0, this.DOM.previewCanvas.width, this.DOM.previewCanvas.height);
         this.thumbnailContext?.drawImage(dummyImg, 0, 0, this.DOM.thumbnailCanvas.width, this.DOM.thumbnailCanvas.height);
-        dummyImg = null;
       },
     });
   }
@@ -1534,27 +1533,29 @@ class T_M_G_Video_Controller {
     return this.#playlist;
   }
   set playlist(value) {
-    if (!tmg.isArr(value)) return;
-    value.forEach((val) => {
+    value?.forEach((val) => {
       val.settings ??= {};
       val.settings.time ??= {};
     });
     this.#playlist = value;
     if (this.readyState < 1) return;
-    const curr = this.playlist.find((v) => tmg.isSameURL(v.src, this.src));
-    this.currentPlaylistIndex = curr ? this.playlist.indexOf(curr) : 0;
-    if (curr) {
-      this.settings.time.start = curr.settings.time.start;
-      this.settings.time.end = curr.settings.time.end;
-      this.settings.time.previews = tmg.isObj(curr.settings.time.previews) && tmg.isObj(this.settings.time.previews) ? { ...this.settings.time.previews, ...curr.settings.time.previews } : curr.settings.time.previews;
+    const v = this.playlist?.find((v) => tmg.isSameURL(v.src, this.src));
+    this.currentPlaylistIndex = v ? this.playlist.indexOf(v) : 0;
+    if (v) {
+      this.media = v.media ? { ...this.media, ...v.media } : v.media ?? null;
+      this.setPosterState();
+      this.settings.time.start = v.settings.time.start;
+      this.settings.time.end = v.settings.time.end;
+      this.settings.time.previews = tmg.isObj(v.settings.time.previews) && tmg.isObj(this.settings.time.previews) ? { ...this.settings.time.previews, ...v.settings.time.previews } : v.settings.time.previews;
       this.settings.status.ui.previews = this.settings.time.previews?.address && this.settings.time.previews?.spf;
-      if (curr.tracks?.length !== this.tracks.length) this.tracks = curr.tracks;
-      this.setPreviewsState();
+      if (v.tracks?.length !== this.tracks.length) this.tracks = v.tracks;
+      this.setTitleState();
+      this.setPreviewsState(false);
+      this.setControlsState("playlist");
     } else {
-      this.playlistCurrentTime = this.playlist[this.currentPlaylistIndex]?.settings.time.start;
+      this.playlistCurrentTime = this.playlist?.[this.currentPlaylistIndex]?.settings.time.start;
       this.movePlaylistTo(this.currentPlaylistIndex, !this.video.paused);
     }
-    this.setControlsState("playlist");
   }
   previousVideo() {
     if (this.currentTime >= 3) return this.replay();
@@ -1562,7 +1563,7 @@ class T_M_G_Video_Controller {
   }
   nextVideo = () => this.playlist && this.currentPlaylistIndex < this.playlist.length - 1 && this.movePlaylistTo(this.currentPlaylistIndex + 1);
   movePlaylistTo(index, shouldPlay = true) {
-    if (!this.playlist) return;
+    if (!this.playlist) return this.setControlsState("playlist");
     if (this.settings.status.allowOverride.time) this.playlist[this.currentPlaylistIndex].settings.time.start = this.currentTime < (this.settings.time.end ?? this.duration) - (this.settings.auto.next || 0) ? this.playlistCurrentTime : null;
     this.playlistCurrentTime = null;
     this.loaded = false;
@@ -3500,7 +3501,7 @@ class T_M_G {
   }
   static isValidNumber = (number) => !isNaN(number ?? NaN) && number !== Infinity;
   static assignDef(target, value, key) {
-    if (value !== undefined) target[key] = value;
+    if (value !== undefined && target != null) target[key] = value;
   }
   static assignHTMLConfig = (attr, optionsObj = {}, medium) =>
     tmg.assignDottedConfig(
@@ -3635,10 +3636,10 @@ class T_M_G {
   }
   static formatKeyForDisplay = (combo) => ` ${(tmg.isArr(combo) ? combo : [combo]).map((c) => `(${c})`).join(" or ")}`;
   static createEl(tag, props = {}, dataset = {}, styles = {}) {
-    const el = document.createElement(tag);
-    Object.entries(props).forEach(([k, v]) => tmg.assignDef(el, v, k));
-    Object.entries(dataset).forEach(([k, v]) => tmg.assignDef(el.dataset, v, k));
-    Object.entries(styles).forEach(([k, v]) => tmg.assignDef(el.style, v, k));
+    const el = tag ? document.createElement(tag) : null;
+    el && Object.entries(props).forEach(([k, v]) => tmg.assignDef(el, v, k));
+    el && Object.entries(dataset).forEach(([k, v]) => tmg.assignDef(el.dataset, v, k));
+    el && Object.entries(styles).forEach(([k, v]) => tmg.assignDef(el.style, v, k));
     return el;
   }
   static mockAsync = (timeout = 250) => new Promise((resolve) => setTimeout(resolve, timeout));
