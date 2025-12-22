@@ -66,7 +66,7 @@ class T_M_G_Video_Controller {
   }
   setReadyState(state = (this.readyState ?? -1) + 1) {
     this.readyState = tmg.clamp(0, state, 3);
-    this.readyState === 2 && this.fire("tmgready", { initialized: true });
+    this.readyState === 1 && this.fire("tmgready", { initialized: true });
     this.fire("tmgreadystatechange", { readyState: this.readyState });
   }
   bindMethods() {
