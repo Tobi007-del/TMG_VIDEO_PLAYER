@@ -8,9 +8,10 @@ TODO:
 class T_M_G_Video_Controller {
   #playlist;
   constructor(videoOptions) {
+    this.video = videoOptions.video;
+    this.setReadyState(0);
     this.bindMethods();
     this.CSSPropsCache = {};
-    this.video = videoOptions.video;
     Object.entries(videoOptions).forEach(([k, v]) => (this[k] = v)); // merging the video build into the Video Player Instance
     const src = this.src,
       sources = this.sources,
@@ -21,12 +22,11 @@ class T_M_G_Video_Controller {
     this.log(videoOptions);
     this.audioSetup = this.loaded = this.locked = this.inFullScreen = this.isScrubbing = this.buffering = this.inFloatingPlayer = this.overTimeline = this.overVolume = this.overBrightness = this.gestureTouchXCheck = this.gestureTouchYCheck = this.gestureWheelXCheck = this.gestureWheelYCheck = this.shouldSetLastVolume = this.shouldSetLastBrightness = this.speedPointerCheck = this.speedCheck = this.skipPersist = this.shouldCancelScrub = false;
     this.parentIntersecting = this.isIntersecting = this.gestureTouchCanCancel = this.canAutoMovePlaylist = this.stallCancelTimeScrub = true;
-    this.skipDuration = this.textTrackIndex = this.playTriggerCounter = 0;
+    this.currentPlaylistIndex = this.skipDuration = this.textTrackIndex = this.playTriggerCounter = 0;
     this.lastCueText = "";
     this.isMediaMobile = tmg.queryMediaMobile();
     this.pfps = 30; // pseudo fps: just for frame stepping
     this.pframeDelay = Math.round(1000 / this.pfps);
-    this.currentPlaylistIndex = this.playlist ? 0 : null;
     this.wasPaused = !this.video.autoplay;
     this.throttleMap = new Map();
     this.rafLoopMap = new Map();
@@ -41,7 +41,6 @@ class T_M_G_Video_Controller {
     setTimeout(() => (this.mutatingDOM = false));
     this.initSettingsManager();
     this.initPlayer();
-    this.fire("tmgready", { loaded: true });
   }
   get src() {
     return this.video.src;
@@ -64,6 +63,11 @@ class T_M_G_Video_Controller {
   set tracks(value = []) {
     tmg.removeTracks(this.video);
     value?.length && tmg.addTracks(value, this.video);
+  }
+  setReadyState(state = (this.readyState ?? -1) + 1) {
+    this.readyState = tmg.clamp(0, state, 3);
+    this.readyState === 2 && this.fire("tmgready", { initialized: true });
+    this.fire("tmgreadystatechange", { readyState: this.readyState });
   }
   bindMethods() {
     let proto = this;
@@ -1009,15 +1013,16 @@ class T_M_G_Video_Controller {
   initPlayer() {
     this.retrieveDOM();
     this.observeResize();
+    this.observeIntersection();
     this.svgSetup();
     this.setInitialStates();
     this.setVideoEventListeners();
     this.setControlsEventListeners();
     this[`toggle${tmg.capitalize(this.initialMode)}Mode`]?.();
-    if (!this.video.currentSrc) this._handleLoadedError();
+    !this.video.currentSrc && this._handleLoadedError();
+    this.setReadyState(1);
     this.initialState && this.video.paused ? this.addInitialState() : this.initControls();
-    if (this.disabled) this.disable();
-    this.initialized = true;
+    this.disabled && this.disable();
   }
   addInitialState() {
     if (!this.initialState) return;
@@ -1121,7 +1126,8 @@ class T_M_G_Video_Controller {
     this.updateCaptionsSettings();
     this.setContainersEventListeners();
     this.setSettingsViewEventListeners();
-    this.observeIntersection();
+    this.setReadyState(2);
+    this.video.paused ? this.video.addEventListener("play", () => this.setReadyState(3), { once: true }) : this.setReadyState(3);
   }
   setKeyEventListeners(target) {
     if (this.disabled || this.locked) return;
@@ -1363,12 +1369,14 @@ class T_M_G_Video_Controller {
   _handleSideControlsWrapperResize = (wrapper) => this.updateSideControls({ target: wrapper });
   _handleMediaIntersectionChange(isIntersecting) {
     this.isIntersecting = isIntersecting;
-    this.isIntersecting && !this.isUIActive("settings") ? this.setKeyEventListeners() : this.removeKeyEventListeners();
+    this.readyState > 2 && (this.isIntersecting && !this.isUIActive("settings") ? this.setKeyEventListeners() : this.removeKeyEventListeners());
   }
   _handleMediaParentIntersectionChange(isIntersecting) {
     this.parentIntersecting = isIntersecting;
-    this.toggleMiniPlayerMode();
+    this._handleMediaAptAutoPlay(this.settings.auto.pause, false) && this._handleMediaAptAutoPlay();
+    this.readyState > 2 && this.toggleMiniPlayerMode();
   }
+  _handleMediaAptAutoPlay = (auto = this.settings.auto.play, bool = true, p = this.parentIntersecting ? "in" : "out") => (auto == `${p}-view-always` ? this.togglePlay(bool) : auto == `${p}-view` && this.readyState < 3 && this.togglePlay(bool)) || true;
   _handleWindowResize() {
     if (!this.isUIActive("fullScreen")) this.toggleMiniPlayerMode();
   }
@@ -1527,24 +1535,24 @@ class T_M_G_Video_Controller {
   }
   set playlist(value) {
     if (!tmg.isArr(value)) return;
-    value.forEach((val) => (val.settings ??= {}));
+    value.forEach((val) => {
+      val.settings ??= {};
+      val.settings.time ??= {};
+    });
     this.#playlist = value;
-    if (this.currentPlaylistIndex == null) this.currentPlaylistIndex = 0;
-    else if (this.initialized) {
-      const curr = this.playlist.find((v) => tmg.isSameURL(v.src, this.src));
-      this.currentPlaylistIndex = curr ? this.playlist.indexOf(curr) : 0;
-      const next = this.playlist[this.currentPlaylistIndex];
-      if (curr) {
-        this.settings.time.start = curr.settings.time.start;
-        this.settings.time.end = curr.settings.time.end;
-        this.settings.time.previews = tmg.isObj(curr.settings.time.previews) && tmg.isObj(this.settings.time.previews) ? { ...this.settings.time.previews, ...curr.settings.time.previews } : curr.settings.time.previews;
-        this.settings.status.ui.previews = this.settings.time.previews?.address && this.settings.time.previews?.spf;
-        if (curr.tracks?.length !== this.tracks.length) this.tracks = curr.tracks;
-        this.setPreviewsState();
-      } else {
-        this.playlistCurrentTime = next?.settings.time.start;
-        this.movePlaylistTo(this.currentPlaylistIndex, !this.video.paused);
-      }
+    if (this.readyState < 1) return;
+    const curr = this.playlist.find((v) => tmg.isSameURL(v.src, this.src));
+    this.currentPlaylistIndex = curr ? this.playlist.indexOf(curr) : 0;
+    if (curr) {
+      this.settings.time.start = curr.settings.time.start;
+      this.settings.time.end = curr.settings.time.end;
+      this.settings.time.previews = tmg.isObj(curr.settings.time.previews) && tmg.isObj(this.settings.time.previews) ? { ...this.settings.time.previews, ...curr.settings.time.previews } : curr.settings.time.previews;
+      this.settings.status.ui.previews = this.settings.time.previews?.address && this.settings.time.previews?.spf;
+      if (curr.tracks?.length !== this.tracks.length) this.tracks = curr.tracks;
+      this.setPreviewsState();
+    } else {
+      this.playlistCurrentTime = this.playlist[this.currentPlaylistIndex]?.settings.time.start;
+      this.movePlaylistTo(this.currentPlaylistIndex, !this.video.paused);
     }
     this.setControlsState("playlist");
   }
@@ -1560,7 +1568,7 @@ class T_M_G_Video_Controller {
     this.loaded = false;
     this.currentPlaylistIndex = index;
     const v = this.playlist[index];
-    this.media = v.media ? { ...this.media, ...v.media } : (v.media ?? null);
+    this.media = v.media ? { ...this.media, ...v.media } : v.media ?? null;
     this.setPosterState();
     this.settings.time.start = v.settings.time.start;
     this.settings.time.end = v.settings.time.end;
@@ -1574,7 +1582,7 @@ class T_M_G_Video_Controller {
     this.canAutoMovePlaylist = true;
   }
   autonextVideo() {
-    if (!this.loaded || !this.playlist || this.settings.auto.next < 0 || !this.canAutoMovePlaylist || this.currentPlaylistIndex >= this.playlist.length - 1 || this.video.paused) return;
+    if (!this.loaded || !this.playlist || this.settings.auto.next < 0 || !this.canAutoMovePlaylist || this.currentPlaylistIndex >= this.playlist.length - 1 || this.video.paused || this.buffering) return;
     this.canAutoMovePlaylist = false;
     const count = tmg.clamp(1, Math.round((this.settings.time.end ?? this.duration) - this.currentTime), this.settings.auto.next);
     const v = this.playlist[this.currentPlaylistIndex + 1];
@@ -2501,9 +2509,8 @@ class T_M_G_Video_Controller {
     this.toggleMiniPlayerMode(false);
   }
   toggleMiniPlayerMode(bool, behavior) {
-    // this is a smart behavioral implementation rather than just a toggler
     if (this.settings.modes.miniPlayer.disabled) return;
-    const active = this.isUIActive("miniPlayer");
+    const active = this.isUIActive("miniPlayer"); // btw this is a smart behavioral implementation rather than just a toggler
     if ((!active && !this.isUIActive("pictureInPicture") && !this.inFloatingPlayer && !this.inFullScreen && !this.parentIntersecting && window.innerWidth >= this.settings.modes.miniPlayer.minWindowWidth && !this.video.paused) || (bool === true && !active)) {
       this.activatePseudoMode();
       this.videoContainer.classList.add("T_M_G-video-mini-player", "T_M_G-video-progress-bar");
@@ -3202,18 +3209,18 @@ class T_M_G_Media_Player {
     this.#build.video = this.#medium;
     this.#medium.playsInline = s.playsInline ??= this.#medium.playsInline;
     this.#medium.toggleAttribute("webkit-playsinline", s.playsInline);
-    this.#medium.autoplay = s.auto.play ??= this.#medium.autoplay;
+    this.#medium.autoplay = "string" == typeof (s.auto.play ??= this.#medium.autoplay) ? false : s.auto.play;
     this.#medium.muted = s.volume.muted ??= this.#medium.muted;
     this.#medium.loop = s.time.loop ??= this.#medium.loop;
     if (this.#build.playlist?.[0]) {
       const v = this.#build.playlist[0];
-      tmg.assignDef(this.#build, v.src, "src");
-      tmg.assignDef(this.#build, v.sources, "sources");
-      tmg.assignDef(this.#build, v.tracks, "tracks");
       if (v.media) this.#build.media = { ...this.#build.media, ...v.media };
       tmg.assignDef(s.time, v.settings?.time?.start, "start");
       tmg.assignDef(s.time, v.settings?.time?.end, "end");
       if (v.settings?.time?.previews !== undefined) s.time.previews = tmg.isObj(v.settings.time.previews) && tmg.isObj(s.time.previews) ? { ...s.time.previews, ...v.settings.time.previews } : v.settings.time.previews;
+      tmg.assignDef(this.#build, v.src, "src");
+      tmg.assignDef(this.#build, v.sources, "sources");
+      tmg.assignDef(this.#build, v.tracks, "tracks");
     }
     Object.entries(s.modes).forEach(([k, v]) => (s.modes[k] = v && (tmg[`supports${tmg.capitalize(k)}`]?.() ?? true) ? v : false));
     s.status = { allowOverride: {} };
@@ -3238,8 +3245,7 @@ class T_M_G_Media_Player {
     this.#build.video = this.#medium;
     await tmg.loadResource(TMG_VIDEO_CSS_SRC);
     await tmg.loadResource(T007_TOAST_JS_SRC, "script", { module: true });
-    this.Controller = new tmg.Controller(this.#build);
-    tmg.Controllers.push(this.Controller);
+    tmg.Controllers.push((this.Controller = new tmg.Controller(this.#build)));
   }
 }
 
@@ -3732,8 +3738,8 @@ class T_M_G {
   static getRGBSat = ([r, g, b]) => Math.max(r, g, b) - Math.min(r, g, b);
   static clampRGBBri([r, g, b], m = 40) {
     const br = tmg.getRGBBri([r, g, b]),
-      d = br < m ? m - br : br > 255 - m ? br - (255 - m) : 0;
-    return [tmg.clamp(0, r + (br < m ? d : -d), 255), tmg.clamp(0, g + (br < m ? d : -d), 255), tmg.clamp(0, b + (br < m ? d : -d), 255)];
+      d = br < m ? m - br : br > 255 - m ? -(br - (255 - m)) : 0;
+    return [r + d, g + d, b + d].map((v) => tmg.clamp(0, v, 255));
   }
   static async getDominantColor(src, format = "rgb", raw = false) {
     if (typeof src == "string")
@@ -3757,7 +3763,7 @@ class T_M_G {
     }
     const clrs = Object.entries(ct)
       .sort((a, b) => b[1] - a[1]) // sort by count DESC
-      .slice(0, 3) // take top 3 buckets
+      .slice(0, 3) // take top buckets
       .map(([k]) => ({ key: k, rgb: pt[k].map((v) => Math.round(v / ct[k])) }));
     if (!clrs.length) return null;
     const [r, g, b] = tmg.clampRGBBri(clrs.reduce((sat, curr) => (tmg.getRGBSat(sat.rgb) > tmg.getRGBSat(curr.rgb) ? sat : curr), clrs[0]).rgb, 70); // vibrancy test to avoid muddy colors
@@ -3850,31 +3856,26 @@ class T_M_G {
   }
   static removeScrollAssist = (el) => tmg._SCROLLERS.get(el)?.destroy();
   static rippleHandler(e, target, forceCenter = false) {
-    const currentTarget = target || e.currentTarget;
-    if ((e.target !== e.currentTarget && e.target?.matches("button,[href],input,label,select,textarea,[tabindex]:not([tabindex='-1'])")) || currentTarget?.hasAttribute("disabled")) return;
-    if (e.pointerType === "mouse" && e.button !== 0) return;
+    const el = target || e.currentTarget;
+    if ((e.target !== e.currentTarget && e.target?.matches("button,[href],input,label,select,textarea,[tabindex]:not([tabindex='-1'])")) || el?.hasAttribute("disabled") || (e.pointerType === "mouse" && e.button !== 0)) return;
     e.stopPropagation?.();
-    const el = currentTarget;
     const { offsetWidth: rW, offsetHeight: rH } = el;
-    const rect = el.getBoundingClientRect();
+    const { width: w, height: h, left: l, top: t } = el.getBoundingClientRect();
     const size = Math.max(rW, rH);
-    const x = forceCenter ? rW / 2 - size / 2 : (e.clientX - rect.left) * (rW / rect.width) - size / 2;
-    const y = forceCenter ? rH / 2 - size / 2 : (e.clientY - rect.top) * (rH / rect.height) - size / 2;
+    const x = forceCenter ? rW / 2 - size / 2 : (e.clientX - l) * (rW / w) - size / 2;
+    const y = forceCenter ? rH / 2 - size / 2 : (e.clientY - t) * (rH / h) - size / 2;
     const wrapper = tmg.createEl("span", { className: "T_M_G-video-ripple-container" });
     const ripple = tmg.createEl("span", { className: "T_M_G-video-ripple T_M_G-video-ripple-hold" }, {}, { cssText: `width:${size}px;height:${size}px;left:${x}px;top:${y}px;` });
     let canRelease = false;
     ripple.addEventListener("animationend", () => (canRelease = true), { once: true });
-    wrapper.appendChild(ripple);
-    el.appendChild(wrapper);
+    el.appendChild(wrapper.appendChild(ripple).parentElement);
     const release = () => {
       if (!canRelease) return ripple.addEventListener("animationend", release, { once: true });
       ripple.classList.replace("T_M_G-video-ripple-hold", "T_M_G-video-ripple-fade");
       ripple.addEventListener("animationend", () => setTimeout(() => wrapper.remove()));
-      el.ownerDocument.defaultView.removeEventListener("pointerup", release);
-      el.ownerDocument.defaultView.removeEventListener("pointercancel", release);
+      ["pointerup", "pointercancel"].forEach((e) => el.ownerDocument.defaultView.removeEventListener(e, release));
     };
-    el.ownerDocument.defaultView.addEventListener("pointerup", release);
-    el.ownerDocument.defaultView.addEventListener("pointercancel", release);
+    ["pointerup", "pointercancel"].forEach((e) => el.ownerDocument.defaultView.addEventListener(e, release));
   }
   static Controllers = []; // REFERENCES TO ALL THE DEPLOYED TMG MEDIA CONTROLLERS
   static Controller = T_M_G_Video_Controller; // THE TMG MEDIA PLAYER CONTROLLER CLASS
