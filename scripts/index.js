@@ -506,6 +506,7 @@ function handleFiles(files) {
             "media.artist": "TMG Video Player",
             "media.profile": "assets/icons/tmg-icon.jpeg",
             "media.links.artist": "https://tmg-video-player.vercel.app",
+            "media.links.profile": "https://tobi007-del.github.io/TMG_MEDIA_PROTOTYPE",
             "settings.overlay.behavior": "auto",
             "settings.captions.font.size.value": 200,
             "settings.captions.font.weight.value": 700,
