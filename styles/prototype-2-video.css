@@ -10,7 +10,7 @@
   --T_M_G-video-object-fit: contain;
   --T_M_G-video-border-radius: calc(var(--T_M_G-video-current-unit) / 1.5);
   --T_M_G-video-large-scale: 1.35;
-  --T_M_G-video-full-screen-unit: calc(var(--T_M_G-video-relative-unit) * 1.15);
+  --T_M_G-video-full-screen-unit: calc(var(--T_M_G-video-relative-unit) * 1.1);
   --T_M_G-video-theater-unit: calc(var(--T_M_G-video-relative-unit) * 1.05);
   --T_M_G-video-mobile-unit: calc(var(--T_M_G-video-relative-unit) / 1.15);
   --T_M_G-video-mini-player-unit: calc(var(--T_M_G-video-relative-unit) / 1.3);
@@ -380,14 +380,17 @@
   outline-offset: calc(var(--T_M_G-video-current-unit) / 7.5);
   transition: none;
 }
-.T_M_G-video-container :is(:is(.T_M_G-video-big-prev-btn, .T_M_G-video-big-play-pause-btn, .T_M_G-video-big-next-btn, .T_M_G-video-timeline-container):focus-visible, #o#o#o#o#o#o#o#o#o#o) {
+.T_M_G-video-container :is(:is(.T_M_G-video-profile-link, .T_M_G-video-title, .T_M_G-video-artist, .T_M_G-video-big-prev-btn, .T_M_G-video-big-play-pause-btn, .T_M_G-video-big-next-btn):focus-visible, #o#o#o#o#o#o#o#o#o#o) {
+  outline-offset: 0px;
+}
+.T_M_G-video-container :is(:is(.T_M_G-video-timeline-container):focus-visible, #o#o#o#o#o#o#o#o#o#o) {
   outline-offset: 1px;
 }
 .T_M_G-video-container :is(.T_M_G-video-vb-slider:focus-visible, #o#o#o#o#o#o#o#o#o#o) {
   outline-offset: calc(var(--T_M_G-video-current-unit) / 4.5);
 }
 .T_M_G-video-side-controls-wrapper-cover,
-.T_M_G-video-title-wrapper-cover > * {
+.T_M_G-video-title-text-wrapper-cover > * {
   flex-grow: 1;
   position: relative;
   overflow: hidden;
@@ -429,9 +432,7 @@
   color: transparent;
   text-shadow: none;
   -webkit-text-stroke: 0px transparent;
-  background:
-    center/cover no-repeat var(--T_M_G-video-alt-img-src),
-    var(--T_M_G-video-background);
+  background: center/cover no-repeat var(--T_M_G-video-alt-img-src), var(--T_M_G-video-background);
   min-width: unset;
   min-height: unset;
   max-width: unset;
@@ -839,9 +840,7 @@ body:where(:has(.T_M_G-video-floating-player)) {
   opacity: 0;
   pointer-events: none;
   transform: translateY(calc(var(--T_M_G-video-current-unit) * 5));
-  transition:
-    transform var(--T_M_G-video-switch-transition-time) ease,
-    opacity var(--T_M_G-video-switch-transition-time) ease;
+  transition: transform var(--T_M_G-video-switch-transition-time) ease, opacity var(--T_M_G-video-switch-transition-time) ease;
 }
 .T_M_G-video-container.T_M_G-video-locked:is(.T_M_G-video-locked-overlay, :has(:focus-visible)) .T_M_G-video-screen-locked-wrapper {
   transform: translateY(0);
@@ -913,6 +912,18 @@ body:where(:has(.T_M_G-video-floating-player)) {
 }
 /* setting controls stack ends */
 /* setting controls font sizes */
+.T_M_G-video-title {
+  font-size: calc(var(--T_M_G-video-current-unit) / 1.4);
+}
+.T_M_G-media-container:is([data-size-tier^="xx"], .T_M_G-video-mobile) .T_M_G-video-title {
+  font-size: calc(var(--T_M_G-video-current-unit) / 1.325);
+}
+.T_M_G-video-artist {
+  font-size: calc(var(--T_M_G-video-current-unit) / 2);
+}
+.T_M_G-media-container:is([data-size-tier^="xx"], .T_M_G-video-mobile) .T_M_G-video-artist {
+  font-size: calc(var(--T_M_G-video-current-unit) / 1.925);
+}
 .T_M_G-video-time-and-duration-btn,
 .T_M_G-video-preview-container::after {
   font-size: calc(var(--T_M_G-video-current-unit) / 1.85);
@@ -1035,38 +1046,65 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 .T_M_G-video-title-wrapper-cover {
   flex: 1 100 auto;
   display: flex;
-  flex-direction: column;
-  gap: calc(var(--T_M_G-video-current-unit) / 8);
+  align-items: center;
   min-width: 25%;
+  gap: calc(var(--T_M_G-video-current-controls-row-gap) / 1.5);
   color: var(--T_M_G-video-text-color);
   text-align: left;
   white-space: nowrap;
-  margin-block: calc(var(--T_M_G-video-current-controls-column-gap) / 2);
+  margin-block-start: calc(var(--T_M_G-video-current-controls-column-gap) / 2);
   margin-inline-start: var(--T_M_G-video-current-controls-row-gap);
+}
+.T_M_G-video-title-wrapper-cover:has(img[data-loaded="true"]) {
+  min-width: 35%;
 }
 .T_M_G-video-top-controls-wrapper:has([data-control-displayed="true"]) .T_M_G-video-title-wrapper-cover {
   margin-inline-end: calc(var(--T_M_G-video-current-controls-row-gap) / 2);
 }
 .T_M_G-video-container.T_M_G-video-mini-player .T_M_G-video-title-wrapper-cover {
-  text-align: center;
+  justify-content: center;
+  margin-block: 0;
 }
-.T_M_G-video-container:is(.T_M_G-video-mini-player) .T_M_G-video-artist-wrapper {
-  display: none;
+.T_M_G-video-title-wrapper-cover a:not([href]) {
+  cursor: text;
+}
+.T_M_G-video-title-wrapper-cover a:has(> img):not([href]) {
+  cursor: default;
+}
+.T_M_G-video-title-wrapper-cover a:not(:hover) {
+  text-decoration: none;
+}
+.T_M_G-video-profile-link {
+  flex-shrink: 0;
+  width: calc(var(--T_M_G-video-current-unit) * 1.5);
+  height: calc(var(--T_M_G-video-current-unit) * 1.5);
+  overflow: hidden;
+  border-radius: 50%;
+  background: black;
+}
+.T_M_G-video-profile {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.T_M_G-video-title-text-wrapper-cover {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--T_M_G-video-current-unit) / 140);
+}
+.T_M_G-video-title-text-wrapper-cover > * {
+  display: flex;
+  padding: calc(var(--T_M_G-video-current-unit) / 13);
 }
 .T_M_G-video-title {
   position: relative;
-  font-size: calc(var(--T_M_G-video-current-unit) / 1.325);
+  color: currentColor;
   font-weight: 700;
-  padding-block-end: 2px;
-}
-.T_M_G-video-artist {
-  font-size: calc(var(--T_M_G-video-current-unit) / 1.925);
-  font-weight: 500;
-  color: rgb(from currentColor r g b / 0.75);
+  padding: 0 calc(0.15px + (var(--T_M_G-video-current-unit) / 20)) calc(0.15px + (var(--T_M_G-video-current-unit) / 20)) 0;
 }
 .T_M_G-video-container.T_M_G-video-mini-player .T_M_G-video-title {
   font-size: calc(var(--T_M_G-video-current-unit) / 1.45);
-  text-align: center;
 }
 .T_M_G-video-title::before {
   content: attr(data-video-title);
@@ -1076,9 +1114,14 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   -webkit-text-stroke: 0.15px var(--T_M_G-video-brand-color);
   transform: translate(calc(var(--T_M_G-video-current-unit) / 20), calc(var(--T_M_G-video-current-unit) / 20));
 }
-.T_M_G-video-container.T_M_G-video-mini-player .T_M_G-video-top-controls-wrapper .T_M_G-video-side-controls-wrapper-cover {
-  flex-grow: 0;
-  margin-inline-end: 0;
+.T_M_G-video-artist {
+  color: rgb(from currentColor r g b / 0.75);
+  font-weight: 500;
+}
+.T_M_G-video-profile-link:has(img[data-loaded="false"]),
+.T_M_G-video-title-text-wrapper-cover > *:has(a:empty),
+.T_M_G-video-container.T_M_G-video-mini-player :is(.T_M_G-video-profile-link, .T_M_G-video-artist-wrapper) {
+  display: none;
 }
 .T_M_G-video-next-preview-wrapper {
   position: relative;
@@ -1229,9 +1272,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   position: absolute;
   width: 100%;
   height: 100%;
-  animation:
-    T_M_G-spinner-easespin 5332ms cubic-bezier(0.4, 0, 0.2, 1) infinite both,
-    T_M_G-spin 1568ms linear infinite;
+  animation: T_M_G-spinner-easespin 5332ms cubic-bezier(0.4, 0, 0.2, 1) infinite both, T_M_G-spin 1568ms linear infinite;
 }
 /* .T_M_G-video-container:is(.T_M_G-video-mini-player, .T_M_G-video-floating-player, .T_M_G-video-mobile) .T_M_G-video-buffer-rotator {
   display: none;
@@ -1340,6 +1381,10 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 .T_M_G-video-container:not(.T_M_G-video-mini-player) .T_M_G-video-top-controls-wrapper .T_M_G-video-side-controls-wrapper-cover {
   align-self: flex-start;
 }
+.T_M_G-video-container.T_M_G-video-mini-player .T_M_G-video-top-controls-wrapper .T_M_G-video-side-controls-wrapper-cover {
+  flex-grow: 0;
+  margin-inline-end: 0;
+}
 .T_M_G-video-left-side-controls-wrapper-cover:has([data-control-displayed="true"]) {
   margin-inline-start: calc(var(--T_M_G-video-current-controls-row-gap) / 2.5);
 }
@@ -1442,7 +1487,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
 .T_M_G-video-container.T_M_G-video-full-screen .T_M_G-video-theater-btn,
 .T_M_G-video-container:is(.T_M_G-video-mini-player, .T_M_G-video-floating-player, .T_M_G-video-mobile) :is(.T_M_G-video-play-pause-btn, .T_M_G-video-prev-btn, .T_M_G-video-next-btn, .T_M_G-video-theater-btn),
 .T_M_G-video-container.T_M_G-video-picture-in-picture :is(.T_M_G-video-cover-curtain, button:has(.T_M_G-video-play-icon, .T_M_G-video-pause-icon, .T_M_G-video-prev-icon, .T_M_G-video-next-icon), .T_M_G-video-brightness-container, .T_M_G-video-buffer, .T_M_G-video-object-fit-btn),
-.T_M_G-media-container[data-size-tier^="xxxxx"] :is(.T_M_G-video-artist-wrapper, .T_M_G-video-thumb-indicator, .T_M_G-video-side-controls-wrapper > *:not(.T_M_G-video-play-pause-btn, .T_M_G-video-next-btn, .T_M_G-video-prev-btn, .T_M_G-video-captions-btn:not(.T_M_G-video-control-disabled), .T_M_G-video-full-screen-btn, .T_M_G-video-volume-container, .T_M_G-video-time-and-duration-btn)),
+.T_M_G-media-container[data-size-tier^="xxxxx"] :is(.T_M_G-video-profile-link, .T_M_G-video-artist-wrapper, .T_M_G-video-thumb-indicator, .T_M_G-video-side-controls-wrapper > *:not(.T_M_G-video-play-pause-btn, .T_M_G-video-next-btn, .T_M_G-video-prev-btn, .T_M_G-video-captions-btn:not(.T_M_G-video-control-disabled), .T_M_G-video-full-screen-btn, .T_M_G-video-volume-container, .T_M_G-video-time-and-duration-btn)),
 .T_M_G-video-container:has([data-notify^="playbackrate"], [data-notify^="volume"], [data-notify^="brightness"], [data-notify^="objectfit"], [data-notify="capture"]) :is(.T_M_G-video-big-controls-wrapper, .T_M_G-video-buffer) {
   display: none;
 }
@@ -1530,9 +1575,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   display: flex;
   align-items: center;
   clip-path: inset(0);
-  transition:
-    width var(--T_M_G-video-fade-transition-time) ease-out,
-    clip-path var(--T_M_G-video-fade-transition-time) ease-out;
+  transition: width var(--T_M_G-video-fade-transition-time) ease-out, clip-path var(--T_M_G-video-fade-transition-time) ease-out;
 }
 .T_M_G-video-left-side-controls-wrapper .T_M_G-video-vb-slider-wrapper {
   left: calc(var(--T_M_G-video-current-unit) / 3);
@@ -1712,18 +1755,13 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   text-align: right;
 }
 .T_M_G-video-cue-character-edge-style-drop-shadow {
-  text-shadow:
-    calc(1px * var(--f-f)) calc(1px * var(--f-f)) calc(1.5px * var(--f-f)) rgb(34, 34, 34),
-    calc(1px * var(--f-f)) calc(1px * var(--f-f)) calc(2px * var(--f-f)) rgb(34, 34, 34),
-    calc(1px * var(--f-f)) calc(1px * var(--f-f)) calc(2.5px * var(--f-f)) rgb(34, 34, 34);
+  text-shadow: calc(1px * var(--f-f)) calc(1px * var(--f-f)) calc(1.5px * var(--f-f)) rgb(34, 34, 34), calc(1px * var(--f-f)) calc(1px * var(--f-f)) calc(2px * var(--f-f)) rgb(34, 34, 34), calc(1px * var(--f-f)) calc(1px * var(--f-f)) calc(2.5px * var(--f-f)) rgb(34, 34, 34);
 }
 .T_M_G-video-cue-character-edge-style-raised {
   text-shadow: calc(1px * var(--f-f)) calc(1px * var(--f-f)) rgb(34, 34, 34);
 }
 .T_M_G-video-cue-character-edge-style-depressed {
-  text-shadow:
-    calc(1px * var(--f-f)) calc(1px * var(--f-f)) rgb(204, 204, 204),
-    calc(-1px * var(--f-f)) calc(-1px * var(--f-f)) rgb(34, 34, 34);
+  text-shadow: calc(1px * var(--f-f)) calc(1px * var(--f-f)) rgb(204, 204, 204), calc(-1px * var(--f-f)) calc(-1px * var(--f-f)) rgb(34, 34, 34);
 }
 .T_M_G-video-cue-character-edge-style-outline {
   --s-s: 0 0 calc(1px * var(--f-f)) rgb(34, 34, 34);
@@ -1814,14 +1852,10 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   background: var(--T_M_G-video-seek-thumb-background);
   border-radius: 50%;
   transform: scale(var(--T_M_G-video-current-thumb-indicator-scale));
-  transition:
-    transform var(--T_M_G-video-switch-transition-time) var(--T_M_G-video-bounce-timing),
-    box-shadow var(--T_M_G-video-switch-transition-time) var(--T_M_G-video-bounce-timing);
+  transition: transform var(--T_M_G-video-switch-transition-time) var(--T_M_G-video-bounce-timing), box-shadow var(--T_M_G-video-switch-transition-time) var(--T_M_G-video-bounce-timing);
 }
 .T_M_G-video-container.T_M_G-video-scrubbing .T_M_G-video-thumb-indicator {
-  box-shadow:
-    0 0 0 1px var(--T_M_G-video-ripple-color),
-    0 0 0 calc(var(--T_M_G-video-current-unit) / 6.5) var(--T_M_G-video-ripple-color);
+  box-shadow: 0 0 0 1px var(--T_M_G-video-ripple-color), 0 0 0 calc(var(--T_M_G-video-current-unit) / 6.5) var(--T_M_G-video-ripple-color);
 }
 .T_M_G-video-preview-container {
   position: absolute;
@@ -1833,9 +1867,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   border-radius: calc(var(--T_M_G-video-current-unit) / 2.5);
   background: var(--T_M_G-video-background);
   pointer-events: none;
-  transition:
-    opacity var(--T_M_G-video-fade-transition-time) var(--T_M_G-video-bounce-timing),
-    transform var(--T_M_G-video-fade-transition-time) var(--T_M_G-video-bounce-timing);
+  transition: opacity var(--T_M_G-video-fade-transition-time) var(--T_M_G-video-bounce-timing), transform var(--T_M_G-video-fade-transition-time) var(--T_M_G-video-bounce-timing);
 }
 .T_M_G-video-container:not(.T_M_G-video-scrubbing, .T_M_G-video-previewing) .T_M_G-video-preview-container {
   opacity: 0;
@@ -1874,9 +1906,7 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   color: var(--T_M_G-video-text-color);
   font-weight: 500;
   padding-block-end: calc(var(--T_M_G-video-current-unit) / 7.5);
-  box-shadow:
-    inset calc(var(--T_M_G-video-current-unit) / 2) calc(var(--T_M_G-video-current-unit) / 2) calc(var(--T_M_G-video-current-unit) / 1.5) rgba(0, 0, 0, 0.2),
-    inset calc(var(--T_M_G-video-current-unit) / -5) calc(var(--T_M_G-video-current-unit) / -2) calc(var(--T_M_G-video-current-unit) / 1.5) rgba(0, 0, 0, 0.2);
+  box-shadow: inset calc(var(--T_M_G-video-current-unit) / 2) calc(var(--T_M_G-video-current-unit) / 2) calc(var(--T_M_G-video-current-unit) / 1.5) rgba(0, 0, 0, 0.2), inset calc(var(--T_M_G-video-current-unit) / -5) calc(var(--T_M_G-video-current-unit) / -2) calc(var(--T_M_G-video-current-unit) / 1.5) rgba(0, 0, 0, 0.2);
   border-radius: inherit;
 }
 .T_M_G-media-container:is([data-size-tier^="xxxx"], .T_M_G-video-mobile, .T_M_G-video-no-previews) .T_M_G-video-preview-container::after {

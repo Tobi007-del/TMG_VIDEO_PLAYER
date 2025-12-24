@@ -439,8 +439,7 @@ function handleFiles(files) {
               if (clientY < SCROLL_MARGIN || clientY > window.innerHeight - SCROLL_MARGIN) {
                 if (autoScrollAccId === null) autoScrollAccId = setTimeout(() => (LINES_PER_SEC += 1), 2000);
                 else if (LINES_PER_SEC > 3) LINES_PER_SEC = Math.min(LINES_PER_SEC + 1, 10);
-                if (clientY < SCROLL_MARGIN)
-                  window.scrollBy(0, -scrollSpeed); // Scroll upward
+                if (clientY < SCROLL_MARGIN) window.scrollBy(0, -scrollSpeed); // Scroll upward
                 else if (clientY > window.innerHeight - SCROLL_MARGIN) window.scrollBy(0, scrollSpeed); // Scroll downward
               } else {
                 clearTimeout(autoScrollAccId);
@@ -491,10 +490,7 @@ function handleFiles(files) {
         objectURLs.forEach((url, i) => {
           const item = {
             src: url,
-            media: {
-              title: files[i].name.replace(/\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v|mpg|mpeg|3gp|ogv|ts)/gi, ""),
-              artist: "TMG Video Player",
-            },
+            media: { title: files[i].name.replace(/\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v|mpg|mpeg|3gp|ogv|ts)/gi, "") },
             settings: { time: { previews: true } },
           };
           playlist.push(item);
@@ -507,6 +503,9 @@ function handleFiles(files) {
             tracks: [],
             playlist,
             // "settings.auto.play": true,
+            "media.artist": "TMG Video Player",
+            "media.profile": "assets/icons/tmg-icon.jpeg",
+            "media.links.artist": "https://tmg-video-player.vercel.app",
             "settings.overlay.behavior": "auto",
             "settings.captions.font.size.value": 200,
             "settings.captions.font.weight.value": 700,

@@ -12,7 +12,7 @@ class T007_Toast {
   constructor(options) {
     this.bindMethods();
     this.opts = { ...options };
-    this.id = this.opts.id  ??= uid();
+    this.id = this.opts.id ??= uid();
     t007.toasts.set(this.id, this);
     "number" !== typeof this.opts.delay ? this.init() : this.queue.push(setTimeout(this.init, this.opts.delay));
     this.update(this.opts);
@@ -27,7 +27,7 @@ class T007_Toast {
     }
   }
   init() {
-    this.toastElement = Object.assign(document.createElement("div"), { className: "t007-toast", id: this.id });
+    this.toastElement = Object.assign(document.createElement("div"), { className: "t007-toast", id: this.id, ariaAtomic: "true" });
     requestAnimationFrame(() => this.toastElement.classList.add("t007-toast-show"));
     this.destroyed = false;
   }
@@ -53,6 +53,8 @@ class T007_Toast {
   set type(value) {
     this.toastElement.classList.remove("info", "success", "error", "warning");
     value && this.toastElement.classList.add(value);
+    this.toastElement.role = value === "error" || value === "warning" ? "alert" : "status";
+    this.toastElement.ariaLive = value === "error" || value === "warning" ? "assertive" : "polite";
     if (value) this.icon = this.opts.icon;
   }
   set bodyHTML(value) {
@@ -113,9 +115,8 @@ class T007_Toast {
   }
   set closeButton(value) {
     const btn = this.toastElement.querySelector(".t007-toast-cancel-button");
-    if (value) {
-      this.toastElement.appendChild(btn || Object.assign(document.createElement("button"), { title: "Close", className: "t007-toast-cancel-button", innerHTML: "&times;", onclick: this._remove }));
-    } else btn?.remove();
+    if (value) this.toastElement.appendChild(btn || Object.assign(document.createElement("button"), { title: "Close", ariaLabel: "Close notification", className: "t007-toast-cancel-button", innerHTML: "&times;", onclick: this._remove }));
+    else btn?.remove();
   }
   get animation() {
     if (this.opts.animation === true || this.opts.animation === "slide")
@@ -227,7 +228,7 @@ class T007_Toast {
     if (e.touches?.length > 1) return;
     !e.target?.matches('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') && this.toastElement.setPointerCapture(e.pointerId);
     this.#isPaused = true;
-    this._ptrTicker = false;
+    this._ptrTicker = this._ptrDirSet = this._ptrDir = false;
     this._ptrStartX = e.clientX ?? e.targetTouches[0]?.clientX;
     this._ptrStartY = e.clientY ?? e.targetTouches[0]?.clientY;
     this.toastElement.addEventListener("pointermove", this._handleToastPointerMove, { passive: false });
@@ -236,17 +237,19 @@ class T007_Toast {
     e.preventDefault();
     if (this._ptrTicker) return;
     this._ptrRAF = requestAnimationFrame(() => {
-      const x = e.clientX ?? e.targetTouches[0]?.clientX,
+      const has = (str) => this.opts.dragToCloseDir.includes(str),
+        x = e.clientX ?? e.targetTouches[0]?.clientX,
         y = e.clientY ?? e.targetTouches[0]?.clientY;
       this._ptrDir ||= Math.abs(x - this._ptrStartX) >= Math.abs(y - this._ptrStartY) ? "x" : "y";
-      this._ptrDeltaX = (this.opts.dragToCloseDir.includes("|") ? this._ptrDir == "x" : this.opts.dragToCloseDir.includes("x")) ? x - this._ptrStartX : 0;
-      this._ptrDeltaY = (this.opts.dragToCloseDir.includes("|") ? this._ptrDir == "y" : this.opts.dragToCloseDir.includes("y")) ? y - this._ptrStartY : 0;
+      this._ptrDeltaX = (has("|") ? this._ptrDir == "x" : has("x")) && !has(x - this._ptrStartX > 0 ? "-" : "+") ? x - this._ptrStartX : 0;
+      this._ptrDeltaY = (has("|") ? this._ptrDir == "y" : has("y")) && !has(y - this._ptrStartY > 0 ? "+" : "-") ? y - this._ptrStartY : 0;
       this.toastElement.style.setProperty("transition", "none", "important");
       this.toastElement.style.setProperty("transform", `translate(${this._ptrDeltaX}px, ${this._ptrDeltaY}px)`, "important");
       const xR = Math.abs(this._ptrDeltaX) / this.toastElement.offsetWidth,
         yR = Math.abs(this._ptrDeltaY) / this.toastElement.offsetHeight;
       this.toastElement.style.setProperty("opacity", clamp(0, 1 - (yR > 0.5 ? yR : xR), 1), "important");
-      this._ptrDir = yR || xR ? this._ptrDir : false;
+      if (!this._ptrDirSet && !xR && !yR) this._ptrDir = false;
+      if (this._ptrDir) this._ptrDirSet = has("||");
       this._ptrTicker = false;
     });
     this._ptrTicker = true;
@@ -255,7 +258,7 @@ class T007_Toast {
     if (typeof this._ptrType === "string" && e.pointerType !== this._ptrType) return;
     cancelAnimationFrame(this._ptrRAF);
     if (Math.abs(this._ptrDeltaX) > this.toastElement.offsetWidth * (this.opts.dragToClosePercent.x ?? this.opts.dragToClosePercent / 100) || Math.abs(this._ptrDeltaY) > this.toastElement.offsetHeight * (this.opts.dragToClosePercent.y ?? this.opts.dragToClosePercent / 100)) return this._remove("instant");
-    this.#isPaused = this._ptrTicker = this._ptrDir = false;
+    this.#isPaused = this._ptrTicker = this._ptrDirSet = this._ptrDir = false;
     this.toastElement.removeEventListener("pointermove", this._handleToastPointerMove, { passive: false });
     this.toastElement.style.removeProperty("transition");
     this.toastElement.style.removeProperty("transform");
@@ -366,7 +369,7 @@ if (typeof window !== "undefined") {
   t007.TOAST_DEFAULT_OPTIONS.icon ??= true;
   t007.TOAST_DEFAULT_OPTIONS.image ??= false;
   t007.TOAST_DEFAULT_OPTIONS.autoClose ??= true;
-  t007.TOAST_DEFAULT_OPTIONS.position ??= "top-right"; // "top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right"
+  t007.TOAST_DEFAULT_OPTIONS.position ??= "top-right"; // "top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right", "center-left", "center-center", "center-right"
   t007.TOAST_DEFAULT_OPTIONS.isLoading ??= false;
   t007.TOAST_DEFAULT_OPTIONS.closeButton ??= true;
   t007.TOAST_DEFAULT_OPTIONS.closeOnClick ??= false;
@@ -375,7 +378,7 @@ if (typeof window !== "undefined") {
   t007.TOAST_DEFAULT_OPTIONS.pauseOnFocusLoss ??= true;
   t007.TOAST_DEFAULT_OPTIONS.dragToClose ??= true; // mouse, pen, touch, boolean
   t007.TOAST_DEFAULT_OPTIONS.dragToClosePercent ??= 40;
-  t007.TOAST_DEFAULT_OPTIONS.dragToCloseDir ??= "x"; // x, y, xy, x|y
+  t007.TOAST_DEFAULT_OPTIONS.dragToCloseDir ??= "x"; // x, y, xy, x|y, x||y, x+, x-, y+, y-, xy+, xy-, x|y+, x|y-, x||y+, x||y-
   t007.TOAST_DEFAULT_OPTIONS.renotify ??= true;
   t007.TOAST_DEFAULT_OPTIONS.vibrate ??= false;
   t007.TOAST_DEFAULT_OPTIONS.animation ??= true; // "fade", "zoom", "slide"|"slide-left"|"slide-right"|"slide-up"|"slide-down"
