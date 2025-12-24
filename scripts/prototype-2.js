@@ -1801,7 +1801,7 @@ class T_M_G_Video_Controller {
   stopTimeScrubbing() {
     if (!this.isScrubbing) return;
     this.isScrubbing = false;
-    this.settings.css.currentPlayedPosition = this.settings.css.currentThumbPosition = this.shouldCancelTimeScrub ? this.settings.css.currentPlayedPosition : this.settings.css.currentThumbPosition;
+    this.settings.css.currentPlayedPosition = this.settings.css.currentThumbPosition = this.shouldCancelTimeScrub ? this.lastTimelineThumbPosition : this.settings.css.currentThumbPosition;
     if (this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(Number(this.settings.css.currentPlayedPosition) * this.duration, true);
     if (!this.shouldCancelTimeScrub) this.currentTime = Number(this.settings.css.currentPlayedPosition) * this.duration;
     clearTimeout(this.scrubbingId);
@@ -1844,8 +1844,8 @@ class T_M_G_Video_Controller {
         if (this.isScrubbing) {
           this.settings.css.currentThumbPosition = p;
           if (this.settings.time.seekSync) this.settings.css.currentPlayedPosition = p;
-          if (this.settings.time.seekSync && this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText(p * this.duration, true);
-          Math.abs(currX - (this.currentTime / this.duration) * rect.width) < this.settings.time.line.seek.cancel.delta ? this.cancelTimeScrubbing() : this.allowTimeScrubbing();
+          if (this.settings.time.seekSync && this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText((this.currentTime = p * this.duration), true);
+          Math.abs(currX - this.lastTimelineThumbPosition * rect.width) < this.settings.time.line.seek.cancel.delta ? this.cancelTimeScrubbing() : this.allowTimeScrubbing();
           this.showOverlay();
         }
         this.settings.css.currentPreviewPosition = p;
