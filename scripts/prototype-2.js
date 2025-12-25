@@ -1111,6 +1111,7 @@ class T_M_G_Video_Controller {
     this.videoContainer.classList.toggle("T_M_G-video-captions", this.video.textTracks.length && !this.settings.captions.disabled);
     this.videoContainer.dataset.trackKind = this.video.textTracks[this.textTrackIndex]?.kind || "captions";
     this.setControlsState("captions");
+    this._handleCueChange(this.video.textTracks[this.textTrackIndex]?.activeCues?.[0]);
   }
   setPreviewsState(flush = true) {
     this.settings.css.altImgSrc = `url(${TMG_VIDEO_ALT_IMG_SRC})`;
@@ -1549,7 +1550,7 @@ class T_M_G_Video_Controller {
     value?.forEach((v, i) => (value[i] = tmg.mergeObjs({ media: { title: "", chapterInfo: [], links: { title: "" } }, src: "", tracks: [], settings: { time: { start: 0, previews: false } } }, tmg.parseDottedObj(v))));
     this.#playlist = value;
     if (this.readyState < 1) return;
-    const v = this.playlist?.find((v) => tmg.isSameURL(v.src, this.src));
+    const v = this.playlist?.find((v) => (v.media.id && v.media.id === this.media.id) || tmg.isSameURL(v.src, this.src));
     this.currentPlaylistIndex = v ? this.playlist.indexOf(v) : 0;
     if (v) {
       this.media = v.media ? { ...this.media, ...v.media } : v.media ?? null;
@@ -1558,7 +1559,7 @@ class T_M_G_Video_Controller {
       this.settings.time.end = v.settings.time.end;
       this.settings.time.previews = tmg.isObj(v.settings.time.previews) && tmg.isObj(this.settings.time.previews) ? { ...this.settings.time.previews, ...v.settings.time.previews } : v.settings.time.previews;
       this.settings.status.ui.previews = this.settings.time.previews?.address && this.settings.time.previews?.spf;
-      if (v.tracks?.length !== this.tracks.length) this.tracks = v.tracks;
+      this.tracks = v.tracks ?? [];
       this.setTitleState();
       this.setPreviewsState(false);
       this.setControlsState("playlist");
@@ -3449,6 +3450,7 @@ class T_M_G {
     if (track.id) trackElement.id = track.id;
   }
   static removeTracks = (medium) => medium.querySelectorAll("track")?.forEach((track) => (track.kind == "subtitles" || track.kind == "captions") && track.remove());
+  static uid = (prefix = "T_M_G-") => `${prefix}${Date.now().toString(36)}_${performance.now().toString(36).replace(".", "")}_${Math.random().toString(36).slice(2)}`;
   static clamp = (min = 0, amount, max = Infinity) => Math.min(Math.max(amount, min), max);
   static remToPx = (val) => parseFloat(getComputedStyle(document.documentElement).fontSize * val);
   static isIter = (obj) => obj != null && typeof obj[Symbol.iterator] === "function";
@@ -3517,13 +3519,10 @@ class T_M_G {
     return result;
   }
   static parseDottedObj(obj = {}, separator = ".", keyFunc = (p) => p, visited = new WeakSet()) {
-    if (!tmg.isObj(obj) || visited.has(obj)) return obj; // prevent circular references
+    if (!tmg.isObj(obj) || visited.has(obj)) return obj; // no circular references
     visited.add(obj);
     const result = {};
-    Object.entries(obj).forEach(([k, v]) => {
-      if (k.includes(separator)) tmg.assignDottedConfig(result, k, tmg.parseDottedObj(v, separator, keyFunc), separator, keyFunc, visited);
-      else result[k] = v;
-    });
+    Object.entries(obj).forEach(([k, v]) => (k.includes(separator) ? tmg.assignDottedConfig(result, k, tmg.parseDottedObj(v, separator, keyFunc), separator, keyFunc, visited) : (result[k] = v)));
     return result;
   }
   static mergeObjs(o1 = {}, o2 = {}) {

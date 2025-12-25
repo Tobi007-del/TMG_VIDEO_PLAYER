@@ -241,7 +241,8 @@ function clearFiles() {
   [...containers].forEach((c) => {
     const vid = c.querySelector("video");
     URL.revokeObjectURL(vid.src);
-    if (vid.playlistItem?.tracks?.[0].src?.startsWith("blob:")) URL.revokeObjectURL(vid.playlistItem.tracks[0].src);
+    const playlistItem = vid.getPlaylistItem();
+    if (playlistItem?.tracks?.[0]?.src?.startsWith("blob:")) URL.revokeObjectURL(playlistItem.tracks[0].src);
     cancelJob(vid.dataset.captionId);
     c.style.setProperty("--video-progress-position", 0);
   });
@@ -330,8 +331,9 @@ function handleFiles(files) {
             if (!["srt", "vtt"].includes(ext)) return Toast.warn("Only .srt and .vtt files are supported");
             let txt = await f.text();
             if (ext === "srt") txt = srtToVtt(txt);
-            thumbnail.playlistItem.tracks = [{ id: uid(), kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
-            if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = thumbnail.playlistItem.tracks;
+            const playlistItem = thumbnail.getPlaylistItem();
+            playlistItem.tracks = [{ id: uid(), kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
+            if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex].media.id === playlistItem.media?.id) mP.Controller.tracks = playlistItem.tracks;
             thumbnail.dataset.captionState = "filled";
           },
           oncancel: () => (thumbnail.dataset.captionState = "empty"),
@@ -353,13 +355,14 @@ function handleFiles(files) {
               setTimeout(() => (thumbnail.dataset.captionState = "loading"), 1000);
               return captionsBtn.querySelector("input").click();
             } else if (thumbnail.dataset.captionState === "filled") {
-              if (thumbnail.playlistItem?.tracks?.[0]?.src?.startsWith("blob:")) URL.revokeObjectURL(thumbnail.playlistItem.tracks[0].src);
-              thumbnail.playlistItem.tracks = [];
-              if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex] === thumbnail.playlistItem) mP.Controller.tracks = [];
+              const playlistItem = thumbnail.getPlaylistItem();
+              if (playlistItem.tracks?.[0]?.src?.startsWith("blob:")) URL.revokeObjectURL(playlistItem.tracks[0].src);
+              playlistItem.tracks = [];
+              if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex].media.id === playlistItem.media?.id) mP.Controller.tracks = [];
             } else if (!cancelJob(thumbnail.dataset.captionId)) return; // cancels if waiting and returns if loading since current job is shifted from queue
             thumbnail.dataset.captionState = "empty";
           },
-          async () => thumbnail.dataset.captionState === "empty" && (await deployCaption(thumbnail.playlistItem, files[i], thumbnail, false))
+          async () => thumbnail.dataset.captionState === "empty" && (await deployCaption(thumbnail.getPlaylistItem(), files[i], thumbnail, false))
         );
         captionsBtn.appendChild(captionsInput);
         li.appendChild(captionsBtn);
@@ -491,12 +494,12 @@ function handleFiles(files) {
         objectURLs.forEach((url, i) => {
           const item = {
             src: url,
-            media: { title: files[i].name.replace(/(?:\.(?:mp4|mkv|avi|mov|webm|flv|wmv|m4v|mpg|mpeg|3gp|ogv|ts))+$/i, "") },
+            media: { id: uid(), title: files[i].name.replace(/(?:\.(?:mp4|mkv|avi|mov|webm|flv|wmv|m4v|mpg|mpeg|3gp|ogv|ts))+$/i, "") },
             settings: { time: { previews: true } },
           };
           playlist.push(item);
           thumbnails[i].src = url;
-          thumbnails[i].playlistItem = item;
+          thumbnails[i].getPlaylistItem = () => (thumbnails[i].playlistItem = mP.Controller.playlist?.find((v) => v.media.id === item.media.id) ?? thumbnail[i].playlistItem ?? {});
         });
         if (!mP) {
           video.addEventListener("tmgready", readyUI, { once: true });
