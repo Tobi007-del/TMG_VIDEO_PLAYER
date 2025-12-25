@@ -1089,7 +1089,7 @@ class T_M_G_Video_Controller {
       },
       pictureinpicture: () => this.setControlState(this.DOM.pictureInPictureBtn, { hidden: !this.settings.modes.pictureInPicture }),
       theater: () => this.setControlState(this.DOM.theaterBtn, { hidden: !this.settings.modes.theater }),
-      fullscreen: () => this.setControlState(this.DOM.fullScreenBtn, { hidden: !this.settings.modes.fullScreen }),
+      fullscreen: () => this.setControlState(this.DOM.fullScreenBtn, { hidden: this.settings.modes.fullScreen.disabled }),
       playlist: () => {
         if (!this.DOM) return;
         this.setControlState(this.DOM.bigPrevBtn, { hidden: !(this.playlist?.length > 1), disabled: atFirst });
@@ -2414,7 +2414,7 @@ class T_M_G_Video_Controller {
   }
   toggleTheaterMode = () => this.settings.modes.theater && this.videoContainer.classList.toggle("T_M_G-video-theater");
   async toggleFullScreenMode() {
-    if (!this.settings.modes.fullScreen) return;
+    if (this.settings.modes.fullScreen.disabled) return;
     if (!this.isUIActive("fullScreen")) {
       if (tmg._currentFullScreenController) return;
       if (this.isUIActive("floatingPlayer")) {
@@ -2460,7 +2460,7 @@ class T_M_G_Video_Controller {
       this.toggleMiniPlayerMode();
     }
     this.setControlsState("fullscreenlock");
-    this.isMediaMobile && (await this.changeScreenOrientation(this.isUIActive("fullScreen") ? "auto" : false));
+    this.isMediaMobile && (await this.changeScreenOrientation(this.isUIActive("fullScreen") ? this.settings.modes.fullScreen.orientationLock : false));
     this.isMediaMobile && this.setControlState(this.DOM.fullScreenOrientationBtn, { hidden: !this.isUIActive("fullScreen") });
   }
   changeScreenOrientation = async (option = true) => (option === false ? screen.orientation?.unlock?.() : await screen.orientation?.lock?.(option === "auto" ? (this.video.videoHeight > this.video.videoWidth ? "portrait" : "landscape") : option !== true ? option : screen.orientation.angle === 0 ? "landscape" : "portrait"));
@@ -2932,15 +2932,15 @@ class T_M_G_Video_Controller {
             this.nextVideo();
             this.notify("videonext");
             break;
-          case "skipBwd":
-            this.deactivateSkipPersist();
-            this.skip(this.settings.keys.mods.skip[mod] ?? -this.settings.time.skip);
-            this.notify("bwd");
-            break;
           case "skipFwd":
             this.deactivateSkipPersist();
             this.skip(this.settings.keys.mods.skip[mod] ?? this.settings.time.skip);
             this.notify("fwd");
+            break;
+          case "skipBwd":
+            this.deactivateSkipPersist();
+            this.skip(-(this.settings.keys.mods.skip[mod] ?? this.settings.time.skip));
+            this.notify("bwd");
             break;
           case "stepBwd":
             this.moveVideoFrame("backwards");
@@ -2955,25 +2955,25 @@ class T_M_G_Video_Controller {
             this.changeVolume(this.settings.keys.mods.volume[mod] ?? this.settings.volume.skip);
             break;
           case "volumeDown":
-            this.changeVolume(this.settings.keys.mods.volume[mod] ?? -this.settings.volume.skip);
+            this.changeVolume(-(this.settings.keys.mods.volume[mod] ?? this.settings.volume.skip));
             break;
           case "brightnessUp":
             this.changeBrightness(this.settings.keys.mods.brightness[mod] ?? this.settings.brightness.skip);
             break;
           case "brightnessDown":
-            this.changeBrightness(this.settings.keys.mods.brightness[mod] ?? -this.settings.brightness.skip);
+            this.changeBrightness(-(this.settings.keys.mods.brightness[mod] ?? this.settings.brightness.skip));
             break;
           case "playbackRateUp":
             this.changePlaybackRate(this.settings.keys.mods.playbackRate[mod] ?? this.settings.playbackRate.skip);
             break;
           case "playbackRateDown":
-            this.changePlaybackRate(this.settings.keys.mods.playbackRate[mod] ?? -this.settings.playbackRate.skip);
+            this.changePlaybackRate(-(this.settings.keys.mods.playbackRate[mod] ?? this.settings.playbackRate.skip));
             break;
           case "captionsFontSizeUp":
             this.changeCaptionsFontSize(this.settings.keys.mods.captionsFontSize[mod] ?? this.settings.captions.font.size.skip);
             break;
           case "captionsFontSizeDown":
-            this.changeCaptionsFontSize(this.settings.keys.mods.captionsFontSize[mod] ?? -this.settings.captions.font.size.skip);
+            this.changeCaptionsFontSize(-(this.settings.keys.mods.captionsFontSize[mod] ?? this.settings.captions.font.size.skip));
             break;
           case "captionsFontWeight":
           case "captionsFontVariant":
@@ -2993,11 +2993,11 @@ class T_M_G_Video_Controller {
             this.changeVolume(this.settings.keys.mods.volume[mod] ?? 5);
             break;
           case "arrowdown": // -w
-            this.changeVolume(this.settings.keys.mods.volume[mod] ?? -5);
+            this.changeVolume(-(this.settings.keys.mods.volume[mod] ?? 5));
             break;
           case "arrowleft": // -w
             this.deactivateSkipPersist();
-            this.skip(this.settings.keys.mods.skip[mod] ?? -5);
+            this.skip(-(this.settings.keys.mods.skip[mod] ?? 5));
             this.notify("bwd");
             break;
           case "arrowright": // -w
@@ -4122,7 +4122,7 @@ if (typeof window !== "undefined") {
         // prettier-ignore
         blocks: ["Ctrl+Tab","Ctrl+Shift+Tab","Ctrl+PageUp","Ctrl+PageDown","Cmd+Option+ArrowRight","Cmd+Option+ArrowLeft","Ctrl+1","Ctrl+2","Ctrl+3","Ctrl+4","Ctrl+5","Ctrl+6","Ctrl+7","Ctrl+8","Ctrl+9","Cmd+1","Cmd+2","Cmd+3","Cmd+4","Cmd+5","Cmd+6","Cmd+7","Cmd+8","Cmd+9","Alt+ArrowLeft","Alt+ArrowRight","Cmd+ArrowLeft","Cmd+ArrowRight","Ctrl+r","Ctrl+Shift+r","F5","Shift+F5","Cmd+r","Cmd+Shift+r","Ctrl+h","Ctrl+j","Ctrl+d","Ctrl+f","Cmd+y","Cmd+Option+b","Cmd+d","Cmd+f","Ctrl+Shift+i","Ctrl+Shift+j","Ctrl+Shift+c","Ctrl+u","F12","Cmd+Option+i","Cmd+Option+j","Cmd+Option+c","Cmd+Option+u","Ctrl+=","Ctrl+-","Ctrl+0","Cmd+=","Cmd+-","Cmd+0","Ctrl+p","Ctrl+s","Ctrl+o","Cmd+p","Cmd+s","Cmd+o"],
       },
-      modes: { fullScreen: true, theater: true, pictureInPicture: true, miniPlayer: { disabled: false, minWindowWidth: 240 } },
+      modes: { fullScreen: { disabled: false, orientationLock: "auto" }, theater: true, pictureInPicture: true, miniPlayer: { disabled: false, minWindowWidth: 240 } },
       notifiers: true,
       overlay: { delay: 3000, behavior: "strict" },
       persist: true,

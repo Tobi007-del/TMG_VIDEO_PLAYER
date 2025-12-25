@@ -557,7 +557,7 @@ body:has(#video.stall) #clear-button {
 }
 
 .thumbnail-container button {
-  background-color: rgb(226, 110, 2, 0.4);
+  background-color: rgb(from var(--T_M_G-brand-color) r g b / 0.4);
   border: none;
   border-radius: 50%;
   width: 25px;
