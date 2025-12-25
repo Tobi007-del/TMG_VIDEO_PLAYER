@@ -232,6 +232,7 @@ function updateUI() {
 
 function clearFiles() {
   numberOfBytes = numberOfFiles = totalTime = 0;
+  video.pause();
   video.removeAttribute("src");
   video.onplay = video.onpause = video.ontimeupdate = null;
   mP?.detach();
@@ -490,7 +491,7 @@ function handleFiles(files) {
         objectURLs.forEach((url, i) => {
           const item = {
             src: url,
-            media: { title: files[i].name.replace(/\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v|mpg|mpeg|3gp|ogv|ts)/gi, "") },
+            media: { title: files[i].name.replace(/(?:\.(?:mp4|mkv|avi|mov|webm|flv|wmv|m4v|mpg|mpeg|3gp|ogv|ts))+$/i, "") },
             settings: { time: { previews: true } },
           };
           playlist.push(item);

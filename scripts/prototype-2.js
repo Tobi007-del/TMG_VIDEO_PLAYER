@@ -13,12 +13,11 @@ class T_M_G_Video_Controller {
     this.bindMethods();
     this.CSSPropsCache = {};
     Object.entries(videoOptions).forEach(([k, v]) => (this[k] = v)); // merging the video build into the Video Player Instance
+    videoOptions.tracks = this.tracks;
     const src = this.src,
-      sources = this.sources,
-      tracks = this.tracks; // adding some info incase user had them burnt into the html
+      sources = this.sources;
     if (src) videoOptions.src = src;
-    if (sources.length) videoOptions.sources = sources;
-    if (tracks.length) videoOptions.tracks = tracks;
+    if (sources.length) videoOptions.sources = sources; // adding some info incase user had them burnt into the html
     this.log(videoOptions);
     this.audioSetup = this.loaded = this.locked = this.inFullScreen = this.isScrubbing = this.buffering = this.inFloatingPlayer = this.overTimeline = this.overVolume = this.overBrightness = this.gestureTouchXCheck = this.gestureTouchYCheck = this.gestureWheelXCheck = this.gestureWheelYCheck = this.shouldSetLastVolume = this.shouldSetLastBrightness = this.speedPointerCheck = this.speedCheck = this.skipPersist = this.shouldCancelScrub = false;
     this.parentIntersecting = this.isIntersecting = this.gestureTouchCanCancel = this.canAutoMovePlaylist = this.stallCancelTimeScrub = true;
@@ -1061,7 +1060,7 @@ class T_M_G_Video_Controller {
     this.setCaptionsState();
     this.setPreviewsState();
   }
-  setPosterState = () => !tmg.isSameURL(this.media.artwork?.[0]?.src, this.video.poster) && (this.video.poster = this.media.artwork?.[0]?.src);
+  setPosterState = (poster = this.media.artwork?.[0]?.src) => !tmg.isSameURL(poster, this.video.poster) && (poster ? this.video.setAttribute("poster", poster) : this.video.removeAttribute("poster"));
   setTitleState(title = this.settings.controlPanel.title, artist = this.settings.controlPanel.artist, profile = this.settings.controlPanel.profile, links = this.media.links) {
     this.DOM.videoTitle.textContent = this.DOM.videoTitle.dataset.videoTitle = (title === true ? this.media.title : title) || "";
     links?.title ? this.DOM.videoTitle.setAttribute("href", links.title) : this.DOM.videoTitle.removeAttribute("href");
@@ -1447,7 +1446,7 @@ class T_M_G_Video_Controller {
     this.notify("capture");
     const tTxt = tmg.formatTime(time, "human", true),
       fTxt = `video frame ${display === "monochrome" ? "in b&w " : ""}at ${tTxt}`,
-      frameToastId = this.toast?.loading(`Capturing ${fTxt}...`, { delay: tmg.parseCSSTime(this.settings.css.notifiersAnimationTime), image: TMG_VIDEO_ALT_IMG_SRC, tag: `T_M_G-fcpa${tTxt}${display}` }),
+      frameToastId = this.toast?.loading(`Capturing ${fTxt}...`, { delay: tmg.parseCSSTime(this.settings.css.notifiersAnimationTime), image: TMG_VIDEO_ALT_IMG_SRC, tag: `T_M_G-${this.media.title ?? "Video"}fcpa${tTxt}${display}` }),
       frame = await this.getVideoFrame(display, time, false, 0, this.video),
       filename = `${this.media.title ?? "Video"}_${display === "monochrome" ? `black&white_` : ""}at_${tTxt}.png`.replace(/[\/:*?"<>|\s]+/g, "_"), // system filename safe
       Save = () => {
@@ -1547,10 +1546,7 @@ class T_M_G_Video_Controller {
     return this.#playlist;
   }
   set playlist(value) {
-    value?.forEach((val) => {
-      val.settings ??= {};
-      val.settings.time ??= {};
-    });
+    value?.forEach((v, i) => (value[i] = tmg.mergeObjs({ media: { title: "", chapterInfo: [], links: { title: "" } }, src: "", tracks: [], settings: { time: { start: 0, previews: false } } }, tmg.parseDottedObj(v))));
     this.#playlist = value;
     if (this.readyState < 1) return;
     const v = this.playlist?.find((v) => tmg.isSameURL(v.src, this.src));
@@ -1571,10 +1567,7 @@ class T_M_G_Video_Controller {
       this.movePlaylistTo(this.currentPlaylistIndex, !this.video.paused);
     }
   }
-  previousVideo() {
-    if (this.currentTime >= 3) return this.replay();
-    if (this.playlist && this.currentPlaylistIndex > 0 && this.currentTime < 3) this.movePlaylistTo(this.currentPlaylistIndex - 1);
-  }
+  previousVideo = () => (this.currentTime >= 3 ? this.replay() : this.playlist && this.currentPlaylistIndex > 0 && this.currentTime < 3 && this.movePlaylistTo(this.currentPlaylistIndex - 1));
   nextVideo = () => this.playlist && this.currentPlaylistIndex < this.playlist.length - 1 && this.movePlaylistTo(this.currentPlaylistIndex + 1);
   movePlaylistTo(index, shouldPlay = true) {
     if (!this.playlist) return this.setControlsState("playlist");
@@ -1589,9 +1582,9 @@ class T_M_G_Video_Controller {
     this.settings.time.end = v.settings.time.end;
     this.settings.time.previews = tmg.isObj(v.settings.time.previews) && tmg.isObj(this.settings.time.previews) ? { ...this.settings.time.previews, ...v.settings.time.previews } : v.settings.time.previews;
     this.settings.status.ui.previews = this.settings.time.previews?.address && this.settings.time.previews?.spf;
-    if (v.src) this.src = v.src;
-    if (v.sources?.length) this.sources = v.sources;
     this.tracks = v.tracks ?? [];
+    tmg.assignDef(this, v.src, "src");
+    tmg.assignDef(this, v.sources, "sources");
     this.setInitialStates();
     this.togglePlay(shouldPlay);
     this.canAutoMovePlaylist = true;
@@ -1694,7 +1687,7 @@ class T_M_G_Video_Controller {
   }
   _handleLoadedMetadata() {
     this.loaded = true;
-    if (this.settings.time.start && !this.initialState) this.currentTime = this.settings.time.start;
+    if (this.settings.time.start && !(this.initialState && this.video.paused)) this.currentTime = this.settings.time.start;
     this.pseudoVideo.src = this.video.src || this.video.currentSrc;
     this.pseudoVideo.crossOrigin = this.video.crossOrigin;
     this.stats = { fps: 30 };
@@ -1759,9 +1752,7 @@ class T_M_G_Video_Controller {
   set currentTime(value) {
     this.video.currentTime = tmg.parseNumber(Math.max(0, value));
   }
-  toTimeText(t = this.video.currentTime, useMode = false, showMs = false) {
-    return !useMode || this.settings.time.mode !== "remaining" ? tmg.formatTime(t, this.settings.time.format, showMs) : `${tmg.formatTime(this.video.duration - t, this.settings.time.format, showMs, true)}`;
-  }
+  toTimeText = (t = this.video.currentTime, useMode = false, showMs = false) => (!useMode || this.settings.time.mode !== "remaining" ? tmg.formatTime(t, this.settings.time.format, showMs) : `${tmg.formatTime(this.video.duration - t, this.settings.time.format, showMs, true)}`);
   syncCanvasPreviews() {
     if (this.frameReadyPromise) return;
     this.throttle(
@@ -1814,10 +1805,7 @@ class T_M_G_Video_Controller {
     this.DOM.timelineContainer?.removeEventListener("pointermove", this._handleTimelineInput);
     this.DOM.timelineContainer?.removeEventListener("pointerup", this.stopTimeScrubbing);
   }
-  stopTimePreviewing() {
-    this.overTimeline = false;
-    setTimeout(() => this.videoContainer.classList.remove("T_M_G-video-previewing"));
-  }
+  stopTimePreviewing = () => !(this.overTimeline = false) && setTimeout(() => this.videoContainer.classList.remove("T_M_G-video-previewing"));
   cancelTimeScrubbing() {
     if (this.stallCancelTimeScrub || this.shouldCancelTimeScrub || this.cancelScrubTimeoutId) return;
     this.shouldCancelTimeScrub = true;
@@ -1827,8 +1815,7 @@ class T_M_G_Video_Controller {
   allowTimeScrubbing(reset = true) {
     this.stallCancelTimeScrub = this.shouldCancelTimeScrub = false;
     this.DOM.cancelScrubNotifier?.classList.remove("T_M_G-video-control-active");
-    clearTimeout(this.cancelScrubTimeoutId);
-    if (reset) this.cancelScrubTimeoutId = null;
+    !clearTimeout(this.cancelScrubTimeoutId) && reset && (this.cancelScrubTimeoutId = null);
   }
   _handleTimelineInput({ clientX }) {
     this.overTimeline = true;
@@ -1911,7 +1898,7 @@ class T_M_G_Video_Controller {
   }
   skip(duration) {
     const notifier = duration > 0 ? this.DOM.fwdNotifier : this.DOM.bwdNotifier;
-    duration = Math.sign(duration) === 1 ? (this.duration - this.currentTime > duration ? duration : this.duration - this.currentTime) : Math.sign(duration) === -1 ? (this.currentTime > Math.abs(duration) ? duration : -this.currentTime) : 0;
+    duration = duration > 0 ? (this.duration - this.currentTime > duration ? duration : this.duration - this.currentTime) : duration < 0 ? (this.currentTime > Math.abs(duration) ? duration : -this.currentTime) : 0;
     duration = Math.trunc(duration);
     this.settings.css.currentPlayedPosition = this.settings.css.currentThumbPosition = tmg.parseNumber((this.video.currentTime += duration) / this.video.duration);
     if (this.skipPersist) {
@@ -1975,7 +1962,7 @@ class T_M_G_Video_Controller {
     this.playbackRate = steps[dir === "backwards" ? (i - 1 + steps.length) % steps.length : (i + 1) % steps.length];
   }
   changePlaybackRate(value) {
-    const sign = Math.sign(value) === 1 ? "+" : "-";
+    const sign = value >= 0 ? "+" : "-";
     value = Math.abs(value);
     const rate = this.playbackRate;
     switch (sign) {
@@ -2104,7 +2091,7 @@ class T_M_G_Video_Controller {
     this.lastCueText = cue.text;
   }
   changeCaptionsFontSize(value) {
-    const sign = Math.sign(value) === 1 ? "+" : "-";
+    const sign = value >= 0 ? "+" : "-";
     value = Math.abs(value);
     const size = Number(this.settings.css.captionsFontSize);
     switch (sign) {
@@ -2255,7 +2242,7 @@ class T_M_G_Video_Controller {
     } else this.settings.css.currentVolumeSliderPosition = vPercent;
   }
   changeVolume(value) {
-    const sign = Math.sign(value) === 1 ? "+" : "-";
+    const sign = value >= 0 ? "+" : "-";
     value = Math.abs(value);
     let volume = this.shouldSetLastVolume ? this.lastVolume : this.volume;
     switch (sign) {
@@ -2280,10 +2267,7 @@ class T_M_G_Video_Controller {
     this.overVolume = this.DOM.volumeSlider?.matches(":hover");
     this.startVolumeActive();
   }
-  _handleVolumeContainerMouseLeave() {
-    this.overVolume = false;
-    this.stopVolumeActive();
-  }
+  _handleVolumeContainerMouseLeave = () => !(this.overVolume = false) && this.stopVolumeActive();
   startVolumeActive() {
     this.DOM.volumeSlider?.classList.add("T_M_G-video-control-active");
     this.delayVolumeActive();
@@ -2368,7 +2352,7 @@ class T_M_G_Video_Controller {
     } else this.settings.css.currentBrightnessSliderPosition = bPercent;
   }
   changeBrightness(value) {
-    const sign = Math.sign(value) === 1 ? "+" : "-";
+    const sign = value >= 0 ? "+" : "-";
     value = Math.abs(value);
     let brightness = this.shouldSetLastBrightness ? this.lastBrightness : this.brightness;
     value = Math.abs(value);
@@ -2394,10 +2378,7 @@ class T_M_G_Video_Controller {
     this.overBrightness = this.DOM.brightnessSlider?.matches(":hover");
     this.startBrightnessActive();
   }
-  _handleBrightnessContainerMouseLeave() {
-    this.overBrightness = false;
-    this.stopBrightnessActive();
-  }
+  _handleBrightnessContainerMouseLeave = () => !(this.overBrightness = false) && this.stopBrightnessActive();
   startBrightnessActive() {
     this.DOM.brightnessSlider?.classList.add("T_M_G-video-control-active");
     this.delayBrightnessActive();
@@ -2430,14 +2411,7 @@ class T_M_G_Video_Controller {
       else if (this.videoContainer.webkitRequestFullScreen) await this.videoContainer.webkitRequestFullScreen();
       else if (this.video.webkitEnterFullScreen) {
         await this.video.webkitEnterFullScreen(); // this is for native ios fullscreen support
-        this.video.addEventListener(
-          "webkitendfullscreen",
-          () => {
-            this.inFullScreen = false;
-            this._handleFullScreenChange();
-          },
-          { once: true }
-        );
+        this.video.addEventListener("webkitendfullscreen", () => !(this.inFullScreen = false) && this._handleFullScreenChange(), { once: true });
       }
       this.inFullScreen = true;
     } else {
@@ -2449,9 +2423,7 @@ class T_M_G_Video_Controller {
     }
   }
   async _handleFullScreenChange() {
-    if (this.inFullScreen) {
-      this.videoContainer.classList.add("T_M_G-video-full-screen");
-    }
+    if (this.inFullScreen) this.videoContainer.classList.add("T_M_G-video-full-screen");
     if (!this.inFullScreen || !tmg.queryFullScreen()) {
       this.videoContainer.classList.remove("T_M_G-video-full-screen");
       this.unlock();
@@ -2636,7 +2608,7 @@ class T_M_G_Video_Controller {
     this.skipPersistPosition = null;
   }
   _handleHoverPointerActive({ target, pointerType }) {
-    (!this.isMediaMobile ? true : !pointerType) && this.showOverlay();
+    (!this.isMediaMobile ? true : !pointerType) && this.showOverlay(); // no pointer activation on mobile
     pointerType && (this.DOM.tRightSideControlsWrapper.contains(target) || this.DOM.bottomControlsWrapper.contains(target)) && clearTimeout(this.overlayDelayId); // better ux
   }
   _handleHoverPointerOut = () => setTimeout(() => !this.isMediaMobile && !this.videoContainer.matches(":hover") && this.removeOverlay());
@@ -2689,7 +2661,7 @@ class T_M_G_Video_Controller {
       height = shiftKey || this.overTimeline ? rect.width : rect.height;
     let xPercent = -deltaX / (width * wc.xRatio);
     xPercent = this.overTimeline ? xPercent : (this.gestureWheelTimePercent += xPercent);
-    const xSign = Math.sign(xPercent) === 1 ? "+" : "-";
+    const xSign = xPercent >= 0 ? "+" : "-";
     xPercent = Math.abs(xPercent);
     if (deltaX || shiftKey || this.overTimeline) {
       if ((!wc.timeline.slider && this.overTimeline) || (!wc.timeline.normal && !this.overTimeline) || this.gestureWheelYCheck) return this._handleGestureWheelStop();
@@ -2739,10 +2711,7 @@ class T_M_G_Video_Controller {
     this.lastGestureTouchY = e.clientY ?? e.targetTouches[0].clientY;
     this.videoContainer.addEventListener("touchmove", this._handleGestureTouchInit, { once: true });
     this.videoContainer.addEventListener("touchmove", this.setGestureTouchCancel); // tm: if user moves finger like during scrolling
-    this.gestureTouchCancelTimeoutId = setTimeout(() => {
-      this.videoContainer.removeEventListener("touchmove", this.setGestureTouchCancel);
-      this.gestureTouchCanCancel = false; // tm: changing bool since timeout reached and user is not scrolling
-    }, this.settings.beta.gesture.touch.threshold);
+    this.gestureTouchCancelTimeoutId = setTimeout(() => !(this.gestureTouchCanCancel = false) && this.videoContainer.removeEventListener("touchmove", this.setGestureTouchCancel), this.settings.beta.gesture.touch.threshold); // tm: changing bool since timeout reached and user is not scrolling
     this.videoContainer.addEventListener("touchend", this._handleGestureTouchEnd);
     this.videoContainer.addEventListener("touchcancel", this._handleGestureTouchEnd);
   }
@@ -2885,11 +2854,7 @@ class T_M_G_Video_Controller {
     if (this.speedCheck && this.playTriggerCounter < 1) setTimeout(this.slowDown);
   }
   _handleSpeedPointerOut = (e) => !this.videoContainer.matches(":hover") && this._handleSpeedPointerUp(e);
-  fetchKeyShortcutsForDisplay() {
-    const shortcuts = {};
-    Object.keys(this.settings.keys.shortcuts).forEach((action) => (shortcuts[action] = tmg.formatKeyForDisplay(this.settings.keys.shortcuts[action])));
-    return shortcuts;
-  }
+  fetchKeyShortcutsForDisplay = () => Object.fromEntries(Object.keys(this.settings.keys.shortcuts).map((action) => [action, tmg.formatKeyForDisplay(this.settings.keys.shortcuts[action])]));
   getTermsForCombo(combo) {
     const terms = { override: false, block: false, allowed: false, action: null };
     const { overrides, shortcuts, blocks, strictMatches: s } = this.settings.keys;
@@ -3238,21 +3203,19 @@ class T_M_G_Media_Player {
       tmg.assignDef(s.time, v.settings?.time?.start, "start");
       tmg.assignDef(s.time, v.settings?.time?.end, "end");
       if (v.settings?.time?.previews !== undefined) s.time.previews = tmg.isObj(v.settings.time.previews) && tmg.isObj(s.time.previews) ? { ...s.time.previews, ...v.settings.time.previews } : v.settings.time.previews;
+      tmg.assignDef(this.#build, v.tracks, "tracks");
       tmg.assignDef(this.#build, v.src, "src");
       tmg.assignDef(this.#build, v.sources, "sources");
-      tmg.assignDef(this.#build, v.tracks, "tracks");
     }
     Object.entries(s.modes).forEach(([k, v]) => (s.modes[k] = v && (tmg[`supports${tmg.capitalize(k)}`]?.() ?? true) ? v : false));
-    s.status = { noOverride: {} };
-    Object.keys(s).forEach((k) => (s.status.noOverride[k] = s.noOverride.includes?.(k.toLowerCase()) ?? s.noOverride));
+    s.status = { noOverride: Object.fromEntries(Object.keys(s).map((k) => [k, s.noOverride.includes?.(k.toLowerCase()) ?? s.noOverride])) };
     s.status.ui = {
       notifiers: s.notifiers || !s.status.noOverride.notifiers,
       timeline: s.time.line.shown,
       previews: s.time.previews?.address && s.time.previews?.spf,
       draggable: !s.status.noOverride.controlPanel,
     };
-    const cE = Object.entries({ top: s.controlPanel.top, bottom: s.controlPanel.bottom });
-    tmg.ALLOWED_CONTROLS.forEach((c) => (s.status.ui[c] = cE.some(([k, v]) => (tmg.isArr(v?.[0]) ? [...v[0], ...v[1]] : v).includes?.(c.toLowerCase()) ?? s.controlPanel[k])));
+    tmg.ALLOWED_CONTROLS.forEach((c) => (s.status.ui[c] = Object.entries({ top: s.controlPanel.top, bottom: s.controlPanel.bottom }).some(([k, v]) => (tmg.isArr(v?.[0]) ? [...v[0], ...v[1]] : v).includes?.(c.toLowerCase()) ?? s.controlPanel[k])));
     this.#build.video = this.#medium;
     await tmg.loadResource(TMG_VIDEO_CSS_SRC);
     await tmg.loadResource(T007_TOAST_JS_SRC, "script", { module: true });
@@ -3282,10 +3245,7 @@ class T_M_G {
   static activateInternalMutation = (m, check = true) => !tmg._internalMutationSet.has(m) && check && tmg._internalMutationSet.add(m);
   static deactivateInternalMutation(m) {
     clearTimeout(tmg._internalMutationId);
-    tmg._internalMutationId = setTimeout(() => {
-      tmg._internalMutationSet.delete(m);
-      tmg._internalMutationId = null;
-    });
+    tmg._internalMutationId = setTimeout(() => !(tmg._internalMutationId = null) && tmg._internalMutationSet.delete(m));
   }
   static mountMedia() {
     Object.defineProperty(HTMLVideoElement.prototype, "tmgcontrols", {
@@ -3312,12 +3272,7 @@ class T_M_G {
   static unmountMedia = () => delete HTMLVideoElement.prototype.tmgcontrols;
   static init() {
     tmg.mountMedia();
-    ["pointerdown", "keydown"].forEach((e) =>
-      document.addEventListener(e, () => {
-        tmg._isDocTransient = true;
-        tmg.startAudioManager();
-      })
-    );
+    ["pointerdown", "keydown"].forEach((e) => document.addEventListener(e, () => (tmg._isDocTransient = true) && tmg.startAudioManager()));
     for (const medium of document.querySelectorAll("video")) {
       tmg.VIDMutationObserver.observe(medium, { attributes: true, childList: true, subtree: true });
       medium.tmgcontrols = medium.hasAttribute("tmgcontrols");
@@ -3344,8 +3299,7 @@ class T_M_G {
     typeof window !== "undefined" &&
     new ResizeObserver((entries) => {
       for (const { target } of entries) {
-        const controller = target.classList.contains("T_M_G-media") ? target.tmgPlayer?.Controller : (target.querySelector(".T_M_G-media") || target.closest(".T_M_G-media-container")?.querySelector(".T_M_G-media"))?.tmgPlayer?.Controller;
-        controller?._handleResize(target);
+        (target.classList.contains("T_M_G-media") ? target.tmgPlayer?.Controller : (target.querySelector(".T_M_G-media") || target.closest(".T_M_G-media-container")?.querySelector(".T_M_G-media"))?.tmgPlayer?.Controller)?._handleResize(target);
       }
     });
   static VIDMutationObserver =
@@ -3378,17 +3332,15 @@ class T_M_G {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (!node.tagName || !(node.matches("video:not(.T_M_G-media") || node.querySelector("video:not(.T_M_G-media)"))) continue;
-          const nodes = [...(node.querySelector("video:not(.T_M_G-media)") ? node.querySelectorAll("video:not(.T_M_G-media)") : [node])];
-          for (const node of nodes) {
-            tmg.VIDMutationObserver.observe(node, { attributes: true, childList: true, subtree: true });
-            node.tmgcontrols = node.hasAttribute("tmgcontrols");
+          for (const el of [...(node.querySelector("video:not(.T_M_G-media)") ? node.querySelectorAll("video:not(.T_M_G-media)") : [node])]) {
+            tmg.VIDMutationObserver.observe(el, { attributes: true, childList: true, subtree: true });
+            el.tmgcontrols = el.hasAttribute("tmgcontrols");
           }
         }
         for (const node of mutation.removedNodes) {
           if (!node.tagName || !(node.matches("video.T_M_G-media") || node.querySelector("video.T_M_G-media")) || tmg.isInDOM(node)) continue;
-          const nodes = [...(node.querySelector("video.T_M_G-media") ? node.querySelectorAll("video.T_M_G-media") : [node])];
-          for (const node of nodes) {
-            if (!node.tmgPlayer?.Controller?.mutatingDOM) node.tmgcontrols = false;
+          for (const el of [...(node.querySelector("video.T_M_G-media") ? node.querySelectorAll("video.T_M_G-media") : [node])]) {
+            if (!el.tmgPlayer?.Controller?.mutatingDOM) el.tmgcontrols = false;
           }
         }
       }
@@ -3510,9 +3462,7 @@ class T_M_G {
     return axis === "x" ? inY : axis === "y" ? inX : inY && inX;
   }
   static isValidNumber = (number) => !isNaN(number ?? NaN) && number !== Infinity;
-  static assignDef(target, value, key) {
-    if (value !== undefined && target != null) target[key] = value;
-  }
+  static assignDef = (target, value, key) => value !== undefined && target != null && (target[key] = value);
   static assignHTMLConfig = (attr, optionsObj = {}, medium) =>
     tmg.assignDottedConfig(
       optionsObj,
@@ -3578,9 +3528,7 @@ class T_M_G {
   }
   static mergeObjs(o1 = {}, o2 = {}) {
     const merged = { ...o1, ...o2 };
-    Object.keys(merged).forEach((k) => {
-      if (tmg.isObj(o1[k]) && tmg.isObj(o2[k])) merged[k] = tmg.mergeObjs(o1[k], o2[k]);
-    });
+    Object.keys(merged).forEach((k) => tmg.isObj(o1[k]) && tmg.isObj(o2[k]) && (merged[k] = tmg.mergeObjs(o1[k], o2[k])));
     return merged;
   }
   static formatTime(time, format = "digital", showMs = false, remaining = false) {
@@ -3603,13 +3551,7 @@ class T_M_G {
   static uncamelize = (str = "", separator = " ") => str.replace(/([a-z])([A-Z])/g, `$1${separator}$2`).toLowerCase();
   static parseKeyCombo(combo) {
     const parts = combo.toLowerCase().split("+");
-    return {
-      ctrlKey: parts.includes("ctrl"),
-      shiftKey: parts.includes("shift"),
-      altKey: parts.includes("alt"),
-      metaKey: parts.includes("meta") || parts.includes("cmd"),
-      key: parts.find((p) => !["ctrl", "shift", "alt", "meta", "cmd"].includes(p)) || "",
-    };
+    return { ctrlKey: parts.includes("ctrl"), shiftKey: parts.includes("shift"), altKey: parts.includes("alt"), metaKey: parts.includes("meta") || parts.includes("cmd"), key: parts.find((p) => !["ctrl", "shift", "alt", "meta", "cmd"].includes(p)) || "" };
   }
   static stringifyKeyCombo(e) {
     const parts = [];
@@ -3657,43 +3599,27 @@ class T_M_G {
     const newV = v.cloneNode(true);
     newV.tmgPlayer = v.tmgPlayer;
     v.parentElement?.replaceChild(newV, v);
-    // Playback control
     if (v.currentTime) newV.currentTime = v.currentTime;
     if (v.playbackRate !== 1) newV.playbackRate = v.playbackRate;
     if (v.defaultPlaybackRate !== 1) newV.defaultPlaybackRate = v.defaultPlaybackRate;
     if (v.volume !== 1) newV.volume = v.volume;
     if (v.muted) newV.muted = true;
     if (v.defaultMuted) newV.defaultMuted = true;
-    if (v.srcObject) newV.srcObject = v.srcObject;
-    // Behavior flags
+    if (v.srcObject) newV.srcObject = v.srcObject; // Playback controls set
     if (v.autoplay) newV.autoplay = true;
     if (v.loop) newV.loop = true;
     if (v.controls) newV.controls = true;
     if (v.crossOrigin) newV.crossOrigin = v.crossOrigin;
     if (v.playsInline) newV.playsInline = true;
     if (v.controlsList?.length) newV.controlsList = v.controlsList;
-    if (v.disablePictureInPicture) newV.disablePictureInPicture = true;
+    if (v.disablePictureInPicture) newV.disablePictureInPicture = true; // Behavior flags set
     if (!v.paused && tmg.isInDOM(newV)) newV.play();
     return newV;
   }
   static onSafeClicks(el, onClick, onDblClick, options) {
-    tmg.removeSafeClicks(el);
-    el?.addEventListener(
-      "click",
-      (el._clickHandler = (e) => {
-        clearTimeout(el._clickTimeoutId);
-        el._clickTimeoutId = setTimeout(() => onClick(e), 300);
-      }),
-      options
-    );
-    el?.addEventListener(
-      "dblclick",
-      (el._dblClickHandler = (e) => {
-        clearTimeout(el._clickTimeoutId);
-        onDblClick(e);
-      }),
-      options
-    ); // just to smoothe out browser perks with tiny logic, nothing special :)
+    tmg.removeSafeClicks(el); // all just to smoothe out browser perks with tiny logic, nothing special :)
+    el?.addEventListener("click", (el._clickHandler = (e) => !clearTimeout(el._clickTimeoutId) && (el._clickTimeoutId = setTimeout(() => onClick(e), 300))), options);
+    el?.addEventListener("dblclick", (el._dblClickHandler = (e) => !clearTimeout(el._clickTimeoutId) && onDblClick(e)), options);
   }
   static removeSafeClicks(el) {
     el?.removeEventListener("click", el._clickHandler);
@@ -3709,10 +3635,7 @@ class T_M_G {
     }
     function parseObjectPosition(position, bbox, object) {
       const [left, top] = position.split(" ");
-      return {
-        left: parsePositionAsPx(left, bbox.width, object.width),
-        top: parsePositionAsPx(top, bbox.height, object.height),
-      };
+      return { left: parsePositionAsPx(left, bbox.width, object.width), top: parsePositionAsPx(top, bbox.height, object.height) };
     }
     let { objectFit, objectPosition } = getComputedStyle(elem);
     const bbox = elem.getBoundingClientRect();
@@ -3775,7 +3698,7 @@ class T_M_G {
     }
     const clrs = Object.entries(ct)
       .sort((a, b) => b[1] - a[1]) // sort by count DESC
-      .slice(0, 3) // take top buckets
+      .slice(0, 7) // take top buckets
       .map(([k]) => ({ key: k, rgb: pt[k].map((v) => Math.round(v / ct[k])) }));
     if (!clrs.length) return null;
     const [r, g, b] = tmg.clampRGBBri(clrs.reduce((sat, curr) => (tmg.getRGBSat(sat.rgb) > tmg.getRGBSat(curr.rgb) ? sat : curr), clrs[0]).rgb, 70); // vibrancy test to avoid muddy colors
@@ -3837,10 +3760,7 @@ class T_M_G {
       last = performance.now();
       frame();
     };
-    const stop = () => {
-      if (scrollId) cancelAnimationFrame(scrollId);
-      scrollId = null;
-    };
+    const stop = () => !(scrollId && cancelAnimationFrame(scrollId)) && (scrollId = null);
     const addAssist = (dir) => {
       const div = tmg.createEl("div", { className: assistClassName }, { scrollDirection: dir }, { display: "none" });
       ["pointerenter", "dragenter"].forEach((e) => div.addEventListener(e, () => scroll(dir)));
@@ -4129,12 +4049,13 @@ if (typeof window !== "undefined") {
       playbackRate: { min: 0.25, max: 8, skip: 0.25 },
       playsInline: true,
       time: {
+        start: 0,
+        skip: 10,
         line: { shown: true, seek: { relative: !tmg.queryMediaMobile(), cancel: { delta: 15, timeout: 2000 } }, thumbIndicator: true },
         previews: false,
         progressBar: tmg.queryMediaMobile(),
         mode: "elapsed",
         format: "digital",
-        skip: 10,
         seekSync: false,
       },
       toasts: { disabled: false, nextVideoPreview: 2, captureAutoClose: 15000, maxToasts: 7, position: "bottom-left", hideProgressBar: true, closeButton: !tmg.queryMediaMobile(), animation: "slide-up", dragToCloseDir: "x||y" },
