@@ -362,7 +362,7 @@ function handleFiles(files) {
             } else if (!cancelJob(thumbnail.dataset.captionId)) return; // cancels if waiting and returns if loading since current job is shifted from queue
             thumbnail.dataset.captionState = "empty";
           },
-          async () => thumbnail.dataset.captionState === "empty" && (await deployCaption(thumbnail.getPlaylistItem(), files[i], thumbnail, false))
+          async () => thumbnail.dataset.captionState === "empty" && (await deployCaption(files[i], thumbnail, false))
         );
         captionsBtn.appendChild(captionsInput);
         li.appendChild(captionsBtn);
