@@ -493,9 +493,9 @@ function handleFiles(files) {
       const deployVideos = (objectURLs) => {
         objectURLs.forEach((url, i) => {
           const item = {
-            src: url,
             media: { id: uid(), title: files[i].name.replace(/(?:\.(?:mp4|mkv|avi|mov|webm|flv|wmv|m4v|mpg|mpeg|3gp|ogv|ts))+$/i, "") },
-            settings: { time: { previews: true } },
+            src: url,
+            "settings.time.previews": true,
           };
           playlist.push(item);
           thumbnails[i].src = url;
@@ -506,18 +506,18 @@ function handleFiles(files) {
           mP = new tmg.Player({
             tracks: [],
             playlist,
-            // "settings.auto.play": true,
             "media.artist": "TMG Video Player",
             "media.profile": "assets/icons/tmg-icon.jpeg",
             "media.links.artist": "https://tmg-video-player.vercel.app",
             "media.links.profile": "https://tobi007-del.github.io/TMG_MEDIA_PROTOTYPE",
+            "lightState.preview.time": 2,
+            // "settings.auto.play": true,
             "settings.overlay.behavior": "auto",
             "settings.captions.font.size.value": 200,
             "settings.captions.font.weight.value": 700,
             "settings.captions.background.opacity.value": 0,
             "settings.captions.characterEdgeStyle.value": "drop-shadow",
           });
-          mP.build.playlist[0].settings.time.start = 2;
           mP.attach(video);
           video.addEventListener("loadedmetadata", dispatchPlayerReadyToast, { once: true });
           video.ontimeupdate = () => {

@@ -668,7 +668,7 @@ body:where(:has(.T_M_G-video-floating-player)) {
 .T_M_G-video-container:not(.T_M_G-video-settings-view):is(.T_M_G-video-overlay, :has(:focus-visible)):not(:has(.T_M_G-video-bottom-controls-wrapper [data-control-displayed="true"])) {
   --T_M_G-video-current-safe-inset-bottom: calc(var(--T_M_G-video-current-unit) * 1.5);
 }
-.T_M_G-media-container:not(.T_M_G-video-settings-view):where([data-size-tier^="xxxxx"], .T_M_G-video-initial):is(.T_M_G-video-overlay, :has(:focus-visible)):not(:has(.T_M_G-video-bottom-controls-wrapper [data-control-displayed="true"])) {
+.T_M_G-media-container:not(.T_M_G-video-settings-view):where([data-size-tier^="xxxxx"], .T_M_G-video-light):is(.T_M_G-video-overlay, :has(:focus-visible)):not(:has(.T_M_G-video-bottom-controls-wrapper [data-control-displayed="true"])) {
   --T_M_G-video-current-safe-inset-bottom: calc(var(--T_M_G-video-current-unit) / 1.75);
 }
 .T_M_G-video-container:is(.T_M_G-video-overlay, :has(:focus-visible)),
@@ -2267,44 +2267,46 @@ body:not(:has(.T_M_G-video-container.T_M_G-video-mini-player)) .T_M_G-pseudo-vid
   opacity: 0;
   pointer-events: none;
 }
-/* setting player initial state */
-.T_M_G-video-container.T_M_G-video-initial .T_M_G-video-container-content {
+/* setting player light state */
+.T_M_G-video-container.T_M_G-video-light .T_M_G-video-container-content {
   cursor: pointer;
 }
-.T_M_G-video-container.T_M_G-video-initial :is(.T_M_G-video-picture-in-picture-wrapper, .T_M_G-video-top-controls-wrapper, .T_M_G-video-big-controls-wrapper, .T_M_G-video-bottom-sub-controls-wrapper),
+.T_M_G-video-container.T_M_G-video-light :is(.T_M_G-video-picture-in-picture-wrapper, .T_M_G-video-top-controls-wrapper, .T_M_G-video-big-controls-wrapper, .T_M_G-video-bottom-sub-controls-wrapper),
 .T_M_G-video-container.T_M_G-video-stall .T_M_G-video-big-play-pause-btn {
   pointer-events: all;
   opacity: 1;
 }
-.T_M_G-video-container.T_M_G-video-initial :is(.T_M_G-video-top-curtain, .T_M_G-video-bottom-curtain) {
+.T_M_G-video-container.T_M_G-video-light :is(.T_M_G-video-top-curtain, .T_M_G-video-bottom-curtain) {
   --T_M_G-video-current-curtain-color: var(--T_M_G-video-curtain-color);
   opacity: 1;
 }
-.T_M_G-video-container.T_M_G-video-initial :is(.T_M_G-video-big-controls-wrapper, .T_M_G-video-side-controls-wrapper) > *:not(.T_M_G-video-control-initial-show),
-.T_M_G-video-container.T_M_G-video-initial :is(.T_M_G-video-settings, .T_M_G-video-cover-curtain, .T_M_G-video-cue-container, .T_M_G-video-timeline-container),
-.T_M_G-video-container:is(.T_M_G-video-initial, .T_M_G-video-stall) :is(.T_M_G-video-play-notifier, .T_M_G-video-pause-notifier, .T_M_G-video-buffer, .T_M_G-video-big-play-pause-btn svg) {
+.T_M_G-video-container.T_M_G-video-light :is(.T_M_G-video-big-controls-wrapper, .T_M_G-video-side-controls-wrapper) > *:not([data-light-control="true"]),
+.T_M_G-video-container.T_M_G-video-light :is(.T_M_G-video-settings, .T_M_G-video-cover-curtain, .T_M_G-video-cue-container, .T_M_G-video-timeline-container),
+.T_M_G-video-container:is(.T_M_G-video-light, .T_M_G-video-stall) :is(.T_M_G-video-play-notifier, .T_M_G-video-pause-notifier, .T_M_G-video-buffer, .T_M_G-video-big-play-pause-btn svg) {
   display: none;
 }
-.T_M_G-video-container:is(.T_M_G-video-initial, .T_M_G-video-stall) :is(.T_M_G-video-big-controls-wrapper, .T_M_G-video-big-play-pause-btn, .T_M_G-video-big-play-pause-btn .T_M_G-video-play-icon) {
+.T_M_G-video-container:is(.T_M_G-video-light, .T_M_G-video-stall) :is(.T_M_G-video-big-controls-wrapper, .T_M_G-video-big-play-pause-btn .T_M_G-video-play-icon),
+.T_M_G-video-container.T_M_G-video-light [data-light-control="true"],
+.T_M_G-video-container.T_M_G-video-stall .T_M_G-video-big-play-pause-btn {
   display: flex;
 }
-.T_M_G-video-container:is(.T_M_G-video-initial, .T_M_G-video-stall) .T_M_G-video-big-play-pause-btn .T_M_G-video-play-icon {
+.T_M_G-video-container:is(.T_M_G-video-light, .T_M_G-video-stall) .T_M_G-video-big-play-pause-btn .T_M_G-video-play-icon {
   animation: inherit;
   transition: inherit;
 }
-.T_M_G-video-container.T_M_G-video-initial .T_M_G-video-big-play-pause-btn:is(:hover, :focus-visible),
+.T_M_G-video-container.T_M_G-video-light .T_M_G-video-big-play-pause-btn:is(:hover, :focus-visible),
 .T_M_G-video-container.T_M_G-video-stall .T_M_G-video-big-play-pause-btn {
   transform: scale(var(--T_M_G-video-large-scale));
   transition: all var(--T_M_G-video-slow-transition-time) ease;
 }
-.T_M_G-video-container.T_M_G-video-initial .T_M_G-video-big-play-pause-btn:is(:hover, :focus-visible),
+.T_M_G-video-container.T_M_G-video-light .T_M_G-video-big-play-pause-btn:is(:hover, :focus-visible),
 .T_M_G-video-container.T_M_G-video-stall .T_M_G-video-play-icon {
   animation: none !important;
 }
-.T_M_G-video-container.T_M_G-video-initial .T_M_G-video-big-play-pause-btn {
+.T_M_G-video-container.T_M_G-video-light .T_M_G-video-big-play-pause-btn {
   animation: T_M_G-beat 1s infinite ease-out;
 }
 .T_M_G-video-container.T_M_G-video-stall .T_M_G-video-big-play-pause-btn {
   animation: T_M_G-spin 1s ease-out;
 }
-/* setting player initial state ends */
+/* setting player light state ends */

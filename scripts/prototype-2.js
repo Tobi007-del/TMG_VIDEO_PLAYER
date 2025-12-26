@@ -587,7 +587,7 @@ class T_M_G_Video_Controller {
       `,
       capture: ui.capture
         ? `
-          <button type="button" class="T_M_G-video-capture-btn" data-draggable-control="${ui.draggable}"> 
+          <button type="button" class="T_M_G-video-capture-btn" data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("capture")}" data-control-id="capture"> 
             <svg viewBox="0 0 24 24" class="T_M_G-video-capture-icon" data-control-title="Capture${keyShortcuts["capture"]} ↔ DblClick→B&W (+alt)">
               <path fill-rule="evenodd" d="M6.937 5.845c.07-.098.15-.219.25-.381l.295-.486C8.31 3.622 8.913 3 10 3h4c1.087 0 1.69.622 2.518 1.978l.295.486c.1.162.18.283.25.381q.071.098.12.155H20a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h2.816q.05-.057.121-.155M4 8a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-3c-.664 0-1.112-.364-1.56-.987a8 8 0 0 1-.329-.499c-.062-.1-.27-.445-.3-.492C14.36 5.282 14.088 5 14 5h-4c-.087 0-.36.282-.812 1.022-.029.047-.237.391-.3.492a8 8 0 0 1-.327.5C8.112 7.635 7.664 8 7 8zm15 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2m-7 7a5 5 0 1 1 0-10 5 5 0 0 1 0 10m0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
             </svg>
@@ -595,7 +595,7 @@ class T_M_G_Video_Controller {
         : null,
       fullscreenorientation: ui.fullScreenOrientation
         ? `
-          <button type="button" class="T_M_G-video-full-screen-orientation-btn T_M_G-video-control-initial-show" data-draggable-control="${ui.draggable}" data-control-id="fullscreenorientation"> 
+          <button type="button" class="T_M_G-video-full-screen-orientation-btn" data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("fullscreenorientation")}" data-control-id="fullscreenorientation"> 
             <svg viewBox="0 0 512 512" class="T_M_G-video-full-screen-orientation-icon" data-control-title="Change orientation" style="scale: 0.925;">
               <path d="M446.81,275.82H236.18V65.19c0-20.78-16.91-37.69-37.69-37.69H65.19c-20.78,0-37.69,16.91-37.69,37.69v255.32   c0,20.78,16.91,37.68,37.69,37.68h88.62v88.62c0,20.78,16.9,37.69,37.68,37.69h255.32c20.78,0,37.69-16.91,37.69-37.69v-133.3   C484.5,292.73,467.59,275.82,446.81,275.82z M65.19,326.19c-3.14,0-5.69-2.55-5.69-5.68V65.19c0-3.14,2.55-5.69,5.69-5.69h133.3   c3.14,0,5.69,2.55,5.69,5.69v210.63h-12.69c-20.78,0-37.68,16.91-37.68,37.69v12.68H65.19z M452.5,446.81   c0,3.14-2.55,5.69-5.69,5.69H191.49c-3.13,0-5.68-2.55-5.68-5.69V342.19v-28.68c0-2.94,2.24-5.37,5.1-5.66   c0.19-0.02,0.38-0.03,0.58-0.03h28.69h226.63c3.14,0,5.69,2.55,5.69,5.69V446.81z"/>
               <path d="M369.92,181.53c-6.25-6.25-16.38-6.25-22.63,0c-6.25,6.25-6.25,16.38,0,22.63l44.39,44.39   c3.12,3.13,7.22,4.69,11.31,4.69c0.21,0,0.42-0.02,0.63-0.03c0.2,0.01,0.4,0.03,0.6,0.03c6.31,0,11.74-3.66,14.35-8.96   l37.86-37.86c6.25-6.25,6.25-16.38,0-22.63c-6.25-6.25-16.38-6.25-22.63,0l-13.59,13.59v-86.58c0-8.84-7.16-16-16-16h-86.29   l15.95-15.95c6.25-6.25,6.25-16.38,0-22.63c-6.25-6.25-16.38-6.25-22.63,0l-40.33,40.33c-5.19,2.65-8.75,8.03-8.75,14.25   c0,0.19,0.02,0.37,0.03,0.56c-0.01,0.19-0.03,0.38-0.03,0.57c0,4.24,1.69,8.31,4.69,11.31l42.14,42.14   c3.12,3.12,7.22,4.69,11.31,4.69s8.19-1.56,11.31-4.69c6.25-6.25,6.25-16.38,0-22.63l-15.95-15.95h72.54v73.05L369.92,181.53z"/>
@@ -605,7 +605,7 @@ class T_M_G_Video_Controller {
         : null,
       fullscreenlock: ui.fullScreenLock
         ? `
-          <button type="button" class="T_M_G-video-full-screen-locked-btn" data-draggable-control="${ui.draggable}" data-control-id="fullscreenlock"> 
+          <button type="button" class="T_M_G-video-full-screen-locked-btn" data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("fullscreenlock")}" data-control-id="fullscreenlock"> 
             <svg class="T_M_G-video-full-screen-locked-icon" viewBox="0 0 512 512" data-control-title="Lock Screen" style="scale: 0.825;">
               <path d="M390.234 171.594v-37.375c.016-36.969-15.078-70.719-39.328-94.906A133.88 133.88 0 0 0 256 0a133.88 133.88 0 0 0-94.906 39.313c-24.25 24.188-39.344 57.938-39.313 94.906v37.375H24.906V512h462.188V171.594zm-210.343-37.375c.016-21.094 8.469-39.938 22.297-53.813C216.047 66.594 234.891 58.125 256 58.125s39.953 8.469 53.813 22.281c13.828 13.875 22.281 32.719 22.297 53.813v37.375H179.891zm-96.86 95.5h345.938v224.156H83.031z"/>
               <path d="M297.859 321.844c0-23.125-18.75-41.875-41.859-41.875-23.125 0-41.859 18.75-41.859 41.875 0 17.031 10.219 31.625 24.828 38.156l-9.25 60.094h52.562L273.016 360c14.609-6.531 24.843-21.125 24.843-38.156"/>
@@ -614,7 +614,7 @@ class T_M_G_Video_Controller {
       `
         : null,
       bigprev: `
-        <button type="button" class="T_M_G-video-big-prev-btn" data-control-id="bigprev">
+        <button type="button" class="T_M_G-video-big-prev-btn" data-light-control="${this.isControlLight("bigprev")}" data-control-id="bigprev">
           <svg viewBox="0 0 25 25" class="T_M_G-video-prev-icon" data-control-title="Previous video${keyShortcuts["prev"]}">
             <rect x="4" y="5.14" width="2.5" height="14" transform="translate(2.1,0)"/>
             <path d="M17,5.14V19.14L6,12.14L17,5.14Z" transform="translate(2.5,0)" />
@@ -622,7 +622,7 @@ class T_M_G_Video_Controller {
         </button>      
       `,
       bigplaypause: `
-        <button type="button" class="T_M_G-video-big-play-pause-btn" data-control-id="bigplaypause">
+        <button type="button" class="T_M_G-video-big-play-pause-btn" data-light-control="${this.isControlLight("bigplaypause")}" data-control-id="bigplaypause">
           <svg viewBox="0 0 25 25" class="T_M_G-video-play-icon" data-control-title="Play${keyShortcuts["playPause"]}">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
           </svg>
@@ -635,7 +635,7 @@ class T_M_G_Video_Controller {
         </button>         
       `,
       bignext: `
-        <button type="button" class="T_M_G-video-big-next-btn" data-control-id="bignext">
+        <button type="button" class="T_M_G-video-big-next-btn" data-light-control="${this.isControlLight("bignext")}" data-control-id="bignext">
           <svg viewBox="0 0 25 25" class="T_M_G-video-next-icon" data-control-title="Next video${keyShortcuts["next"]}">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" transform="translate(-2.5,0)" />
             <rect x="19" y="5.14" width="2.5" height="14" transform="translate(-2.5,0)"/>
@@ -644,7 +644,7 @@ class T_M_G_Video_Controller {
       `,
       timeline: ui.timeline
         ? `
-        <div class="T_M_G-video-timeline-container" tabindex="0"  data-control-id="timeline">
+        <div class="T_M_G-video-timeline-container" tabindex="0" data-control-id="timeline">
           <div class="T_M_G-video-timeline">
             <div class="T_M_G-video-seek-bars-wrapper">
               <div class="T_M_G-video-seek-bar T_M_G-video-base-seek-bar"></div>
@@ -663,7 +663,7 @@ class T_M_G_Video_Controller {
         : null,
       prev: ui.prev
         ? `
-        <button type="button" class="T_M_G-video-prev-btn" data-draggable-control="${ui.draggable}" data-control-id="prev">
+        <button type="button" class="T_M_G-video-prev-btn" data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("prev")}" data-control-id="prev">
           <svg viewBox="0 0 25 25" class="T_M_G-video-prev-icon" data-control-title="Previous video${keyShortcuts["prev"]}">
             <rect x="4" y="5.14" width="2.5" height="14" transform="translate(2.1,0)"/>
             <path d="M17,5.14V19.14L6,12.14L17,5.14Z" transform="translate(2.5,0)" />
@@ -673,7 +673,7 @@ class T_M_G_Video_Controller {
         : null,
       playpause: ui.playPause
         ? `
-        <button type="button" class="T_M_G-video-play-pause-btn" data-draggable-control="${ui.draggable}" data-control-id="playpause">
+        <button type="button" class="T_M_G-video-play-pause-btn" data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("playpause")}" data-control-id="playpause">
           <svg viewBox="0 0 25 25" class="T_M_G-video-play-icon" data-control-title="Play${keyShortcuts["playPause"]}" style="scale: 1.25;">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
           </svg>
@@ -688,7 +688,7 @@ class T_M_G_Video_Controller {
         : null,
       next: ui.next
         ? `
-        <button type="button" class="T_M_G-video-next-btn" data-draggable-control="${ui.draggable}" data-control-id="next">
+        <button type="button" class="T_M_G-video-next-btn" data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("next")}" data-control-id="next">
           <svg viewBox="0 0 25 25" class="T_M_G-video-next-icon" data-control-title="Next video${keyShortcuts["next"]}">
             <path d="M8,5.14V19.14L19,12.14L8,5.14Z" transform="translate(-2.5,0)" />
             <rect x="19" y="5.14" width="2.5" height="14" transform="translate(-2.5,0)"/>
@@ -698,7 +698,7 @@ class T_M_G_Video_Controller {
         : null,
       volume: ui.volume
         ? `
-        <div class="T_M_G-video-volume-container T_M_G-video-vb-container" data-control-id="volume">
+        <div class="T_M_G-video-volume-container T_M_G-video-vb-container" data-light-control="${this.isControlLight("volume")}" data-control-id="volume">
           <button type="button" class="T_M_G-video-mute-btn T_M_G-video-vb-btn" data-draggable-control="${ui.draggable}">
             <svg viewBox="0 0 25 25" class="T_M_G-video-volume-high-icon" data-control-title="Mute${keyShortcuts["mute"]}">
               <path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.84 14,18.7V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z" />
@@ -716,7 +716,7 @@ class T_M_G_Video_Controller {
         : null,
       brightness: ui.brightness
         ? `
-        <div class="T_M_G-video-brightness-container T_M_G-video-vb-container" data-control-id="brightness">
+        <div class="T_M_G-video-brightness-container T_M_G-video-vb-container" data-light-control="${this.isControlLight("brightness")}" data-control-id="brightness">
           <button type="button" class="T_M_G-video-dark-btn T_M_G-video-vb-btn" data-draggable-control="${ui.draggable}">
             <svg viewBox="0 0 25 25" class="T_M_G-video-brightness-high-icon" data-control-title="Darken${keyShortcuts["dark"]}">
               <path transform="translate(1.5, 1.5)" style="scale: 1.05;" d="M10 14.858a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6-5h3a1 1 0 0 1 0 2h-3a1 1 0 0 1 0-2zm-6 6a1 1 0 0 1 1 1v3a1 1 0 0 1-2 0v-3a1 1 0 0 1 1-1zm0-15a1 1 0 0 1 1 1v3a1 1 0 0 1-2 0v-3a1 1 0 0 1 1-1zm-9 9h3a1 1 0 1 1 0 2H1a1 1 0 0 1 0-2zm13.95 4.535l2.121 2.122a1 1 0 0 1-1.414 1.414l-2.121-2.121a1 1 0 0 1 1.414-1.415zm-8.486 0a1 1 0 0 1 0 1.415l-2.12 2.12a1 1 0 1 1-1.415-1.413l2.121-2.122a1 1 0 0 1 1.414 0zM17.071 3.787a1 1 0 0 1 0 1.414L14.95 7.322a1 1 0 0 1-1.414-1.414l2.12-2.121a1 1 0 0 1 1.415 0zm-12.728 0l2.121 2.121A1 1 0 1 1 5.05 7.322L2.93 5.201a1 1 0 0 1 1.414-1.414z">
@@ -737,7 +737,7 @@ class T_M_G_Video_Controller {
         : null,
       timeandduration: ui.timeAndDuration
         ? `
-        <button type="button" class="T_M_G-video-time-and-duration-btn" data-draggable-control="${ui.draggable}" title="Switch (format${keyShortcuts["timeFormat"]} / DblClick→mode${keyShortcuts["timeMode"]})" data-control-id="timeandduration">
+        <button type="button" class="T_M_G-video-time-and-duration-btn" data-draggable-control="${ui.draggable}" title="Switch (format${keyShortcuts["timeFormat"]} / DblClick→mode${keyShortcuts["timeMode"]})" data-light-control="${this.isControlLight("timeandduration")}" data-control-id="timeandduration">
           <div class="T_M_G-video-current-time">0:00</div>
           <span>/</span>
           <div class="T_M_G-video-total-time">-:--</div>
@@ -746,12 +746,12 @@ class T_M_G_Video_Controller {
         : null,
       playbackrate: ui.playbackRate
         ? `
-        <button type="button" class="T_M_G-video-playback-rate-btn" title="Playback rate${keyShortcuts["playbackRateUp"]} ↔ DblClick${keyShortcuts["playbackRateDown"]}" data-draggable-control="${ui.draggable}" data-control-id="playbackrate">${this.playbackRate}x</button>
+        <button type="button" class="T_M_G-video-playback-rate-btn" title="Playback rate${keyShortcuts["playbackRateUp"]} ↔ DblClick${keyShortcuts["playbackRateDown"]}" data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("playbackrate")}" data-control-id="playbackrate">${this.playbackRate}x</button>
       `
         : null,
       captions: ui.captions
         ? `
-        <button type="button" class="T_M_G-video-captions-btn" data-draggable-control="${ui.draggable}" data-control-id="captions">
+        <button type="button" class="T_M_G-video-captions-btn" data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("captions")}" data-control-id="captions">
           <svg viewBox="0 0 25 25" data-control-title="Subtitles${keyShortcuts["captions"]}" class="T_M_G-video-subtitles-icon">
             <path style="scale: 0.5;" d="M44,6H4A2,2,0,0,0,2,8V40a2,2,0,0,0,2,2H44a2,2,0,0,0,2-2V8A2,2,0,0,0,44,6ZM12,26h4a2,2,0,0,1,0,4H12a2,2,0,0,1,0-4ZM26,36H12a2,2,0,0,1,0-4H26a2,2,0,0,1,0,4Zm10,0H32a2,2,0,0,1,0-4h4a2,2,0,0,1,0,4Zm0-6H22a2,2,0,0,1,0-4H36a2,2,0,0,1,0,4Z" />
           </svg>
@@ -763,7 +763,7 @@ class T_M_G_Video_Controller {
         : null,
       settings: ui.settings
         ? `
-        <button type="button" class="T_M_G-video-settings-btn" data-draggable-control="${ui.draggable}" data-control-id="settings">
+        <button type="button" class="T_M_G-video-settings-btn" data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("settings")}" data-control-id="settings">
           <svg class="T_M_G-video-settings-icon" viewBox="0 -960 960 960" data-control-title="Settings${keyShortcuts["settings"]}">
             <path d="m370-80-16-128q-13-5-24.5-12T307-235l-119 50L78-375l103-78q-1-7-1-13.5v-27q0-6.5 1-13.5L78-585l110-190 119 50q11-8 23-15t24-12l16-128h220l16 128q13 5 24.5 12t22.5 15l119-50 110 190-103 78q1 7 1 13.5v27q0 6.5-2 13.5l103 78-110 190-118-50q-11 8-23 15t-24 12L590-80H370Zm70-80h79l14-106q31-8 57.5-23.5T639-327l99 41 39-68-86-65q5-14 7-29.5t2-31.5q0-16-2-31.5t-7-29.5l86-65-39-68-99 42q-22-23-48.5-38.5T533-694l-13-106h-79l-14 106q-31 8-57.5 23.5T321-633l-99-41-39 68 86 64q-5 15-7 30t-2 32q0 16 2 31t7 30l-86 65 39 68 99-42q22 23 48.5 38.5T427-266l13 106Zm42-180q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Zm-2-140Z"/>
           </svg>
@@ -772,7 +772,7 @@ class T_M_G_Video_Controller {
         : null,
       objectfit: ui.objectFit
         ? `
-        <button type="button" class="T_M_G-video-object-fit-btn " data-draggable-control="${ui.draggable}" data-control-id="objectfit">
+        <button type="button" class="T_M_G-video-object-fit-btn " data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("objectfit")}" data-control-id="objectfit">
           <svg class="T_M_G-video-object-fit-contain-icon" data-control-title="Crop to fit${keyShortcuts["objectFit"]}" viewBox="0 0 16 16" style="scale: 0.75;">
             <rect width="16" height="16" rx="4" ry="4" fill="none" stroke-width="2.25" stroke="currentColor"/>
             <g stroke-width="1" stroke="currentColor" transform="translate(3,3)">
@@ -801,7 +801,7 @@ class T_M_G_Video_Controller {
         : null,
       pictureinpicture: ui.pictureInPicture
         ? `
-        <button type="button" class="T_M_G-video-picture-in-picture-btn" data-draggable-control="${ui.draggable}" data-control-id="pictureinpicture">
+        <button type="button" class="T_M_G-video-picture-in-picture-btn" data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("pictureinpicture")}" data-control-id="pictureinpicture">
           <svg viewBox="0 0 25 25" class="T_M_G-video-enter-picture-in-picture-icon" data-control-title="Picture-in-picture${keyShortcuts["pictureInPicture"]}">
             <path fill-rule="nonzero" d="M21 3a1 1 0 0 1 1 1v7h-2V5H4v14h6v2H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h18zm0 10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h8zM6.707 6.293l2.25 2.25L11 6.5V12H5.5l2.043-2.043-2.25-2.25 1.414-1.414z" />
           </svg>
@@ -814,7 +814,7 @@ class T_M_G_Video_Controller {
         : null,
       theater: ui.theater
         ? `
-        <button type="button" class="T_M_G-video-theater-btn" data-draggable-control="${ui.draggable}" data-control-id="theater">
+        <button type="button" class="T_M_G-video-theater-btn" data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("theater")}" data-control-id="theater">
           <svg viewBox="0 0 25 25" class="T_M_G-video-enter-theater-icon" data-control-title="Cinema mode${keyShortcuts["theater"]}">
             <path fill-rule="evenodd" clip-rule="evenodd" d="M23 7C23 5.34315 21.6569 4 20 4H4C2.34315 4 1 5.34315 1 7V17C1 18.6569 2.34315 20 4 20H20C21.6569 20 23 18.6569 23 17V7ZM21 7C21 6.44772 20.5523 6 20 6H4C3.44772 6 3 6.44771 3 7V17C3 17.5523 3.44772 18 4 18H20C20.5523 18 21 17.5523 21 17V7Z"/>
           </svg>
@@ -826,7 +826,7 @@ class T_M_G_Video_Controller {
         : null,
       fullscreen: ui.fullScreen
         ? `
-        <button type="button" class="T_M_G-video-full-screen-btn" data-draggable-control="${ui.draggable}" data-control-id="fullscreen">
+        <button type="button" class="T_M_G-video-full-screen-btn" data-draggable-control="${ui.draggable}" data-light-control="${this.isControlLight("fullscreen")}" data-control-id="fullscreen">
           <svg viewBox="0 0 25 25" class="T_M_G-video-enter-full-screen-icon" data-control-title="Full screen${keyShortcuts["fullScreen"]}" style="scale: 0.8;">
             <path d="M4 1.5C2.61929 1.5 1.5 2.61929 1.5 4V8.5C1.5 9.05228 1.94772 9.5 2.5 9.5H3.5C4.05228 9.5 4.5 9.05228 4.5 8.5V4.5H8.5C9.05228 4.5 9.5 4.05228 9.5 3.5V2.5C9.5 1.94772 9.05228 1.5 8.5 1.5H4Z" />
             <path d="M20 1.5C21.3807 1.5 22.5 2.61929 22.5 4V8.5C22.5 9.05228 22.0523 9.5 21.5 9.5H20.5C19.9477 9.5 19.5 9.05228 19.5 8.5V4.5H15.5C14.9477 4.5 14.5 4.05228 14.5 3.5V2.5C14.5 1.94772 14.9477 1.5 15.5 1.5H20Z" />
@@ -846,7 +846,7 @@ class T_M_G_Video_Controller {
   }
   buildContainers() {
     this.setPosterState();
-    this.video.parentElement?.insertBefore((this.videoContainer = tmg.createEl("div", { className: `T_M_G-video-container T_M_G-media-container${this.isMediaMobile ? " T_M_G-video-mobile" : ""}${this.video.paused ? " T_M_G-video-paused" : ""}${this.settings.time.progressBar ? " T_M_G-video-progress-bar" : ""}` }, { trackKind: "captions", volumeLevel: "muted", brightnessLevel: "dark", thumbIndicator: this.settings.time.line.thumbIndicator })), this.video);
+    this.video.parentElement?.insertBefore((this.videoContainer = tmg.createEl("div", { className: `T_M_G-video-container T_M_G-media-container${this.isMediaMobile ? " T_M_G-video-mobile" : ""}${this.video.paused ? " T_M_G-video-paused" : ""}${this.settings.controlPanel.progressBar ? " T_M_G-video-progress-bar" : ""}` }, { trackKind: "captions", volumeLevel: "muted", brightnessLevel: "dark", thumbIndicator: this.settings.controlPanel.timeline.thumbIndicator })), this.video);
     (this.pseudoVideoContainer = tmg.createEl("div", { className: "T_M_G-pseudo-video-container T_M_G-media-container" })).append((this.pseudoVideo = tmg.createEl("video", { tmgPlayer: this.video.tmgPlayer, className: "T_M_G-pseudo-video T_M_G-media", muted: true, autoplay: false })));
     const css = Object.entries(this.settings.css);
     this.bindCSSProps();
@@ -928,9 +928,7 @@ class T_M_G_Video_Controller {
     controlsContainerBuild.insertAdjacentHTML("afterbegin", ``.concat(HTML.expandminiplayer ?? "", HTML.removeminiplayer ?? "", HTML.pictureinpicturewrapper ?? "", HTML.thumbnail ?? "", HTML.videobuffer ?? "", HTML.cueContainer ?? ""));
     this.pseudoVideoContainer.insertAdjacentHTML("beforeend", ``.concat(HTML.pictureinpicturewrapper ?? "")); // running some pseudo build
   }
-  queryDOM(query, isPseudo = false, all = false) {
-    return (isPseudo ? this.pseudoVideoContainer : this.videoContainer)[all ? "querySelectorAll" : "querySelector"](query);
-  }
+  queryDOM = (query, isPseudo = false, all = false) => (isPseudo ? this.pseudoVideoContainer : this.videoContainer)[all ? "querySelectorAll" : "querySelector"](query);
   retrieveDOM() {
     const { ui } = this.settings.status;
     this.DOM = {
@@ -1026,30 +1024,31 @@ class T_M_G_Video_Controller {
     this[`toggle${tmg.capitalize(this.initialMode)}Mode`]?.();
     !this.video.currentSrc && this._handleLoadedError();
     this.setReadyState(1);
-    this.initialState && this.video.paused ? this.addInitialState() : this.initControls();
+    !this.lightState.disabled && this.video.paused ? this.addLightState() : this.initControls();
     this.disabled && this.disable();
   }
-  addInitialState() {
-    if (!this.initialState) return;
-    if (this.settings.time.start && !this.video.poster) this.currentTime = this.settings.time.start;
-    this.videoContainer.classList.add("T_M_G-video-initial");
-    this.video.addEventListener("play", this.removeInitialState, { once: true });
-    this.DOM.controlsContainer.addEventListener("click", this._handleInitialStateClick);
+  addLightState() {
+    if (this.lightState.disabled) return;
+    if (this.lightState.preview.usePoster ? !this.video.poster : true) this.currentTime = this.lightState.preview.time;
+    this.videoContainer.classList.add("T_M_G-video-light");
+    this.video.addEventListener("play", this.removeLightState, { once: true });
+    this.DOM.controlsContainer.addEventListener("click", this._handleLightStateClick);
   }
-  removeInitialState() {
-    if (!this.initialState) return;
-    this.initialState = false;
-    this.DOM.controlsContainer.removeEventListener("click", this._handleInitialStateClick);
-    this.stall();
-    this.videoContainer.classList.remove("T_M_G-video-initial");
+  removeLightState() {
+    if (this.lightState.disabled) return;
+    this.lightState.disabled = true;
+    tmg.assignNND(this, "currentTime", this.settings.time.start);
+    this.DOM.controlsContainer.removeEventListener("click", this._handleLightStateClick);
+    this.isControlLight("bigplaypause") && this.stall();
+    this.videoContainer.classList.remove("T_M_G-video-light");
     this.initControls();
     this.togglePlay(true);
   }
-  _handleInitialStateClick = ({ target }) => target === this.DOM.controlsContainer && this.removeInitialState();
+  isControlLight = (controlId) => this.lightState.controls.includes?.(controlId) ?? this.lightState.controls;
+  _handleLightStateClick = ({ target }) => target === this.DOM.controlsContainer && this.removeLightState();
   stall() {
     this.showOverlay();
-    if (!this.DOM.bigPlayPauseBtn) return;
-    this.videoContainer.classList.add("T_M_G-video-stall");
+    this.DOM.bigPlayPauseBtn && this.videoContainer.classList.add("T_M_G-video-stall");
     this.DOM.bigPlayPauseBtn?.addEventListener("animationend", () => this.videoContainer.classList.remove("T_M_G-video-stall"), { once: true });
   }
   setInitialStates() {
@@ -1187,7 +1186,7 @@ class T_M_G_Video_Controller {
     this.video.addEventListener("leavepictureinpicture", this._handleLeavePictureInPicture);
   }
   removeVideoEventListeners() {
-    if (this.initialState) this.video.removeEventListener("play", this.removeInitialState, { once: true });
+    if (!this.lightState.disabled) this.video.removeEventListener("play", this.removeLightState, { once: true });
     this.video.removeEventListener("error", this._handleLoadedError);
     this.video.removeEventListener("play", this._handlePlay);
     this.video.removeEventListener("pause", this._handlePause);
@@ -1547,7 +1546,7 @@ class T_M_G_Video_Controller {
     return this.#playlist;
   }
   set playlist(value) {
-    value?.forEach((v, i) => (value[i] = tmg.mergeObjs({ media: { title: "", chapterInfo: [], links: { title: "" } }, src: "", tracks: [], settings: { time: { start: 0, previews: false } } }, tmg.parseDottedObj(v))));
+    value?.forEach((v, i) => (value[i] = tmg.mergeObjs(tmg.DEFAULT_PLAYLIST_ITEM_BUILD, tmg.parseDottedObj(v))));
     this.#playlist = value;
     if (this.readyState < 1) return;
     const v = this.playlist?.find((v) => (v.media.id && v.media.id === this.media.id) || tmg.isSameURL(v.src, this.src));
@@ -1577,15 +1576,15 @@ class T_M_G_Video_Controller {
     this.loaded = false;
     this.currentPlaylistIndex = index;
     const v = this.playlist[index];
-    this.media = v.media ? { ...this.media, ...v.media } : v.media ?? null;
+    this.media = v.media ? tmg.mergeObjs(this.media, v.media) : v.media ?? null;
     this.setPosterState();
     this.settings.time.start = v.settings.time.start;
     this.settings.time.end = v.settings.time.end;
     this.settings.time.previews = tmg.isObj(v.settings.time.previews) && tmg.isObj(this.settings.time.previews) ? { ...this.settings.time.previews, ...v.settings.time.previews } : v.settings.time.previews;
     this.settings.status.ui.previews = this.settings.time.previews?.address && this.settings.time.previews?.spf;
     this.tracks = v.tracks ?? [];
-    tmg.assignDef(this, v.src, "src");
-    tmg.assignDef(this, v.sources, "sources");
+    tmg.assignDef(this, "src", v.src);
+    tmg.assignDef(this, "sources", v.sources);
     this.setInitialStates();
     this.togglePlay(shouldPlay);
     this.canAutoMovePlaylist = true;
@@ -1601,7 +1600,7 @@ class T_M_G_Video_Controller {
       position: "bottom-right",
       bodyHTML: `<span title="Play next video" class="T_M_G-video-next-preview-wrapper">
         <button type="button"><svg viewBox="0 0 25 25"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg></button>
-        <video class="T_M_G-video-next-preview" poster="${v.media?.artwork?.[0]?.src}" src="${v.src || ""}"${!v.media?.artwork?.[0]?.src ? " autoplay " : " "}muted loop playsinline webkit-playsinline preload="metadata"></video>
+        <video class="T_M_G-video-next-preview" poster="${v.media?.artwork?.[0]?.src}" src="${v.src || ""}"${(this.settings.toasts.nextVideoPreview.usePoster ? !v.media?.artwork?.[0]?.src : true) && this.settings.toasts.nextVideoPreview.tease ? " autoplay " : " "}muted playsinline webkit-playsinline preload="metadata"></video>
         <p>${this.toTimeText(NaN)}</p>
       </span>
       <span class="T_M_G-video-next-info">
@@ -1626,7 +1625,7 @@ class T_M_G_Video_Controller {
     const nextVideoPreview = this.queryDOM(".T_M_G-video-next-preview");
     v.sources?.length && tmg.addSources(v.sources, nextVideoPreview);
     ["loadedmetadata", "durationchange"].forEach((e) => nextVideoPreview?.addEventListener(e, ({ target: p }) => (p.nextElementSibling.textContent = this.toTimeText(p.duration))));
-    nextVideoPreview?.addEventListener("timeupdate", ({ target: p }) => tmg.parseNumber(p.currentTime) >= this.settings.toasts.nextVideoPreview && p.pause());
+    this.settings.toasts.nextVideoPreview.tease ? nextVideoPreview?.addEventListener("timeupdate", ({ target: p }) => tmg.parseNumber(p.currentTime) >= this.settings.toasts.nextVideoPreview.time && p.pause()) : (nextVideoPreview.currentTime = tmg.parseNumber(this.settings.toasts.nextVideoPreview.time));
     nextVideoPreview?.parentElement?.addEventListener("click", () => cleanUp(true) && this.nextVideo(), true);
   }
   setMediaSession() {
@@ -1688,7 +1687,7 @@ class T_M_G_Video_Controller {
   }
   _handleLoadedMetadata() {
     this.loaded = true;
-    if (this.settings.time.start && !(this.initialState && this.video.paused)) this.currentTime = this.settings.time.start;
+    tmg.assignNND(this, "currentTime", this.settings.time.start, !(!this.lightState.disabled && this.video.paused));
     this.pseudoVideo.src = this.video.src || this.video.currentSrc;
     this.pseudoVideo.crossOrigin = this.video.crossOrigin;
     this.stats = { fps: 30 };
@@ -1811,12 +1810,13 @@ class T_M_G_Video_Controller {
     if (this.stallCancelTimeScrub || this.shouldCancelTimeScrub || this.cancelScrubTimeoutId) return;
     this.shouldCancelTimeScrub = true;
     this.DOM.cancelScrubNotifier?.classList.add("T_M_G-video-control-active");
-    this.cancelScrubTimeoutId = setTimeout(this.allowTimeScrubbing, this.settings.time.line.seek.cancel.timeout, false);
+    this.cancelScrubTimeoutId = setTimeout(this.allowTimeScrubbing, this.settings.controlPanel.timeline.seek.cancel.timeout, false);
   }
   allowTimeScrubbing(reset = true) {
     this.stallCancelTimeScrub = this.shouldCancelTimeScrub = false;
     this.DOM.cancelScrubNotifier?.classList.remove("T_M_G-video-control-active");
-    !clearTimeout(this.cancelScrubTimeoutId) && reset && (this.cancelScrubTimeoutId = null);
+    clearTimeout(this.cancelScrubTimeoutId);
+    if (reset) this.cancelScrubTimeoutId = null;
   }
   _handleTimelineInput({ clientX }) {
     this.overTimeline = true;
@@ -1825,7 +1825,7 @@ class T_M_G_Video_Controller {
       "timelineInput",
       () => {
         const rect = this.DOM.timelineContainer?.getBoundingClientRect(),
-          currX = tmg.clamp(0, !this.isScrubbing || this.settings.time.line.seek.relative ? clientX - rect.left : this.lastTimelineThumbPosition * rect.width + (clientX - this.lastTimelinePointerX), rect.width),
+          currX = tmg.clamp(0, !this.isScrubbing || this.settings.controlPanel.timeline.seek.relative ? clientX - rect.left : this.lastTimelineThumbPosition * rect.width + (clientX - this.lastTimelinePointerX), rect.width),
           p = currX / rect.width,
           previewImgMin = this.DOM.previewContainer.offsetWidth / 2 / rect.width;
         this.DOM.previewContainer?.setAttribute("data-preview-time", this.toTimeText(p * this.video.duration, true));
@@ -1833,7 +1833,7 @@ class T_M_G_Video_Controller {
           this.settings.css.currentThumbPosition = p;
           if (this.settings.time.seekSync) this.settings.css.currentPlayedPosition = p;
           if (this.settings.time.seekSync && this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText((this.currentTime = p * this.duration), true);
-          Math.abs(currX - this.lastTimelineThumbPosition * rect.width) < this.settings.time.line.seek.cancel.delta ? this.cancelTimeScrubbing() : this.allowTimeScrubbing();
+          Math.abs(currX - this.lastTimelineThumbPosition * rect.width) < this.settings.controlPanel.timeline.seek.cancel.delta ? this.cancelTimeScrubbing() : this.allowTimeScrubbing();
           this.showOverlay();
         }
         this.settings.css.currentPreviewPosition = p;
@@ -2490,7 +2490,7 @@ class T_M_G_Video_Controller {
     if (!this.inFloatingPlayer) return;
     this.inFloatingPlayer = false;
     this.floatingPlayer = null;
-    this.videoContainer.classList.toggle("T_M_G-video-progress-bar", this.settings.time.progressBar);
+    this.videoContainer.classList.toggle("T_M_G-video-progress-bar", this.settings.controlPanel.progressBar);
     this.videoContainer.classList.remove("T_M_G-video-floating-player");
     this.deactivatePseudoMode();
     this.toggleMiniPlayerMode();
@@ -2512,7 +2512,7 @@ class T_M_G_Video_Controller {
       if (behavior && tmg.isInWindowView(this.pseudoVideoContainer)) this.pseudoVideoContainer.scrollIntoView({ behavior, block: "center", inline: "center" });
       this.deactivatePseudoMode();
       this.videoContainer.classList.remove("T_M_G-video-mini-player");
-      this.videoContainer.classList.toggle("T_M_G-video-progress-bar", this.settings.time.progressBar);
+      this.videoContainer.classList.toggle("T_M_G-video-progress-bar", this.settings.controlPanel.progressBar);
       this.videoContainer.removeEventListener("mousedown", this._handleMiniPlayerDragStart);
       this.videoContainer.removeEventListener("touchstart", this._handleMiniPlayerDragStart);
     }
@@ -3178,7 +3178,7 @@ class T_M_G_Media_Player {
     }
     const customOptions = (await fetchedControls) ?? {};
     const attributes = this.#medium.getAttributeNames().filter((attr) => attr.startsWith("tmg--"));
-    attributes?.forEach((attr) => tmg.assignHTMLConfig(attr, customOptions, this.#medium));
+    attributes?.forEach((attr) => tmg.assignHTMLConfig(customOptions, attr, this.#medium.getAttribute(attr)));
     if (this.#medium.poster) this.configure({ "media.artwork[0].src": customOptions.media?.artwork?.[0]?.src ?? this.#medium.poster });
     this.#active ? customOptions.settings && Object.entries(customOptions.settings).forEach(([setting, value]) => (this.Controller.settings[setting] = value)) : this.configure(customOptions);
   }
@@ -3199,20 +3199,20 @@ class T_M_G_Media_Player {
     this.#medium.muted = s.volume.muted ??= this.#medium.muted;
     this.#medium.loop = s.time.loop ??= this.#medium.loop;
     if (this.#build.playlist?.[0]) {
-      const v = this.#build.playlist[0];
-      if (v.media) this.#build.media = { ...this.#build.media, ...v.media };
-      tmg.assignDef(s.time, v.settings?.time?.start, "start");
-      tmg.assignDef(s.time, v.settings?.time?.end, "end");
-      if (v.settings?.time?.previews !== undefined) s.time.previews = tmg.isObj(v.settings.time.previews) && tmg.isObj(s.time.previews) ? { ...s.time.previews, ...v.settings.time.previews } : v.settings.time.previews;
-      tmg.assignDef(this.#build, v.tracks, "tracks");
-      tmg.assignDef(this.#build, v.src, "src");
-      tmg.assignDef(this.#build, v.sources, "sources");
+      const v = tmg.mergeObjs(tmg.DEFAULT_PLAYLIST_ITEM_BUILD, tmg.parseDottedObj(this.#build.playlist[0]));
+      if (v.media) this.#build.media = tmg.mergeObjs(this.#build.media, v.media);
+      tmg.assignDef(s.time, "start", v.settings?.time?.start);
+      tmg.assignDef(s.time, "end", v.settings?.time?.end);
+      if (tmg.isDef(v.settings?.time?.previews)) s.time.previews = tmg.isObj(v.settings.time.previews) && tmg.isObj(s.time.previews) ? { ...s.time.previews, ...v.settings.time.previews } : v.settings.time.previews;
+      tmg.assignDef(this.#build, "tracks", v.tracks);
+      tmg.assignDef(this.#build, "src", v.src);
+      tmg.assignDef(this.#build, "sources", v.sources);
     }
     Object.entries(s.modes).forEach(([k, v]) => (s.modes[k] = v && (tmg[`supports${tmg.capitalize(k)}`]?.() ?? true) ? v : false));
     s.status = { noOverride: Object.fromEntries(Object.keys(s).map((k) => [k, s.noOverride.includes?.(k.toLowerCase()) ?? s.noOverride])) };
     s.status.ui = {
       notifiers: s.notifiers || !s.status.noOverride.notifiers,
-      timeline: s.time.line.shown,
+      timeline: s.controlPanel.timeline,
       previews: s.time.previews?.address && s.time.previews?.spf,
       draggable: !s.status.noOverride.controlPanel,
     };
@@ -3226,6 +3226,7 @@ class T_M_G_Media_Player {
 
 class T_M_G {
   static DEFAULT_VIDEO_BUILD = {};
+  static DEFAULT_PLAYLIST_ITEM_BUILD = {};
   static ALLOWED_CONTROLS = ["capture", "fullScreenOrientation", "fullScreenLock", "prev", "playPause", "next", "brightness", "volume", "timeAndDuration", "spacer", "playbackRate", "captions", "settings", "objectFit", "pictureInPicture", "theater", "fullScreen"];
   static NOTIFIER_EVENTS = ["videoplay", "videopause", "videoprev", "videonext", "playbackrateup", "playbackratedown", "volumeup", "volumedown", "volumemuted", "brightnessup", "brightnessdown", "brightnessdark", "objectfitcontain", "objectfitcover", "objectfitfill", "captions", "capture", "theater", "fullScreen", "fwd", "bwd"];
   static WHITE_LISTED_KEYS = [" ", "Enter", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].map((k) => k.toLowerCase());
@@ -3453,6 +3454,8 @@ class T_M_G {
   static uid = (prefix = "T_M_G-") => `${prefix}${Date.now().toString(36)}_${performance.now().toString(36).replace(".", "")}_${Math.random().toString(36).slice(2)}`;
   static clamp = (min = 0, amount, max = Infinity) => Math.min(Math.max(amount, min), max);
   static remToPx = (val) => parseFloat(getComputedStyle(document.documentElement).fontSize * val);
+  static isDef = (val) => val !== undefined;
+  static isNND = (val) => val != null && val !== undefined;
   static isIter = (obj) => obj != null && typeof obj[Symbol.iterator] === "function";
   static isObj = (obj) => typeof obj === "object" && obj != null && !tmg.isArr(obj);
   static isArr = (arr) => Array.isArray(arr);
@@ -3464,24 +3467,12 @@ class T_M_G {
     return axis === "x" ? inY : axis === "y" ? inX : inY && inX;
   }
   static isValidNumber = (number) => !isNaN(number ?? NaN) && number !== Infinity;
-  static assignDef = (target, value, key) => value !== undefined && target != null && (target[key] = value);
-  static assignHTMLConfig = (attr, optionsObj = {}, medium) =>
-    tmg.assignDottedConfig(
-      optionsObj,
-      attr.replace("tmg--", ""),
-      (() => {
-        let value = medium.getAttribute(attr);
-        if (value.includes(",")) value = value.split(",")?.map((val) => val.replace(/\s+/g, ""));
-        else if (/^(true|false|null|\d+)$/.test(value)) value = JSON.parse(value);
-        return value;
-      })(),
-      "--",
-      (p) => tmg.camelize(p)
-    );
-  static assignDottedConfig(obj = {}, prop, value, separator = ".", keyFunc = (p) => p) {
-    if (!tmg.isObj(obj)) return;
-    const keys = prop.split(separator).map(keyFunc);
-    let currObj = obj;
+  static assignDef = (target, key, value, guard = true) => tmg.isDef(value) && guard && target != null && tmg.assignDottedConfig(target, key, value);
+  static assignNND = (target, key, value, guard = true) => tmg.isNND(value) && guard && target != null && tmg.assignDottedConfig(target, key, value);
+  static assignHTMLConfig = (target = {}, attr, value) => tmg.assignDottedConfig(target, attr.replace("tmg--", ""), (() => (value.includes(",") ? value.split(",")?.map((v) => v.replace(/\s+/g, "")) : /^(true|false|null|\d+)$/.test(value) ? JSON.parse(value) : value))(), "--", (p) => tmg.camelize(p));
+  static assignDottedConfig(target = {}, key, value, separator = ".", keyFunc = (p) => p) {
+    const keys = key.split(separator).map(keyFunc);
+    let currObj = target;
     keys.forEach((key, i) => {
       const match = key.match(/^([^\[\]]+)\[(\d+)\]$/);
       if (match) {
@@ -3504,10 +3495,10 @@ class T_M_G {
   static parseNumber = (number, fallback = 0) => (tmg.isValidNumber(number) ? number : fallback);
   static parseCSSTime = (time) => (time.endsWith("ms") ? parseFloat(time) : parseFloat(time) * 1000);
   static parseCSSUnit = (val) => (val.endsWith("px") ? parseFloat(val) : tmg.remToPx(parseFloat(val)));
-  static parseUIObj(node) {
+  static parseUIObj(obj) {
     const result = {};
-    for (const key of Object.keys(node)) {
-      const entry = node[key];
+    for (const key of Object.keys(obj)) {
+      const entry = obj[key];
       if (!tmg.isObj(entry)) continue;
       result[key] = entry.options
         ? {
@@ -3588,9 +3579,9 @@ class T_M_G {
   static formatKeyForDisplay = (combo) => ` ${(tmg.isArr(combo) ? combo : [combo]).map((c) => `(${c})`).join(" or ")}`;
   static createEl(tag, props = {}, dataset = {}, styles = {}) {
     const el = tag ? document.createElement(tag) : null;
-    el && Object.entries(props).forEach(([k, v]) => tmg.assignDef(el, v, k));
-    el && Object.entries(dataset).forEach(([k, v]) => tmg.assignDef(el.dataset, v, k));
-    el && Object.entries(styles).forEach(([k, v]) => tmg.assignDef(el.style, v, k));
+    el && Object.entries(props).forEach(([k, v]) => tmg.assignDef(el, k, v));
+    el && Object.entries(dataset).forEach(([k, v]) => tmg.assignDef(el.dataset, k, v));
+    el && Object.entries(styles).forEach(([k, v]) => tmg.assignDef(el.style, k, v));
     return el;
   }
   static mockAsync = (timeout = 250) => new Promise((resolve) => setTimeout(resolve, timeout));
@@ -3821,10 +3812,9 @@ if (typeof window !== "undefined") {
     mediaType: "video",
     media: { title: "", artist: "", profile: "", album: "", artwork: [], chapterInfo: [], links: { title: "", artist: "", profile: "" } },
     disabled: false,
-    initialState: true,
+    lightState: { disabled: false, controls: ["bigplaypause", "fullscreenorientation"], preview: { usePoster: true, time: 2 } },
     debug: true,
     settings: {
-      noOverride: false,
       auto: { next: 20 },
       beta: {
         disabled: false,
@@ -3989,11 +3979,13 @@ if (typeof window !== "undefined") {
         },
       },
       controlPanel: {
+        profile: true,
         title: true,
         artist: true,
-        profile: true,
         top: ["capture", "fullscreenlock", "fullscreenorientation"],
+        timeline: { thumbIndicator: true, seek: { relative: !tmg.queryMediaMobile(), cancel: { delta: 15, timeout: 2000 } } },
         bottom: [[], ["prev", "playpause", "next", "brightness", "volume", "timeandduration", "spacer", "captions", "settings", "objectfit", "pictureinpicture", "theater", "fullscreen"]],
+        progressBar: tmg.queryMediaMobile(),
       },
       errorMessages: { 1: "The video playback was aborted :(", 2: "The video failed due to a network error :(", 3: "The video could not be decoded :(", 4: "The video source is not supported :(" },
       fastPlay: { playbackRate: 2, key: true, pointer: { type: "all", threshold: 800, inset: 20 }, reset: true },
@@ -4043,23 +4035,21 @@ if (typeof window !== "undefined") {
       },
       modes: { fullScreen: { disabled: false, orientationLock: "auto" }, theater: true, pictureInPicture: true, miniPlayer: { disabled: false, minWindowWidth: 240 } },
       notifiers: true,
+      noOverride: false,
       overlay: { delay: 3000, behavior: "strict" },
       persist: true,
       playbackRate: { min: 0.25, max: 8, skip: 0.25 },
       playsInline: true,
-      time: {
-        start: 0,
-        skip: 10,
-        line: { shown: true, seek: { relative: !tmg.queryMediaMobile(), cancel: { delta: 15, timeout: 2000 } }, thumbIndicator: true },
-        previews: false,
-        progressBar: tmg.queryMediaMobile(),
-        mode: "elapsed",
-        format: "digital",
-        seekSync: false,
-      },
-      toasts: { disabled: false, nextVideoPreview: 2, captureAutoClose: 15000, maxToasts: 7, position: "bottom-left", hideProgressBar: true, closeButton: !tmg.queryMediaMobile(), animation: "slide-up", dragToCloseDir: "x||y" },
+      time: { skip: 10, previews: false, mode: "elapsed", format: "digital", seekSync: false },
+      toasts: { disabled: false, nextVideoPreview: { usePoster: true, time: 2, tease: true }, captureAutoClose: 15000, maxToasts: 7, position: "bottom-left", hideProgressBar: true, closeButton: !tmg.queryMediaMobile(), animation: "slide-up", dragToCloseDir: "x||y" },
       volume: { min: 0, max: 300, skip: 5 },
     },
+  };
+  tmg.DEFAULT_PLAYLIST_ITEM_BUILD = {
+    media: { title: "", chapterInfo: [], links: { title: "" } },
+    src: "",
+    tracks: [],
+    settings: { time: { start: 0, previews: false } },
   };
   window.TMG_VIDEO_ALT_IMG_SRC ??= "/TMG_MEDIA_PROTOTYPE/assets/icons/movie-tape.png";
   window.TMG_VIDEO_CSS_SRC ??= "/TMG_MEDIA_PROTOTYPE/prototype-2/prototype-2-video.css";
