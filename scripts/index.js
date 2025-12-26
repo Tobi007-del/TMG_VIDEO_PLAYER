@@ -528,7 +528,7 @@ function handleFiles(files) {
         } else mP.Controller.playlist = [...mP.Controller.playlist, ...playlist];
       };
       const deployCaptions = async () => {
-        await Promise.all(playlist.map(async (item, i) => await deployCaption(item, files[i], thumbnails[i])));
+        await Promise.all(playlist.map(async (item, i) => await deployCaption(files[i], thumbnails[i])));
       };
       deployVideos(files.map((file) => URL.createObjectURL(file)));
       deployCaptions();
@@ -571,7 +571,7 @@ function cancelJob(id) {
   return !!job?.cancelled;
 }
 
-async function deployCaption(item, file, thumbnail, autocancel = tmg.queryMediaMobile()) {
+async function deployCaption(file, thumbnail, autocancel = tmg.queryMediaMobile()) {
   const id = uid();
   thumbnail?.setAttribute("data-caption-id", id);
   thumbnail?.setAttribute("data-caption-state", autocancel ? "empty" : "waiting");
@@ -582,6 +582,7 @@ async function deployCaption(item, file, thumbnail, autocancel = tmg.queryMediaM
     () => thumbnail?.setAttribute("data-caption-state", "loading")
   );
   if (!res.cancelled) thumbnail?.setAttribute("data-caption-state", res.success ? "filled" : "empty");
+  const item = thumbnail?.getPlaylistItem();
   if (!res.success || !item) return;
   item.tracks = [res.track];
   if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex].media.id === item.media.id) mP.Controller.tracks = item.tracks;
