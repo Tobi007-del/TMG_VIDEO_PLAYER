@@ -214,7 +214,7 @@ function initUI() {
 function readyUI() {
   video.classList.remove("stall");
   videoPlayerContainer.classList.remove("loading");
-  setTimeout(() => mP.Controller.toast(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }));
+  setTimeout(() => mP.Controller?.toast(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }));
 }
 
 function errorUI(error) {
@@ -271,7 +271,7 @@ function handleFiles(files) {
           className: "thumbnail-container",
           onclick: () => {
             const idx = mP.Controller?.playlist.findIndex((vid) => vid.src === thumbnailContainer.querySelector("video").src);
-            if (idx >= 0) mP.Controller.movePlaylistTo(idx);
+            if (idx >= 0) mP.Controller?.movePlaylistTo(idx);
           },
         });
         li.appendChild(thumbnailContainer);
@@ -499,12 +499,11 @@ function handleFiles(files) {
           };
           playlist.push(item);
           thumbnails[i].src = url;
-          thumbnails[i].getPlaylistItem = () => (thumbnails[i].playlistItem = mP.Controller.playlist?.find((v) => v.media.id === item.media.id) ?? thumbnail[i].playlistItem ?? {});
+          thumbnails[i].getPlaylistItem = () => (thumbnails[i].playlistItem = mP?.Controller?.playlist?.find((v) => v.media.id === item.media.id) ?? thumbnails[i].playlistItem ?? {});
         });
         if (!mP) {
           video.addEventListener("tmgready", readyUI, { once: true });
           mP = new tmg.Player({
-            tracks: [],
             playlist,
             "media.artist": "TMG Video Player",
             "media.profile": "assets/icons/tmg-icon.jpeg",
@@ -520,18 +519,10 @@ function handleFiles(files) {
           });
           mP.attach(video);
           video.addEventListener("loadedmetadata", dispatchPlayerReadyToast, { once: true });
-          video.ontimeupdate = () => {
-            mP.Controller.throttle(
-              "progressSetting",
-              () => {
-                if (video.currentTime > 3) containers[mP.Controller.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.parseNumber(video.currentTime / video.duration));
-              },
-              1000
-            );
-          };
+          video.ontimeupdate = ({ target: { currentTime: ct, duration: d } }) => mP.Controller?.throttle("progressSetting", () => ct > 3 && containers[mP.Controller?.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.parseNumber(ct / d)), 1000);
           video.onplay = () => {
-            fileList.querySelectorAll(".content-line").forEach((li, i) => li.classList.toggle("playing", i === mP.Controller.currentPlaylistIndex));
-            containers[mP.Controller.currentPlaylistIndex]?.classList.remove("paused");
+            fileList.querySelectorAll(".content-line").forEach((li, i) => li.classList.toggle("playing", i === mP.Controller?.currentPlaylistIndex));
+            containers[mP.Controller?.currentPlaylistIndex]?.classList.remove("paused");
           };
           video.onpause = () => containers[mP.Controller?.currentPlaylistIndex]?.classList.add("paused");
         } else mP.Controller.playlist = [...mP.Controller.playlist, ...playlist];
@@ -593,7 +584,7 @@ async function deployCaption(item, file, thumbnail, autocancel = tmg.queryMediaM
   if (!res.cancelled) thumbnail?.setAttribute("data-caption-state", res.success ? "filled" : "empty");
   if (!res.success || !item) return;
   item.tracks = [res.track];
-  if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex] === item) mP.Controller.tracks = item.tracks;
+  if (mP.Controller?.playlist[mP.Controller.currentPlaylistIndex].media.id === item.media.id) mP.Controller.tracks = item.tracks;
 }
 
 async function extractCaptions(file, id) {
