@@ -48,6 +48,8 @@
   --t007-toast-image-width: calc(var(--t007-toast-unit) * 3.5);
   --t007-toast-image-height: calc(var(--t007-toast-unit) * 3.5);
   --t007-toast-image-border-radius: calc(var(--t007-toast-border-radius) - (var(--t007-toast-padding) / 2));
+  --t007-toast-image-object-fit: cover;
+  --t007-toast-image-background: black;
   --t007-toast-actions-container-width: 65%;
   --t007-toast-actions-container-max-width: fit-content;
   --t007-toast-actions-container-gap: calc(var(--t007-toast-unit) / 4);
@@ -224,9 +226,7 @@
   backdrop-filter: blur(var(--t007-toast-background-blur));
   overflow: hidden;
   will-change: transform, opacity;
-  transition:
-    transform 300ms ease,
-    opacity 300ms ease;
+  transition: transform 300ms ease, opacity 300ms ease;
   animation-timing-function: var(--t007-toast-animation-timing-function);
   animation-fill-mode: forwards;
   animation-duration: var(--t007-toast-animation-duration);
@@ -383,7 +383,8 @@
   height: 100%;
   min-width: 100%;
   width: 100%;
-  object-fit: cover;
+  object-fit: var(--t007-toast-image-object-fit);
+  background: var(--t007-toast-image-background);
 }
 
 .t007-toast-body {
@@ -425,10 +426,7 @@
   border: var(--t007-toast-action-button-border);
   border-radius: var(--t007-toast-action-button-border-radius);
   opacity: 0.9;
-  transition:
-    opacity 200ms ease,
-    color 200ms ease,
-    background-color 200ms ease;
+  transition: opacity 200ms ease, color 200ms ease, background-color 200ms ease;
 }
 
 .t007-toast-action-button:is(:hover, :focus-visible) {

@@ -1715,13 +1715,14 @@ class T_M_G_Video_Controller {
     this.video.play();
   }
   _handleBufferStart() {
-    this.buffering = true;
+    this.buffering = this.isMediaMobile && this.currentSkipNotifier ? "skip" : true;
     this.isMediaMobile && this.showOverlay();
     this.videoContainer.classList.add("T_M_G-video-buffering");
   }
   _handleBufferStop() {
+    const buffering = this.buffering;
     this.buffering = false;
-    this.isMediaMobile && this.delayOverlay();
+    this.isMediaMobile && (buffering === "skip" ? this.removeOverlay() : this.delayOverlay());
     this.videoContainer.classList.remove("T_M_G-video-buffering");
   }
   _handlePlay() {
@@ -1739,10 +1740,14 @@ class T_M_G_Video_Controller {
     !this.video.error && this.reactivate();
   }
   _handlePause() {
+    this.showOverlay();
     this.videoContainer.classList.add("T_M_G-video-paused");
     this._handleBufferStop();
   }
-  _handleEnded = () => this.videoContainer.classList.add("T_M_G-video-replay");
+  _handleEnded = () => {
+    this.showOverlay();
+    this.videoContainer.classList.add("T_M_G-video-replay");
+  };
   get duration() {
     return tmg.parseNumber(this.video.duration);
   }
@@ -1900,7 +1905,6 @@ class T_M_G_Video_Controller {
   skip(duration) {
     const notifier = duration > 0 ? this.DOM.fwdNotifier : this.DOM.bwdNotifier;
     duration = duration > 0 ? (this.duration - this.currentTime > duration ? duration : this.duration - this.currentTime) : duration < 0 ? (this.currentTime > Math.abs(duration) ? duration : -this.currentTime) : 0;
-    duration = Math.trunc(duration);
     this.settings.css.currentPlayedPosition = this.settings.css.currentThumbPosition = tmg.parseNumber((this.video.currentTime += duration) / this.video.duration);
     if (this.skipPersist) {
       if (this.currentSkipNotifier && notifier !== this.currentSkipNotifier) {
@@ -1919,9 +1923,9 @@ class T_M_G_Video_Controller {
         this.currentSkipNotifier = null;
         !this.video.paused ? this.removeOverlay() : this.showOverlay();
       }, tmg.parseCSSTime(this.settings.css.notifiersAnimationTime));
-      return notifier?.setAttribute("data-skip", this.skipDuration);
+      return notifier?.setAttribute("data-skip", Math.trunc(this.skipDuration));
     } else this.currentSkipNotifier?.classList.remove("T_M_G-video-control-persist");
-    notifier?.setAttribute("data-skip", Math.abs(duration));
+    notifier?.setAttribute("data-skip", Math.trunc(Math.abs(duration)));
   }
   moveVideoTime(details) {
     switch (details.to) {
@@ -1943,9 +1947,7 @@ class T_M_G_Video_Controller {
     // this.throttle("statsLogging", () => this.log(` STATS FOR NERDS: \n Now: ${now} ms\n Media Time: ${m.mediaTime} s\n Expected Display Time: ${m.expectedDisplayTime} ms\n Presented Frames: ${m.presentedFrames}\n Dropped Frames (detected): ${droppedFrames}\n FPS (real-time): ${fps}\n Processing Duration: ${m.processingDuration} ms\n Capture Time: ${m.captureTime}\n Width: ${m.width}\n Height: ${m.height}\n Painted Frames: ${m.paintedFrames}\n`), 1000, false);
     this.frameCallbackId = this.video.requestVideoFrameCallback?.(this._handleFrameUpdate);
   }
-  moveVideoFrame(dir = "forwards") {
-    this.video.paused && this.throttle("frameStepping", () => (this.currentTime = tmg.clamp(0, Math.round(this.currentTime * this.pfps) + (dir === "backwards" ? -1 : 1), Math.floor(this.duration * this.pfps)) / this.pfps), this.pframeDelay);
-  }
+  moveVideoFrame = (dir = "forwards") => this.video.paused && this.throttle("frameStepping", () => (this.currentTime = tmg.clamp(0, Math.round(this.currentTime * this.pfps) + (dir === "backwards" ? -1 : 1), Math.floor(this.duration * this.pfps)) / this.pfps), this.pframeDelay);
   get playbackRate() {
     return this.video.playbackRate ?? 1;
   }
@@ -2564,7 +2566,7 @@ class T_M_G_Video_Controller {
   _handleClick({ target }) {
     if (target !== this.DOM.controlsContainer) return;
     if (this.speedCheck && this.playTriggerCounter < 1) return;
-    if (this.isMediaMobile && !this.isUIActive("pictureInPicture") && !this.buffering && !this.video.ended ? true : !this.isUIActive("overlay")) !this.settings.overlay.behavior.match(/hidden|persistent/) && this.videoContainer.classList.toggle("T_M_G-video-overlay");
+    if (this.isMediaMobile && !this.isUIActive("pictureInPicture") && !this.buffering && !this.video.ended && !this.currentSkipNotifier ? true : !this.isUIActive("overlay")) !this.settings.overlay.behavior.match(/hidden|persistent/) && this.videoContainer.classList.toggle("T_M_G-video-overlay");
     if (this.isMediaMobile || this.isUIActive("miniPlayer")) return;
     this.togglePlay();
     this.video.paused ? this.notify("videopause") : this.notify("videoplay");
@@ -2587,10 +2589,7 @@ class T_M_G_Video_Controller {
       this.deactivateSkipPersist();
       if (detail == 1) return;
     }
-    if (pos === "center") {
-      this.isMediaMobile ? this.togglePlay() : this.toggleFullScreenMode();
-      return this.isMediaMobile && this.video.paused && this.showOverlay();
-    }
+    if (pos === "center") return this.isMediaMobile ? this.togglePlay() : this.toggleFullScreenMode();
     if (this.skipPersist && detail == 2) return;
     this.activateSkipPersist(pos);
     pos === "right" ? this.skip(this.settings.time.skip) : this.skip(-this.settings.time.skip);
@@ -2624,7 +2623,7 @@ class T_M_G_Video_Controller {
     if (this.shouldRemoveOverlay()) this.overlayDelayId = setTimeout(this.removeOverlay, this.settings.overlay.delay);
   }
   removeOverlay = (manner) => this.shouldRemoveOverlay(manner) && this.videoContainer.classList.remove("T_M_G-video-overlay");
-  shouldRemoveOverlay = (manner) => this.settings.overlay.behavior !== "persistent" && (manner === "force" || (!this.isUIActive("pictureInPicture") && !this.isUIActive("settings") && (this.isMediaMobile ? !this.video.paused && !this.buffering && !this.video.ended : this.settings.overlay.behavior === "strict" ? true : !this.video.paused)));
+  shouldRemoveOverlay = (manner) => this.settings.overlay.behavior !== "persistent" && (manner === "force" || (!this.isUIActive("pictureInPicture") && !this.isUIActive("settings") && (this.isMediaMobile ? !this.buffering && !this.video.paused : this.settings.overlay.behavior === "strict" ? true : !this.video.paused)));
   showLockedOverlay() {
     this.videoContainer.classList.add("T_M_G-video-locked-overlay");
     this.delayLockedOverlay();
@@ -4033,7 +4032,7 @@ if (typeof window !== "undefined") {
         // prettier-ignore
         blocks: ["Ctrl+Tab","Ctrl+Shift+Tab","Ctrl+PageUp","Ctrl+PageDown","Cmd+Option+ArrowRight","Cmd+Option+ArrowLeft","Ctrl+1","Ctrl+2","Ctrl+3","Ctrl+4","Ctrl+5","Ctrl+6","Ctrl+7","Ctrl+8","Ctrl+9","Cmd+1","Cmd+2","Cmd+3","Cmd+4","Cmd+5","Cmd+6","Cmd+7","Cmd+8","Cmd+9","Alt+ArrowLeft","Alt+ArrowRight","Cmd+ArrowLeft","Cmd+ArrowRight","Ctrl+r","Ctrl+Shift+r","F5","Shift+F5","Cmd+r","Cmd+Shift+r","Ctrl+h","Ctrl+j","Ctrl+d","Ctrl+f","Cmd+y","Cmd+Option+b","Cmd+d","Cmd+f","Ctrl+Shift+i","Ctrl+Shift+j","Ctrl+Shift+c","Ctrl+u","F12","Cmd+Option+i","Cmd+Option+j","Cmd+Option+c","Cmd+Option+u","Ctrl+=","Ctrl+-","Ctrl+0","Cmd+=","Cmd+-","Cmd+0","Ctrl+p","Ctrl+s","Ctrl+o","Cmd+p","Cmd+s","Cmd+o"],
       },
-      modes: { fullScreen: { disabled: false, orientationLock: "auto" }, theater: true, pictureInPicture: true, miniPlayer: { disabled: false, minWindowWidth: 240 } },
+      modes: { fullScreen: { disabled: false, orientationLock: "auto" }, theater: !tmg.queryMediaMobile(), pictureInPicture: true, miniPlayer: { disabled: false, minWindowWidth: 240 } },
       notifiers: true,
       noOverride: false,
       overlay: { delay: 3000, behavior: "strict" },
