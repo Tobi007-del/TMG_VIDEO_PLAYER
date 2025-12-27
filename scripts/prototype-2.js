@@ -1439,7 +1439,7 @@ class T_M_G_Video_Controller {
     this.exportContext.drawImage(video, 0, 0, this.exportCanvas.width, this.exportCanvas.height);
     display === "monochrome" && this.convertToMonoChrome(this.exportCanvas, this.exportContext);
     if (raw === true) return { canvas: this.exportCanvas, context: this.exportContext };
-    const blob = await new Promise((res) => this.exportCanvas.toBlob(res));
+    const blob = (this.exportCanvas.width || this.exportCanvas.height) && (await new Promise((res) => this.exportCanvas.toBlob(res)));
     return { blob, url: blob && URL.createObjectURL(blob) };
   }
   async captureVideoFrame(display = "", time = this.currentTime) {

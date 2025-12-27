@@ -75,10 +75,9 @@ class T007_Toast {
     if (values.length) {
       this._setUpBodyHTML();
       this.toastElement.querySelector(".t007-toast-body").insertAdjacentElement("afterend", actionsWrapper() || Object.assign(document.createElement("div"), { className: "t007-toast-actions-wrapper" }));
-      actionsWrapper().innerHTML = values.map(([label]) => (label ? `<button class="t007-toast-action-button">${label}</button>` : "")).join("");
-      actionsWrapper()
-        .querySelectorAll(".t007-toast-action-button")
-        .forEach((btn, i) => (btn.onclick = (e) => values[i][1]?.(e, this)));
+      const wrapper = actionsWrapper();
+      wrapper.innerHTML = values.map(([label]) => (label ? `<button class="t007-toast-action-button">${label}</button>` : "")).join("");
+      wrapper.querySelectorAll(".t007-toast-action-button").forEach((btn, i) => (btn.onclick = (e) => values[i][1]?.(e, this)));
     } else actionsWrapper()?.remove();
   }
   set image(value) {
@@ -86,7 +85,9 @@ class T007_Toast {
     if (value) {
       this._setUpBodyHTML();
       this.toastElement.querySelector(".t007-toast-image-wrapper").prepend(image() || Object.assign(document.createElement("img"), { className: "t007-toast-image", alt: "toast-image" }));
-      image().src = value;
+      const img = image();
+      img.src = value;
+      img.onload = img.onerror = () => (img.dataset.loaded = img.complete && img.naturalWidth > 0);
     } else image()?.remove();
   }
   get icon() {

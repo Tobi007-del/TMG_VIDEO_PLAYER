@@ -384,6 +384,10 @@
   min-width: 100%;
   width: 100%;
   object-fit: var(--t007-toast-image-object-fit);
+  background: var(--t007-toast-no-image-background);
+}
+
+.t007-toast-image-wrapper [data-loaded="true"] {
   background: var(--t007-toast-image-background);
 }
 
