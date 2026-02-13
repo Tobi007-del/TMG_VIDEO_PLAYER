@@ -3688,11 +3688,11 @@ var tmg = {
       this.running = true;
       while (this.jobs.length > 0) {
         const job = this.jobs.shift();
-        if (job) (job.cancelled ? job.resolve({ success: false, cancelled: true, dropped: false }) : job.preTask?.(), job.resolve(await job.task()));
+        if (job) job.cancelled ? job.resolve({ success: false, cancelled: true, dropped: false }) : (job.preTask?.(), job.resolve(await job.task()));
       }
       this.running = false;
     }
-    add = (task, id, cancelled, preTask) => new Promise((resolve) => this.jobs.push({ task, id, preTask, cancelled, resolve }), this._handle());
+    add = (task, id, cancelled, preTask) => new Promise((resolve) => (this.jobs.push({ task, id, preTask, cancelled, resolve }), this._handle()));
     drop(id) {
       const job = this.jobs.find((j) => j.id === id);
       job?.resolve({ success: false, cancelled: true, dropped: true });

@@ -41,6 +41,7 @@ let canSession = "launchQueue" in window || "showOpenFilePicker" in window,
   installPrompt = null,
   video = document.getElementById("video"),
   mP = null, // media player
+  readyTId,
   numOfBytes = 0,
   numOfFiles = 0,
   totalTime = 0,
@@ -331,8 +332,7 @@ function saveSession() {
 async function clearFiles() {
   const ok = await Confirm("Are you sure you want to clear all files?", { title: "Clear Files", confirmText: "Clear" });
   if (!ok) return;
-  video.pause();
-  video.removeAttribute("src");
+  (Toast.dismiss(readyTId), video.pause(), video.removeAttribute("src"));
   video.onplay = video.onpause = video.ontimeupdate = null;
   video = mP?.detach();
   mP = null;
@@ -554,7 +554,8 @@ async function deployCaption(file, thumbnail, autocancel = tmg.queryMediaMobile(
     console.log(`✨TVP IDB Vault Hit: Subtitles restored for ${id}`);
     track ??= { id, kind: "captions", label: "English", srclang: "en", default: true };
     track.src = URL.createObjectURL(new Blob([buffer], { type: "text/vtt" }));
-    if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === item.media.id) mP.Controller.config.tracks = item.tracks = [track];
+    item.tracks = [track];
+    if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === item.media.id) mP.Controller.config.tracks = item.tracks;
     return thumbnail.setAttribute("data-caption-state", "filled");
   }
   // 2. THE FACTORY (FFmpeg - only if Vault is empty)
@@ -568,7 +569,8 @@ async function deployCaption(file, thumbnail, autocancel = tmg.queryMediaMobile(
   if (res.success) await DB.vault.subtitles.put(res.vttData.buffer, id);
   if (!res.cancelled) thumbnail.setAttribute("data-caption-state", res.success ? "filled" : "empty");
   if (!(item = thumbnail.getPlItem()) || !res.success) return;
-  if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === item.media.id) mP.Controller.config.tracks = item.tracks = [res.track];
+  item.tracks = [res.track];
+  if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === item.media.id) mP.Controller.config.tracks = item.tracks;
 }
 async function extractCaptions(file, id) {
   const outputName = `cue${id}.vtt`,
@@ -656,10 +658,10 @@ function syncPlaylist() {
   mP.Controller.config.playlist = Array.from(fileList.querySelectorAll(".content-line"), (li) => map[li.querySelector("video")?.mediaId]).filter(Boolean);
 }
 function dispatchPlayerReadyToast(hour = new Date().getHours()) {
-  const timeLines = readyLines[hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : hour >= 17 && hour < 21 ? "evening" : "night"] || [];
-  const combined = [...timeLines, ...readyLines.default, ...timeLines];
-  const { body, icon } = combined[Math.floor(Math.random() * combined.length)];
-  Toast(body, { vibrate: true, icon });
+  const timeLines = readyLines[hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : hour >= 17 && hour < 21 ? "evening" : "night"] || [],
+    combined = [...timeLines, ...readyLines.default, ...timeLines],
+    { body, icon } = combined[Math.floor(Math.random() * combined.length)];
+  readyTId = Toast(body, { vibrate: true, icon });
 }
 
 function smartFlatSort(files) {
