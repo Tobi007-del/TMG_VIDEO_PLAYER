@@ -567,7 +567,7 @@ async function deployCaption(file, thumbnail, autocancel = tmg.queryMediaMobile(
   );
   if (res.success) await DB.vault.subtitles.put(res.vttData.buffer, id);
   if (!res.cancelled) thumbnail.setAttribute("data-caption-state", res.success ? "filled" : "empty");
-  if (!res.success || !(item = thumbnail.getPlItem())) return;
+  if (!(item = thumbnail.getPlItem()) || !res.success) return;
   if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === item.media.id) mP.Controller.config.tracks = item.tracks = [res.track];
 }
 async function extractCaptions(file, id) {
