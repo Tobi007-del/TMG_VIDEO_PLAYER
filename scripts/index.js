@@ -36,6 +36,7 @@ var lsk = "TVP_visitor_info",
 let canSession = "launchQueue" in window || "showOpenFilePicker" in window,
   sessionHandles = [],
   sessionTId, // session toast id
+  sessionTInt, // session toast interval for updating last updated time every minute
   installed = true,
   installPrompt = null,
   video = document.getElementById("video"),
@@ -122,7 +123,7 @@ const Memory = {
     return (Date.now() - session.lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (this.clear(), console.log("TVP expired session cleaned up.")) : { state, handles: session.handles, lastUpdated: session.lastUpdated };
   },
   async save(snapshot) {
-    localStorage.setItem(this._stateKey, JSON.stringify({ settings: snapshot.settings, playlist: snapshot.playlist, playlistIndex: +mP?.Controller?.currentPlaylistIndex, paused: video.paused }));
+    localStorage.setItem(this._stateKey, JSON.stringify({ settings: snapshot.settings, playlist: snapshot.playlist, media: snapshot.media, paused: video.paused }));
     sessionHandles.length ? await DB.vault.handles.put({ handles: sessionHandles, lastUpdated: Date.now() }, "last_handles") : await this.clear();
   },
   async clear() {
@@ -195,6 +196,7 @@ window.addEventListener("load", async () => {
   (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && Toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
   const session = await Memory.getSession();
   if (session) sessionTId = Toast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", autoClose: false, closeButton: false, actions: { Restore: () => restoreSession(session), Dismiss: () => Toast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, actions: false, autoClose: true, closeButton: true }) } });
+  if (session) sessionTInt = setInterval(() => Toast.update(sessionTId, { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
 });
 window.addEventListener("online", () => document.body.classList.remove("offline"));
 window.addEventListener("offline", () => document.body.classList.add("offline"));
@@ -218,7 +220,7 @@ clearFilesBtn.addEventListener("click", clearFiles);
     const handles = useHandles ? await getPickedHandles(recurse) : null;
     if (useHandles && !handles?.length) return defaultUI();
     const allFiles = useHandles ? await getHandlesFiles(handles) : [...e.target.files],
-      videoFiles = allFiles.filter((file) => file.type.startsWith("video/")),
+      videoFiles = allFiles.filter((file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
       rejectedCount = allFiles.length - videoFiles.length;
     if (rejectedCount > 0) Toast.warn(`You picked ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
     handleFiles(videoFiles, null, handles);
@@ -233,7 +235,7 @@ clearFilesBtn.addEventListener("click", clearFiles);
   async function handleDrop(e, useHandles = false) {
     const handles = useHandles ? await getDroppedHandles(e) : null,
       allFiles = useHandles ? await getHandlesFiles(handles) : await getDroppedFiles(e, initUI),
-      videoFiles = allFiles.filter((file) => file.type.startsWith("video/")),
+      videoFiles = allFiles.filter((file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
       rejectedCount = allFiles.length - videoFiles.length;
     if (rejectedCount > 0) Toast.warn(`You dropped ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
     handleFiles(videoFiles, null, handles);
@@ -292,7 +294,7 @@ function updateUI() {
 async function restoreSession({ state, handles }) {
   const files = [],
     sureHandles = [];
-  Toast.info(sessionTId, { render: "Restoring your ongoing session now", icon: true, actions: false });
+  (clearInterval(sessionTInt), Toast.info(sessionTId, { render: "Restoring your ongoing session now", icon: true, actions: false }));
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
     try {
@@ -496,7 +498,8 @@ function handleFiles(files, restored = null, handles = null) {
           video.addEventListener(
             "tmgattached",
             () => {
-              restored && mP.Controller?.movePlaylistTo(restored.playlistIndex, !restored.paused);
+              const i = restored && playlist.findIndex((item) => item.media.id === restored.media.id);
+              restored && mP.Controller?.movePlaylistTo(Math.max(0, i), !restored.paused);
               mP.Controller.config.on("*", () => mP.Controller?.throttle("TVP_session_save", saveSession, 2000), { immediate: true });
               readyUI();
             },
@@ -521,7 +524,7 @@ function handleFiles(files, restored = null, handles = null) {
           window.addEventListener("pagehide", saveSession);
           document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && saveSession());
           video.addEventListener("loadedmetadata", () => dispatchPlayerReadyToast(), { once: true });
-          video.ontimeupdate = ({ target: { currentTime: ct, duration: d } }) => mP.Controller?.throttle("TVP_thumbnail_update", () => ct > 3 && containers[mP.Controller?.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.safeNum(ct / d)), 5000);
+          video.ontimeupdate = ({ target: { currentTime: ct, duration: d } }) => mP.Controller?.throttle("TVP_thumbnail_update", () => ct > 3 && containers[mP.Controller?.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.safeNum(ct / d)), 2000);
           video.onplay = () => {
             fileList.querySelectorAll(".content-line").forEach((li, i) => li.classList.toggle("playing", i === mP.Controller?.currentPlaylistIndex));
             containers[mP.Controller?.currentPlaylistIndex]?.classList.remove("paused");
