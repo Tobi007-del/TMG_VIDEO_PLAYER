@@ -33,7 +33,7 @@ var lsk = "TVP_visitor_info",
   if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist();
 })();
 
-let canSession = "launchQueue" in window || "showOpenFilePicker" in window,
+let canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype,
   sessionHandles = [],
   sessionTId, // session toast id
   sessionTInt, // session toast interval for updating last updated time every minute
@@ -196,7 +196,7 @@ window.addEventListener("load", async () => {
   }
   (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && Toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
   const session = await Memory.getSession();
-  if (session) sessionTId = Toast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", autoClose: false, closeButton: false, actions: { Restore: () => restoreSession(session), Dismiss: () => Toast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, actions: false, autoClose: true, closeButton: true }) } });
+  if (session) sessionTId = Toast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", autoClose: false, closeButton: false, dragToClose: false, actions: { Restore: () => restoreSession(session), Dismiss: () => Toast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, actions: false, autoClose: true, closeButton: true }) } });
   if (session) sessionTInt = setInterval(() => Toast.update(sessionTId, { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
 });
 window.addEventListener("online", () => document.body.classList.remove("offline"));
@@ -226,7 +226,7 @@ clearFilesBtn.addEventListener("click", clearFiles);
     if (rejectedCount > 0) Toast.warn(`You picked ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
     handleFiles(videoFiles, null, handles);
   }
-  !("showOpenFilePicker" in window) ? input.addEventListener("change", handleInput) : input.addEventListener("click", (e) => handleInput(e, true));
+  !((!recurse ? "showOpenFilePicker" : "showDirectoryPicker") in window) ? input.addEventListener("change", handleInput) : input.addEventListener("click", (e) => handleInput(e, true));
 });
 [videosDropBox, foldersDropBox].forEach((dropBox, i) => {
   if (!((i ? "webkitdirectory" : "files") in HTMLInputElement.prototype)) return dropBox.remove();
@@ -242,7 +242,7 @@ clearFilesBtn.addEventListener("click", clearFiles);
     handleFiles(videoFiles, null, handles);
     [videosDropBox, foldersDropBox].forEach((el) => el.classList.remove("active"));
   }
-  !("showOpenFilePicker" in window) ? dropBox.addEventListener("drop", handleDrop) : dropBox.addEventListener("drop", (e) => handleDrop(e, true));
+  !("getAsFileSystemHandle" in DataTransferItem.prototype) ? dropBox.addEventListener("drop", handleDrop) : dropBox.addEventListener("drop", (e) => handleDrop(e, true));
 });
 (async function launchWithOpenedFiles() {
   if (!("launchQueue" in window)) return;
@@ -311,6 +311,7 @@ async function restoreSession({ state, handles }) {
             },
             autoClose: false,
             closeButton: false,
+            dragToClose: false,
           });
         })();
       });
