@@ -14,6 +14,15 @@
   --T_M_G-brand-color: rgb(226, 110, 2);
   --T_M_G-brand-light-color: hsl(from var(--T_M_G-brand-color) h s calc(l + 40));
   --T_M_G-brand-accent-color: rgb(from var(--T_M_G-brand-color) calc(r + 18) calc(g + 33) calc(b + 175));
+  --T_M_G-theme-color: white;
+  --T_M_G-theme-light-color: rgb(from var(--T_M_G-theme-color) calc(r - 40) calc(g - 40) calc(b - 40));
+  --T_M_G-theme-accent-color: rgb(from var(--T_M_G-theme-color) calc(r - 130) calc(g - 130) calc(b - 130));
+  --T_M_G-theme-accent-2-color: rgb(from var(--T_M_G-theme-color) calc(r - 100) calc(g - 100) calc(b - 100));
+  --T_M_G-theme-inverse-color: black;
+  --T_M_G-theme-dark-color: rgb(from var(--T_M_G-theme-inverse-color) calc(r + 11) calc(g + 16) calc(b + 18));
+  --T_M_G-theme-shadow-color: rgb(from var(--T_M_G-theme-dark-color) r g b / 0.9);
+  --T_M_G-theme-shadow-2-color: rgb(from var(--T_M_G-theme-inverse-color) calc(r + 27) calc(g + 38) calc(b + 74) / 0.751);
+  --T_M_G-theme-shadow-3-color: rgb(from var(--T_M_G-theme-inverse-color) calc(r + 92) calc(g + 128) calc(b + 247) / 0.33);
   --max-turn: 0.235turn;
   --loader-size: 75px;
   --loader-width: 4px;
@@ -21,10 +30,22 @@
 }
 
 /* lib variables */
-.t007-toast-container {
-  --T_M_G-video-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+:where(body > .t007-toast-container) > .t007-toast {
   --t007-toast-type-color: var(--T_M_G-brand-color);
+  --t007-toast-box-shadow: 1px 1px 2px rgb(from var(--T_M_G-brand-accent-color) r g b / 0.06), 2px 2px 4px rgb(from var(--T_M_G-brand-accent-color) r g b / 0.06);
   --t007-toast-progress-background: linear-gradient(to left, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-brand-light-color));
+}
+.t007-dialog {
+  --t007-dialog-border: 0.05rem solid rgb(from var(--T_M_G-theme-color) r g b / 0.25);
+  --t007-dialog-background: rgb(20, 20, 20);
+  --t007-dialog-message-color: var(--T_M_G-theme-color);
+  --t007-confirm-button-color: var(--T_M_G-theme-accent-2-color);
+  --t007-cancel-button-color: var(--T_M_G-brand-color);
+}
+.tmg-media-container {
+  --tmg-video-brand-color: var(--T_M_G-brand-color);
+  --tmg-video-current-mini-player-x: calc((var(--T_M_G-video-current-container-width) / 2) + 7.5px);
+  --tmg-video-current-mini-player-y: calc((var(--T_M_G-video-current-container-height) / 2) + 7.5px);
 }
 
 @keyframes rotateLight {
@@ -88,8 +109,13 @@
   transition: none !important;
 }
 
+*::selection {
+  color: currentColor;
+  background-color: var(--T_M_G-brand-color);
+}
+
 html {
-  background-color: #0b1012;
+  background-color: var(--T_M_G-theme-dark-color);
   overflow-x: hidden;
 }
 
@@ -97,7 +123,15 @@ body {
   margin: 0;
   padding: 0;
   padding-bottom: 30px;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
   overflow-x: hidden;
 }
 
@@ -109,17 +143,17 @@ body::before {
   height: 100lvh;
   z-index: -1;
   background:
-    conic-gradient(from var(--turn) at 50% -10%, #0b1012e8 10deg, #0b1012e8 calc((360deg - var(--degree)) / 2), rgba(27, 38, 74, 0.751), #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2), #0b1012e8 350deg),
+    conic-gradient(from var(--turn) at 50% -10%, var(--T_M_G-theme-shadow-color) 10deg, var(--T_M_G-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--T_M_G-theme-shadow-2-color), var(--T_M_G-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--T_M_G-theme-shadow-color) 350deg),
     center/cover url("../assets/images/lone-tree.jpg"),
-    #0b1012;
+    var(--T_M_G-theme-dark-color);
   animation: rotateLight 30s linear infinite;
 }
 
 body.light::before {
   background:
-    conic-gradient(from var(--turn) at 50% -10%, #0b1012e8 10deg, #0b1012e8 calc((360deg - var(--degree)) / 2), #5c80f755, #0b1012e8 calc(360deg - (360deg - var(--degree)) / 2), #0b1012e8 350deg),
+    conic-gradient(from var(--turn) at 50% -10%, var(--T_M_G-theme-shadow-color) 10deg, var(--T_M_G-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--T_M_G-theme-shadow-3-color), var(--T_M_G-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--T_M_G-theme-shadow-color) 350deg),
     center/cover url("../assets/images/lone-tree.jpg"),
-    #0b1012;
+    var(--T_M_G-theme-dark-color);
 }
 
 body.offline .offline-notice {
@@ -129,7 +163,7 @@ body.offline .offline-notice {
   font-weight: bolder;
   font-size: 12px;
   text-align: center;
-  color: rgba(0, 0, 0, 0.85);
+  color: rgb(from var(--T_M_G-theme-inverse-color) r g b/ 0.85);
   width: 100%;
   max-height: fit-content;
   padding: 2px;
@@ -161,7 +195,7 @@ body:has(.dragging) {
 
 .attribution {
   font-size: 12.5px;
-  color: lightgrey;
+  color: var(--T_M_G-theme-light-color);
   padding-inline: 10vw;
 }
 
@@ -174,13 +208,6 @@ body:has(.dragging) {
   max-width: fit-content;
   flex: 1 1 50%;
   margin-bottom: 40px;
-}
-
-body .T_M_G-media-container {
-  --T_M_G-video-brand-color: var(--T_M_G-brand-color);
-  --T_M_G-video-brand-complement-color: rgb(from var(--T_M_G-video-brand-color) r g b / 0.4);
-  --T_M_G-video-current-mini-player-x: calc((var(--T_M_G-video-current-container-width) / 2) + 7.5px);
-  --T_M_G-video-current-mini-player-y: calc((var(--T_M_G-video-current-container-height) / 2) + 7.5px);
 }
 
 .T_M_G-media {
@@ -198,7 +225,7 @@ body .T_M_G-media-container {
   aspect-ratio: 16 / 9;
 }
 
-body:has(#video.stall) #clear-button {
+body:has(#video.stall) #clear-files-button {
   display: none;
 }
 
@@ -222,7 +249,7 @@ body:has(#video.stall) #clear-button {
   border-radius: 50%;
   border-style: solid;
   border-width: var(--loader-width);
-  border-color: var(--T_M_G-brand-color) gray var(--T_M_G-brand-color) var(--T_M_G-brand-color);
+  border-color: var(--T_M_G-brand-color) var(--T_M_G-theme-accent-2-color) var(--T_M_G-brand-color) var(--T_M_G-brand-color);
   rotate: 0;
   animation:
     spin 800ms linear infinite,
@@ -267,13 +294,13 @@ body:has(#video.stall) #clear-button {
 }
 
 #content-header > h1 {
-  color: whitesmoke;
+  color: var(--T_M_G-theme-color);
 }
 
 #content-header > p {
-  color: grey;
+  color: var(--T_M_G-theme-accent-color);
   font-weight: bold;
-  text-shadow: 0.5px 0.5px 2px #0b1012e8;
+  text-shadow: 0.5px 0.5px 2px var(--T_M_G-theme-shadow-color);
 }
 
 #content-helper-wrapper {
@@ -293,13 +320,13 @@ body:has(#video.stall) #clear-button {
   height: fit-content;
   width: 100%;
   padding: 10px;
-  border: 1.35px solid rgba(169, 169, 169, 0.6);
-  box-shadow: 1px 1px 2px rgba(244, 143, 177, 0.4);
+  border: 1.35px solid rgb(from var(--T_M_G-theme-accent-color) r g b/ 0.6);
+  box-shadow: 1px 1px 2px rgb(from var(--T_M_G-brand-accent-color) r g b / 0.4);
   transition: all 250ms ease;
 }
 
 #file-picker:has(.drop-box.active) {
-  box-shadow: 0 4px 10px rgba(244, 143, 177, 0.4); /* 🧪 glow */
+  box-shadow: 0 4px 10px rgb(from var(--T_M_G-brand-accent-color) r g b / 0.4); /* 🧪 glow */
 }
 
 #file-picker > form > div {
@@ -331,10 +358,10 @@ body:has(#video.stall) #clear-button {
   display: flex;
   justify-content: center;
   align-items: center;
-  color: rgba(0, 0, 0, 0.75);
+  color: rgb(from var(--T_M_G-theme-inverse-color) r g b/ 0.75);
   cursor: pointer;
   transition: 200ms ease;
-  border: 1.35px solid rgba(169, 169, 169, 0.6);
+  border: 1.35px solid rgb(from var(--T_M_G-theme-accent-color) r g b/ 0.6);
   font-size: 16.5px;
   font-weight: bolder;
   padding: 10px;
@@ -342,7 +369,7 @@ body:has(#video.stall) #clear-button {
 
 .drop-box::after {
   content: attr(aria-label);
-  color: rgba(0, 0, 0, 0.45);
+  color: rgb(from var(--T_M_G-theme-inverse-color) r g b/ 0.45);
   position: absolute;
   width: 100%;
   bottom: 0;
@@ -388,11 +415,11 @@ body:has(#video.stall) #clear-button {
 }
 
 #file-picker > form > div > span > label:not(.drop-box) {
-  color: rgba(245, 245, 245, 0.85);
+  color: rgb(from var(--T_M_G-theme-color) r g b/ 0.85);
 }
 
 #file-picker > form > div > span > output {
-  color: rgba(245, 245, 245, 0.85);
+  color: rgb(from var(--T_M_G-theme-color) r g b/ 0.85);
   text-align: end;
 }
 
@@ -407,7 +434,7 @@ body:has(#video.stall) #clear-button {
 }
 
 #install,
-#clear-button {
+#clear-files-button {
   justify-self: center;
   display: flex;
   justify-content: center;
@@ -417,10 +444,10 @@ body:has(#video.stall) #clear-button {
   font-size: 13px;
   background: var(--T_M_G-brand-light-color);
   font-weight: 550;
-  color: grey;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25); /* 🧪 subtle lift */
-  border: 1px solid gray;
-  transition: all 250ms ease;
+  color: var(--T_M_G-theme-accent-color);
+  box-shadow: 0 2px 5px rgb(from var(--T_M_G-theme-inverse-color) r g b/ 0.25); /* 🧪 subtle lift */
+  border: 1px solid var(--T_M_G-theme-accent-2-color);
+  transition: transform 250ms ease, box-shadow 250ms ease;
 }
 
 #install {
@@ -429,18 +456,18 @@ body:has(#video.stall) #clear-button {
 }
 
 #install:hover,
-#clear-button:hover {
+#clear-files-button:hover {
   cursor: pointer;
   transform: scale(1.05);
-  color: gray;
-  box-shadow: 0 4px 10px rgba(244, 143, 177, 0.4); /* 🧪 glow */
+  color: var(--T_M_G-theme-accent-2-color);
+  box-shadow: 0 4px 10px rgb(from var(--T_M_G-brand-accent-color) r g b / 0.4); /* 🧪 glow */
 }
 
 #no-files-text {
   margin-block: 30px;
-  color: grey;
+  color: var(--T_M_G-theme-accent-color);
   text-align: center;
-  text-shadow: 0.5px 0.5px 2px #0b1012e8;
+  text-shadow: 0.5px 0.5px 2px var(--T_M_G-theme-shadow-color);
 }
 
 #file-list-wrapper h2 {
@@ -462,13 +489,15 @@ body:has(#video.stall) #clear-button {
 }
 
 .content-line.dragging {
-  border-top: 1px solid grey;
-  border-bottom: 1px solid grey;
+  position: absolute !important;
+  z-index: 999 !important;
+  border-top: 1px solid var(--T_M_G-theme-accent-color);
+  border-bottom: 1px solid var(--T_M_G-theme-accent-color);
   backdrop-filter: blur(1px);
 }
 
 .drag-placeholder {
-  background-color: rgba(255, 255, 255, 0.005);
+  background-color: rgb(from var(--T_M_G-theme-color) r g b/0.005);
 }
 
 .content-line {
@@ -482,17 +511,17 @@ body:has(#video.stall) #clear-button {
   padding-inline: 7.5px;
   font-size: 13px;
   gap: 10px;
-  background-color: rgba(255, 255, 255, 0.005);
+  background-color: rgb(from var(--T_M_G-theme-color) r g b/0.005);
 }
 
 .content-line:not(:last-child),
 .drag-placeholder:not(:last-child) {
-  border-bottom: 1px solid grey;
+  border-bottom: 1px solid var(--T_M_G-theme-accent-color);
 }
 
 .file-info-wrapper {
   flex: 1 1 75%;
-  color: lightgrey;
+  color: var(--T_M_G-theme-light-color);
   word-break: break-all;
 }
 
@@ -509,7 +538,7 @@ body:has(#video.stall) #clear-button {
 }
 
 .content-line p span:first-child {
-  color: gray;
+  color: var(--T_M_G-theme-accent-2-color);
 }
 
 .content-line.playing {
@@ -536,10 +565,10 @@ body:has(#video.stall) #clear-button {
   display: flex;
   justify-content: center;
   align-items: center;
-  color: white;
+  color: var(--T_M_G-theme-color);
   border-radius: 5px;
   overflow: hidden;
-  background: black;
+  background: var(--T_M_G-theme-inverse-color);
 }
 
 .thumbnail-container:hover {
@@ -562,7 +591,7 @@ body:has(#video.stall) #clear-button {
   border-radius: 50%;
   width: 25px;
   height: 25px;
-  color: white;
+  color: var(--T_M_G-theme-color);
   padding-inline: 5px;
   cursor: pointer;
   display: flex;
@@ -570,7 +599,7 @@ body:has(#video.stall) #clear-button {
   align-items: center;
   position: absolute;
   z-index: 1;
-  transition: all 200ms ease;
+  transition: transform 200ms ease;
 }
 
 .thumbnail-container button:hover {
@@ -666,7 +695,7 @@ body:has(#video.stall) #clear-button {
   display: flex;
   align-items: center;
   margin-right: 2px;
-  transition: 200ms ease;
+  transition: all 200ms ease;
 }
 
 .captions-btn input {
@@ -685,7 +714,7 @@ body:has(#video.stall) #clear-button {
 }
 
 .content-line:has([data-caption-state="waiting"]) .captions-btn::before {
-  border-color: gray white gray gray;
+  border-color: var(--T_M_G-theme-accent-2-color) var(--T_M_G-theme-color) var(--T_M_G-theme-accent-2-color) var(--T_M_G-theme-accent-2-color);
 }
 
 .content-line:has([data-caption-state="waiting"]) .captions-btn::after {
@@ -695,7 +724,7 @@ body:has(#video.stall) #clear-button {
   top: 3.5px;
   translate: -0.45px -0.3px;
   font-size: 12.5px;
-  color: gray;
+  color: var(--T_M_G-theme-accent-2-color);
 }
 
 .content-line:has([data-caption-state="empty"], [data-caption-state="filled"]) .captions-btn::after {
@@ -704,7 +733,7 @@ body:has(#video.stall) #clear-button {
   right: -3px;
   font-weight: bold;
   font-size: 20px;
-  text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.85);
+  text-shadow: 0px 0px 2px rgb(from var(--T_M_G-theme-inverse-color) r g b/ 0.85);
 }
 
 .content-line:has([data-caption-state="filled"]) .captions-btn::after {
@@ -714,7 +743,7 @@ body:has(#video.stall) #clear-button {
 
 .content-line:has([data-caption-state="empty"]) .captions-btn::after {
   content: "+";
-  color: white;
+  color: var(--T_M_G-theme-color);
 }
 
 .captions-btn svg {
@@ -727,11 +756,11 @@ body:has(#video.stall) #clear-button {
 }
 
 .captions-btn svg path {
-  fill: white;
+  fill: var(--T_M_G-theme-color);
 }
 
 .content-line:has([data-caption-state="empty"]) .captions-btn svg path {
-  fill: gray;
+  fill: var(--T_M_G-theme-accent-2-color);
 }
 
 .delete-btn {
@@ -761,7 +790,7 @@ body:has(#video.stall) #clear-button {
 }
 
 .drag-handle svg {
-  fill: white;
+  fill: var(--T_M_G-theme-color);
   width: 19px;
   height: 19px;
 }

@@ -10,21 +10,12 @@ class T007_Toast {
   destroyed = true;
   #visiblityChange = () => (this.#shouldUnPause = document.visibilityState === "visible");
   constructor(options) {
-    this.bindMethods();
+    bindMethods(this);
     this.opts = { ...options };
-    this.id = this.opts.id ??= uid();
+    this.id = this.opts.id ??= uid(this.opts.idPrefix ?? "t007_toast_");
     t007.toasts.set(this.id, this);
     "number" !== typeof this.opts.delay ? this.init() : this.queue.push(setTimeout(this.init, this.opts.delay));
     this.update(this.opts);
-  }
-  bindMethods() {
-    let proto = this;
-    while (proto && proto !== Object.prototype) {
-      for (const method of Object.getOwnPropertyNames(proto)) {
-        if (method !== "constructor" && typeof Object.getOwnPropertyDescriptor(proto, method)?.value === "function") this[method] = this[method].bind(this);
-      }
-      proto = Object.getPrototypeOf(proto);
-    }
   }
   init() {
     this.toastElement = Object.assign(document.createElement("div"), { className: "t007-toast", id: this.id, ariaAtomic: "true" });
@@ -337,20 +328,33 @@ export const Toasting = {
     );
     return promise;
   },
-  dismiss(id, manner, timeElapsed) {
-    return !arguments.length ? t007.toasts.values().forEach((toast) => toast._remove()) : t007.toasts.get(id)?._remove(manner, timeElapsed);
+  dismiss(base, id, manner, timeElapsed) {
+    return !arguments.length ? base.dismissAll() : t007.toasts.get(id)?._remove(manner, timeElapsed);
+  },
+  dismissAll(base, idPrefix) {
+    t007.toasts.values().forEach((toast) => (!arguments.length ? true : toast.id.startsWith(idPrefix)) && toast._remove());
+  },
+  doForAll(base, action, options, idPrefix) {
+    t007.toasts.keys().forEach((id) => (!arguments.length ? true : id.startsWith(idPrefix)) && base[action]?.(id, options));
+  },
+  getAll(base, idPrefix) {
+    return t007.toasts.values().filter((toast) => (!arguments.length ? true : toast.id.startsWith(idPrefix)));
   },
 };
-export const Toaster = (defOptions = {}) => {
+export const Toaster = (defOptions = {}, idPrefix = "t007_toast_") => {
   const defaults = () => ({ ...t007.TOAST_DEFAULT_OPTIONS, ...defOptions });
-  const base = (render, options = {}) => new T007_Toast({ ...defaults(), ...options, id: render.startsWith("t007_toast_") ? render : options.id, render: render.startsWith("t007_toast_") ? options.render : render }).id;
+  const base = (render, options = {}) => new T007_Toast({ ...defaults(), ...options, id: render.startsWith(idPrefix) ? render : options.id, render: render.startsWith(idPrefix) ? options.render : render, idPrefix }).id;
   base.update = (id, options) => Toasting.update(base, id, options);
   ["info", "success", "warn", "error"].forEach((action) => Toasting.message(base, defaults, action));
   base.loading = (render, options) => Toasting.loading(base, render, options);
   base.promise = (promise, options) => Toasting.promise(base, promise, options);
-  base.dismiss = Toasting.dismiss;
+  base.dismiss = (id, manner, timeElapsed) => Toasting.dismiss(base, id, manner, timeElapsed);
+  base.dismissAll = (idPrefix) => Toasting.dismissAll(base, idPrefix);
+  base.doForAll = (action, options, idPrefix) => Toasting.doForAll(base, action, options, idPrefix);
+  base.getAll = (idPrefix) => Toasting.getAll(base, idPrefix);
   return base;
 };
+
 const Toast = Toaster();
 export default Toast;
 
@@ -401,7 +405,7 @@ if (typeof window !== "undefined") {
   window.T007_TOAST_CSS_SRC ??= `/T007_TOOLS/T007_toast_library/T007_toast.css`;
   loadResource(T007_TOAST_CSS_SRC);
   window.Toast ??= t007.toast;
-  console.log("%cT007 Toasts attached to window!", "color: green");
+  console.log("%cT007 Toasts attached to window!", "color: darkturquoise");
 }
 
 function clamp(min, amount, max) {
@@ -409,6 +413,13 @@ function clamp(min, amount, max) {
 }
 function uid(prefix = "t007_toast_") {
   return `${prefix}${Date.now().toString(36)}_${performance.now().toString(36).replace(".", "")}_${Math.random().toString(36).slice(2)}`;
+}
+function bindMethods(owner, callback = (method, owner) => (owner[method] = owner[method].bind(owner))) {
+  let proto = owner;
+  while (proto && proto !== Object.prototype) {
+    for (const method of Object.getOwnPropertyNames(proto)) method !== "constructor" && typeof Object.getOwnPropertyDescriptor(proto, method)?.value === "function" && callback(method, owner);
+    proto = Object.getPrototypeOf(proto);
+  }
 }
 // prettier-ignore
 function isSameURL(src1, src2) {

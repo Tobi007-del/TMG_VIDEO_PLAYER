@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -160,7 +160,7 @@
                 </span>
                 <span>
                   <label for="total-size">Total size:</label>
-                  <output id="total-size">0 B</output>
+                  <output id="total-size">0 bytes</output>
                 </span>
                 <span>
                   <label for="total-time">Total duration:</label>
@@ -171,7 +171,7 @@
             <button style="display: none" type="button" title="Install TVP" id="install">Install App</button>
           </div>
           <div id="file-list-wrapper">
-            <button type="button" title="Clear Files!" id="clear-button">Clear Files</button>
+            <button type="button" title="Clear Files!" id="clear-files-button">Clear Files</button>
             <h2>Selected Files</h2>
             <div id="file-list">
               <p id="no-files-text">No videos currently selected :&lpar;</p>
@@ -188,14 +188,19 @@
     </div>
     <p class="offline-notice">You're offline</p>
     <script>
-      window.TMG_VIDEO_CSS_SRC = "styles/prototype-2-video.css";
+      window.TMG_VIDEO_CSS_SRC = "styles/prototype-3-video.css";
       window.TMG_VIDEO_ALT_IMG_SRC = "/assets/icons/movie-tape.png";
+      window.T007_INPUT_JS_SRC = "scripts/T007_input.js";
+      window.T007_INPUT_CSS_SRC = "styles/T007_input.css";
       window.T007_TOAST_JS_SRC = "scripts/T007_toast.js";
       window.T007_TOAST_CSS_SRC = "styles/T007_toast.css";
+      window.T007_DIALOG_JS_SRC = "scripts/T007_dialog.js";
+      window.T007_DIALOG_CSS_SRC = "styles/T007_dialog.css";
     </script>
     <script type="module" src="scripts/T007_toast.js"></script>
-    <!-- <script src="/TMG_MEDIA_PROTOTYPE/prototype-2/prototype-2.js"></script> -->
-    <script src="scripts/prototype-2.js"></script>
+    <script type="module" src="scripts/T007_dialog.js"></script>
+    <script src="scripts/prototype-3.js"></script>
+    <!-- <script src="/TMG_MEDIA_PROTOTYPE/prototype-3/prototype-3.js"></script> -->
     <script src="assets/ffmpeg/ffmpeg.min.js"></script>
     <script src="scripts/index.js"></script>
     <script>
@@ -210,13 +215,10 @@
         star.style.animation = "";
       };
       for (const star of document.getElementsByClassName("magic-star")) {
-        setTimeout(
-          () => {
-            animate(star);
-            setInterval(animate, 1000, star);
-          },
-          index++ * (interval / 3)
-        );
+        setTimeout(() => {
+          animate(star);
+          setInterval(animate, 1000, star);
+        }, index++ * (interval / 3));
       }
     </script>
   </body>

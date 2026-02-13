@@ -1,5 +1,12 @@
 const cacheName = "TVP_offline_cache_v1.0.0";
-const precachedResources = ["assets/images/lone-tree.jpg", "assets/icons/movie-tape.png", "index.html", "styles/index.css", "scripts/index.js", "scripts/prototype-2.js", "styles/prototype-2-video.css", "assets/icons/tmg-icon.jpeg", "assets/icons/tmg-icon.png", "scripts/T007_toast.js", "styles/T007_toast.css", "assets/ffmpeg/ffmpeg.min.js", "assets/ffmpeg/ffmpeg-core.js", "assets/ffmpeg/ffmpeg-core.wasm", "assets/ffmpeg/ffmpeg-core.worker.js"];
+// prettier-ignore
+const precachedResources = [
+  "index.html", 
+  "assets/images/lone-tree.jpg", "assets/icons/movie-tape.png", "assets/icons/tmg-icon.jpeg",  "assets/icons/tmg-icon.png",
+  "styles/index.css", "styles/prototype-3-video.css", "styles/T007_toast.css", "styles/T007_dialog.css", "styles/T007_input.css",
+  "scripts/index.js", "scripts/prototype-3.js", "scripts/T007_toast.js",  "scripts/T007_dialog.js", "scripts/T007_input.js",
+  "assets/ffmpeg/ffmpeg.min.js", "assets/ffmpeg/ffmpeg-core.js", "assets/ffmpeg/ffmpeg-core.wasm", "assets/ffmpeg/ffmpeg-core.worker.js"
+];
 
 async function precache() {
   const cache = await caches.open(cacheName);
