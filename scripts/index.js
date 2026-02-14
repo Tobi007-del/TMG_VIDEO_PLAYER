@@ -219,6 +219,7 @@ clearFilesBtn.addEventListener("click", clearFiles);
   async function handleInput(e, useHandles = false) {
     useHandles && e.preventDefault();
     const handles = useHandles ? await getPickedHandles(recurse) : null;
+    console.log("DEBUG - Handle Kind:", handles?.[0]?.kind, "Full Object:", handles?.[0]);
     if (useHandles && !handles?.length) return defaultUI();
     const allFiles = useHandles ? await getHandlesFiles(handles) : [...e.target.files],
       videoFiles = allFiles.filter((file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
@@ -234,6 +235,7 @@ clearFilesBtn.addEventListener("click", clearFiles);
   dropBox.addEventListener("dragover", (e) => (e.preventDefault(), (e.dataTransfer.dropEffect = "copy")));
   dropBox.addEventListener("dragleave", (e) => (e.preventDefault(), e.currentTarget.classList.remove("active")));
   async function handleDrop(e, useHandles = false) {
+    e.preventDefault();
     const handles = useHandles ? await getDroppedHandles(e) : null,
       allFiles = useHandles ? await getHandlesFiles(handles) : await getDroppedFiles(e, initUI),
       videoFiles = allFiles.filter((file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
@@ -362,8 +364,8 @@ function handleFiles(files, restored = null, handles = null) {
       for (let i = 0; i < files.length; i++) {
         const state = stateMap.get(tmg.noExtension(files[i].name));
         if (restored && !state) {
-          (numOfFiles--, (numOfBytes -= files[i].size)); // skip files incase user deleted file but not directory handle
-          continue;
+          (numOfFiles--, (numOfBytes -= files[i].size), thumbnails.push(null));
+          continue; // skip files incase user deleted file but not directory handle
         }
         const li = tmg.createEl("li", { className: "content-line" }, { fileName: files[i].name });
         const thumbnail = tmg.createEl(
@@ -482,14 +484,13 @@ function handleFiles(files, restored = null, handles = null) {
         li.append(thumbnailContainer, tmg.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${files[i].name}</span></p><p class="file-size"><span>Size: </span><span>${tmg.formatSize(files[i].size)}</span></p><p class="file-duration"><span>Duration: </span><span>Initializing...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
         fragment.append(li);
       }
-      list.append(fragment);
-      fileList.append(list);
+      (list.append(fragment), fileList.append(list));
       const playlist = [];
       const deployVideos = (files, objectURLs) => {
         objectURLs.forEach((url, i) => {
-          const state = stateMap.get(tmg.noExtension(files[i].name));
-          if (restored && !state) return; // skip files incase user deleted file but not directory handle
-          const item = state ?? { media: { id: tmg.uid(), title: tmg.noExtension(files[i].name) }, "settings.time.previews": true, "settings.time.start": 0 };
+          if (!thumbnails[i]) return URL.revokeObjectURL(url); // skip files incase user deleted file but not directory handle
+          const state = stateMap.get(tmg.noExtension(files[i].name)),
+            item = state ?? { media: { id: tmg.uid(), title: tmg.noExtension(files[i].name) }, "settings.time.previews": true, "settings.time.start": 0 };
           playlist.push(((item.src = url), item));
           ((thumbnails[i].src = url), (thumbnails[i].mediaId = item.media.id));
           thumbnails[i].getPlItem = () => (thumbnails[i].playlistItem = mP?.Controller?.config?.playlist?.find((v) => v.media.id === item.media.id) ?? thumbnails[i].playlistItem ?? {});
@@ -625,9 +626,9 @@ async function getDroppedFiles(e, preTask) {
   return (await Promise.all(promises)).flat().filter(Boolean);
 }
 async function getDroppedHandles(e) {
-  const items = [...(e.dataTransfer.items || [])];
-  const handlePromises = items.map((item) => (item.getAsFileSystemHandle ? item.getAsFileSystemHandle() : null));
-  return await Promise.all(handlePromises).filter(Boolean);
+  const items = [...(e.dataTransfer.items || [])],
+    handlePromises = items.map((item) => (item.getAsFileSystemHandle ? item.getAsFileSystemHandle() : null));
+  return await Promise.all(handlePromises.filter(Boolean));
 }
 async function getPickedHandles(directory = false) {
   try {
