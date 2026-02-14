@@ -637,7 +637,7 @@ class tmg_Video_Controller {
       else this.settings.css.brandColor = (this.loaded ? await this.getMediaMainColor(this.currentTime, null) : null) ?? this.CSSCache.brandColor;
       const No = () => (sync(false), assert({ actions: { Yes } })),
         Yes = () => (sync(true), assert({ actions: { No } }));
-      (sync(i.value === "auto"), i.value === "auto" && (id.brand = this.toast?.("Should the brand color to change anytime a video loads?", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Yes, No } })));
+      (sync(i.value === "auto"), i.value === "auto" && (id.brand = this.toast?.("Should the brand color change anytime a video loads?", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Yes, No } })));
     });
     themeSelector.querySelector("select").addEventListener("input", async ({ target: i }) => {
       this.toast?.dismiss(id.theme);
@@ -645,7 +645,7 @@ class tmg_Video_Controller {
       else this.settings.css.themeColor = (this.loaded ? await this.getMediaMainColor(this.currentTime, null) : null) ?? this.CSSCache.themeColor;
       const No = () => (sync(false, "theme"), assert({ actions: { Yes } }, "theme")),
         Yes = () => (sync(true, "theme"), assert({ actions: { No } }, "theme"));
-      (sync(i.value === "auto", "theme"), i.value === "auto" && (id.theme = this.toast?.("Should the theme color to change anytime a video loads?", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Yes, No } })));
+      (sync(i.value === "auto", "theme"), i.value === "auto" && (id.theme = this.toast?.("Should the theme color change anytime a video loads?", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Yes, No } })));
     });
   }
   buildContainers() {
