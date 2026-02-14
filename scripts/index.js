@@ -367,8 +367,8 @@ function handleFiles(files, restored = null, handles = null) {
         list = fileList.appendChild(document.getElementById("media-list") || tmg.createEl("ul", { id: "media-list" })), // building the media list
         thumbnails = [];
       for (let i = 0; i < files.length; i++) {
-        const ffName = tmg.noExtension(files[i].name); // file formatted name
-        state = stateMap.get(ffName);
+        const ffName = tmg.noExtension(files[i].name), // file formatted name
+          state = stateMap.get(ffName);
         if ((restored && !state) || !!Array.prototype.find.call(containers, (c) => c.lastElementChild.ffName === ffName)) {
           (numOfFiles--, (numOfBytes -= files[i].size), thumbnails.push(null));
           continue; // prevents duplicates & skips files incase user deleted file but not directory handle
