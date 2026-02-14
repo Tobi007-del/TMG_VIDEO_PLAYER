@@ -1514,6 +1514,7 @@ class tmg_Video_Controller {
       removeListeners = () => ["timeupdate", "pause", "waiting"].forEach((e, i) => this.video.removeEventListener(e, !i ? autoCleanUpToast : cleanUpWhenNeeded));
     ["timeupdate", "pause", "waiting"].forEach((e, i) => this.video.addEventListener(e, !i ? autoCleanUpToast : cleanUpWhenNeeded));
     const nVP = (this.nextVideoPreview = this.queryDOM(".tmg-video-next-preview"));
+    nVP?.toggleAttribute("poster", v.media?.artwork?.[0]?.src);
     v.sources?.length && tmg.addSources(v.sources, nVP);
     ["loadedmetadata", "loaded", "durationchange"].forEach((e) => nVP?.addEventListener(e, ({ target: p }) => (p.nextElementSibling.textContent = this.toTimeText(p.duration))));
     this.settings.toasts.nextVideoPreview = this.settings.toasts.nextVideoPreview; // force UI update
@@ -1834,12 +1835,12 @@ class tmg_Video_Controller {
     this.DOM.playbackRateNotifier?.classList.remove("tmg-video-control-active", "tmg-video-rewind");
   }
   setCaptionsState() {
+    this.textTrackIndex = 0;
     [...this.video.textTracks].forEach((track, i) => {
       track.oncuechange = () => i === this.textTrackIndex && !(!this.isUIActive("captions") && this.isUIActive("captionsPreview")) && this._handleCueChange(track.activeCues?.[0]);
-      if (track.mode === "showing") this.textTrackIndex = i;
+      if (track.mode === "showing" || track.default) this.textTrackIndex = i;
       track.mode = "hidden";
     });
-    if (!this.video.textTracks.length) this.textTrackIndex = 0;
     this.videoContainer.classList.toggle("tmg-video-captions", this.video.textTracks.length && !this.settings.captions.disabled);
     this.videoContainer.dataset.trackKind = this.video.textTracks[this.textTrackIndex]?.kind || "captions";
     this.setControlsState("captions");

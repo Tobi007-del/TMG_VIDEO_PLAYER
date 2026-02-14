@@ -1,52 +1,6 @@
-var lsk = "TVP_visitor_info",
-  vi = JSON.parse(localStorage[lsk] || `{ "visitorId": "${crypto?.randomUUID?.() || tmg.uid()}", "visitCount": 0 }`),
-  formatVisit = (d, sx = "") => ((d = Math.floor((new Date().getTime() - new Date(d).getTime()) / 1000)), `${d < 60 ? `${d} second` : d < 3600 ? `${Math.floor(d / 60)} minute` : d < 86400 ? `${Math.floor(d / 3600)} hour` : `${Math.floor(d / 86400)} day`}`.replace(/(\d+)\s(\w+)/g, (_, n, u) => `${n} ${u}${n == 1 ? "" : "s"}`) + sx); // this one's just for terse practice :)
-(async function logVisitor() {
-  vi.isNew = vi.isNew == null ? true : false;
-  vi.visitCount += 1;
-  vi.lastVisited = vi.lastVisit ? formatVisit(vi.lastVisit, " ago") : "Just now";
-  try {
-    const response = await fetch("../api/log-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...vi, screenW: screen.width, screenH: screen.height, platform: navigator.platform, touchScreen: navigator.maxTouchPoints > 0, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }) });
-    console.log("TVP logged visitor info: ", await response.json());
-  } catch (err) {
-    console.error("TVP couldn't log info: ", err);
-  }
-  localStorage[lsk] = JSON.stringify({ ...vi, lastVisit: new Date().toISOString() });
-})();
-(async function registerServiceWorker() {
-  if (!("serviceWorker" in navigator)) return Toast.warn("Offline support is currently unavailable");
-  try {
-    await navigator.serviceWorker.register("TVP_sw.js");
-  } catch (error) {
-    Toast.error("Offline caching failed: " + error.message);
-    Toast("Don’t worry, your local videos still play fine", { vibrate: true, icon: "🎬" });
-  }
-})();
-(async function checkVaultUsage() {
-  if (!navigator.storage || !navigator.storage.estimate) return;
-  const { usage, quota } = await navigator.storage.estimate(),
-    percent = (usage / quota) * 100;
-  console.log(`TVP Storage: ${tmg.formatSize(usage)} used of ${tmg.formatSize(quota)} (${percent.toFixed(2)}%)`);
-  if (usage / quota > 80) Toast.warn(`Storage is ${percent.toFixed(2)}% full, sessions may be forgotten`);
-})();
-(async function requestPersistence() {
-  if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist();
-})();
-
-let canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype,
-  sessionHandles = [],
-  sessionTId, // session toast id
-  sessionTInt, // session toast interval for updating last updated time every minute
-  installed = true,
-  installPrompt = null,
-  video = document.getElementById("video"),
-  mP = null, // media player
-  readyTId,
-  numOfBytes = 0,
-  numOfFiles = 0,
-  totalTime = 0,
-  placeholderItem = null;
-const DB = {
+// global variables
+var canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype;
+var DB = {
   _db: null,
   onErr: (act, comment = "(likely a Support issue or Private Mode)") => (console.warn(`TVP_DB: ${act} failed ${comment}`), null),
   async idb() {
@@ -111,7 +65,7 @@ const DB = {
     for (const store of Array.isArray(stores) ? stores : [stores]) await this.vault[store].clear();
   },
 };
-const Memory = {
+var Memory = {
   _stateKey: "TVP_last_session_state",
   _expiryDays: 30, // 30 days of no sessions
   getState() {
@@ -136,8 +90,25 @@ const Memory = {
     localStorage.setItem(this._stateKey, JSON.stringify({ playlist, playlistIndex, paused }));
   },
 };
-const { createFFmpeg, fetchFile } = FFmpeg,
-  installButton = document.getElementById("install"),
+// immediate runs
+const initState = Memory.getState();
+initState?.settings && setColors(initState.settings.css.brandColor, initState.settings.css.themeColor);
+if (!("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker" in window && tmg.ON_MOBILE)) foldersDropBox.remove(); // dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data
+if (!("files" in HTMLInputElement.prototype)) videosDropBox.remove();
+// app logic variables
+let sessionHandles = [],
+  sessionTId, // session toast id
+  sessionTInt, // session toast interval for updating last updated time every minute
+  installed = true,
+  installPrompt = null, // beforeinstallprompt event object
+  readyTId, // ready toast id
+  mP = null, // media player
+  video = document.getElementById("video"),
+  numOfBytes = 0,
+  numOfFiles = 0,
+  totalTime = 0,
+  placeholderItem = null;
+const installButton = document.getElementById("install"),
   videoPlayerContainer = document.getElementById("video-player-container"),
   uploadVideosInput = document.getElementById("videos-file-input"),
   uploadFoldersInput = document.getElementById("folders-file-input"),
@@ -178,15 +149,65 @@ const { createFFmpeg, fetchFile } = FFmpeg,
       { icon: "🎭", body: "Curtains Up. Prepare to Be Amazed." },
     ],
   },
-  queue = new tmg.AsyncQueue(),
-  ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" }),
+  lsk = "TVP_visitor_info",
+  vi = JSON.parse(localStorage[lsk] || `{ "visitorId": "${crypto?.randomUUID?.() || tmg.uid()}", "visitCount": 0 }`),
   scroller = tmg.initVScrollerator({ lineHeight: 80, margin: 80 }),
-  initState = Memory.getState();
-
-initState?.settings && setColors(initState.settings.css.brandColor, initState.settings.css.themeColor);
+  queue = new tmg.AsyncQueue(),
+  { createFFmpeg, fetchFile } = FFmpeg,
+  ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" }),
+  formatVisit = (d, sx = "") => ((d = Math.floor((new Date().getTime() - new Date(d).getTime()) / 1000)), `${d < 60 ? `${d} second` : d < 3600 ? `${Math.floor(d / 60)} minute` : d < 86400 ? `${Math.floor(d / 3600)} hour` : `${Math.floor(d / 86400)} day`}`.replace(/(\d+)\s(\w+)/g, (_, n, u) => `${n} ${u}${n == 1 ? "" : "s"}`) + sx); // this one's just for terse practice :)
+// initial runs
 if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load()); // let the UI breathe, don't suffocate it
+(async function logVisitor() {
+  vi.isNew = vi.isNew == null ? true : false;
+  vi.visitCount += 1;
+  vi.lastVisited = vi.lastVisit ? formatVisit(vi.lastVisit, " ago") : "Just now";
+  try {
+    const response = await fetch("../api/log-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...vi, screenW: screen.width, screenH: screen.height, platform: navigator.platform, touchScreen: navigator.maxTouchPoints > 0, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }) });
+    console.log("TVP logged visitor info: ", await response.json());
+  } catch (err) {
+    console.error("TVP couldn't log info: ", err);
+  }
+  localStorage[lsk] = JSON.stringify({ ...vi, lastVisit: new Date().toISOString() });
+})();
+(async function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return Toast.warn("Offline support is currently unavailable");
+  try {
+    await navigator.serviceWorker.register("TVP_sw.js");
+  } catch (error) {
+    Toast.error("Offline caching failed: " + error.message);
+    Toast("Don’t worry, your local videos still play fine", { vibrate: true, icon: "🎬" });
+  }
+})();
+(async function launchOpenedFiles() {
+  if (!("launchQueue" in window)) return;
+  launchQueue.setConsumer(async (launchParams) => {
+    if (!launchParams?.files?.length) return;
+    initUI();
+    const allFiles = await getHandlesFiles(launchParams.files),
+      videoFiles = allFiles.filter((file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
+      rejectedCount = allFiles.length - videoFiles.length;
+    if (rejectedCount > 0) Toast.warn(`You opened ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
+    handleFiles(videoFiles, null, launchParams.files);
+  });
+})();
+(async function requestRestore() {
+  const session = await Memory.getSession();
+  if (session) sessionTId = Toast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", autoClose: false, closeButton: false, dragToClose: false, onClose: () => clearInterval(sessionTInt), actions: { Restore: () => restoreSession(session), Dismiss: () => Toast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, actions: false, autoClose: true, closeButton: true, actions: { Reload: () => location.reload() } }) } });
+  if (session) sessionTInt = setInterval(() => Toast.update(sessionTId, { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
+})();
+(async function checkVaultUsage() {
+  if (!navigator.storage || !navigator.storage.estimate) return;
+  const { usage, quota } = await navigator.storage.estimate(),
+    percent = (usage / quota) * 100;
+  console.log(`TVP Storage: ${tmg.formatSize(usage)} used of ${tmg.formatSize(quota)} (${percent.toFixed(2)}%)`);
+  if (usage / quota > 80) Toast.warn(`Storage is ${percent.toFixed(2)}% full, sessions may be forgotten`);
+})();
+(async function requestPersist() {
+  if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist();
+})();
 // window listeners
-window.addEventListener("load", async () => {
+window.addEventListener("load", () => {
   if ("navigator" in window) {
     document.body.classList.toggle("offline", !navigator.onLine);
     navigator.onLine &&
@@ -195,14 +216,11 @@ window.addEventListener("load", async () => {
         .catch(() => document.body.classList.add("offline"));
   }
   (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && Toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
-  const session = await Memory.getSession();
-  if (session) sessionTId = Toast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", autoClose: false, closeButton: false, dragToClose: false, onClose: () => clearInterval(sessionTInt), actions: { Restore: () => restoreSession(session), Dismiss: () => Toast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, actions: false, autoClose: true, closeButton: true }) } });
-  if (session) sessionTInt = setInterval(() => Toast.update(sessionTId, { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
 });
 window.addEventListener("online", () => document.body.classList.remove("offline"));
 window.addEventListener("offline", () => document.body.classList.add("offline"));
-window.addEventListener("beforeinstallprompt", (e) => ((installPrompt = e), (installed = false), (installButton.style.display = "flex")));
-window.addEventListener("appinstalled", () => ((installButton.style.display = "none"), (installed = true), Toast.success("TVP was installed successfully!")));
+window.addEventListener("beforeinstallprompt", (e) => ((installed = false), (installPrompt = e), (installButton.style.display = "flex")));
+window.addEventListener("appinstalled", () => ((installed = true), (installButton.style.display = "none"), Toast.success("TVP was installed successfully!")));
 // other listeners
 installButton.addEventListener("click", async () => {
   const result = await installPrompt?.prompt?.();
@@ -219,8 +237,8 @@ clearFilesBtn.addEventListener("click", clearFiles);
   async function handleInput(e, useHandles = false) {
     useHandles && e.preventDefault();
     const handles = useHandles ? await getPickedHandles(recurse) : null;
-    console.log("DEBUG - Handle Kind:", handles?.[0]?.kind, "Full Object:", handles?.[0]);
     if (useHandles && !handles?.length) return defaultUI();
+    console.log("DEBUG - Handle Kind:", handles?.[0]?.kind, "Full Object:", handles?.[0]);
     const allFiles = useHandles ? await getHandlesFiles(handles) : [...e.target.files],
       videoFiles = allFiles.filter((file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
       rejectedCount = allFiles.length - videoFiles.length;
@@ -229,10 +247,8 @@ clearFilesBtn.addEventListener("click", clearFiles);
   }
   !((!recurse ? "showOpenFilePicker" : "showDirectoryPicker") in window) ? input.addEventListener("change", handleInput) : input.addEventListener("click", (e) => handleInput(e, true));
 });
-if (!("files" in HTMLInputElement.prototype)) videosDropBox.remove();
-if (!("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker" in window && tmg.ON_MOBILE)) foldersDropBox.remove(); // dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data
 [videosDropBox, foldersDropBox].forEach((dropBox, i) => {
-  if (!dropBox.isConnected) return;
+  // if (!dropBox.isConnected) return;
   dropBox.addEventListener("dragenter", (e) => (e.preventDefault(), e.currentTarget.classList.add("active")));
   dropBox.addEventListener("dragover", (e) => (e.preventDefault(), (e.dataTransfer.dropEffect = "copy")));
   dropBox.addEventListener("dragleave", (e) => (e.preventDefault(), e.currentTarget.classList.remove("active")));
@@ -248,18 +264,6 @@ if (!("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker"
   }
   !("getAsFileSystemHandle" in DataTransferItem.prototype) ? dropBox.addEventListener("drop", handleDrop) : dropBox.addEventListener("drop", (e) => handleDrop(e, true));
 });
-(async function launchWithOpenedFiles() {
-  if (!("launchQueue" in window)) return;
-  launchQueue.setConsumer(async (launchParams) => {
-    if (!launchParams?.files?.length) return;
-    initUI();
-    const allFiles = await getHandlesFiles(launchParams.files),
-      videoFiles = allFiles.filter((file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
-      rejectedCount = allFiles.length - videoFiles.length;
-    if (rejectedCount > 0) Toast.warn(`You opened ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
-    handleFiles(videoFiles, null, launchParams.files);
-  });
-})();
 
 function defaultUI() {
   if (numOfFiles >= 1) return;
@@ -327,7 +331,7 @@ async function restoreSession({ state, handles }) {
       Toast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false });
     }
   }
-  if (!sureHandles.length) return Toast.error(sessionTId, { render: "Your ongoing session could not be restored :(", autoClose: true, closeButton: true });
+  if (!sureHandles.length) return Toast.error(sessionTId, { render: "Your ongoing session was not restored :(", actions: { Reload: () => location.reload(), Dismiss: () => Toast.dismiss(sessionTId) } });
   handleFiles(files, state, sureHandles);
 }
 function saveSession() {
@@ -483,7 +487,7 @@ function handleFiles(files, restored = null, handles = null) {
           },
           { passive: false }
         );
-        li.append(thumbnailContainer, tmg.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${files[i].name}</span></p><p class="file-size"><span>Size: </span><span>${tmg.formatSize(files[i].size)}</span></p><p class="file-duration"><span>Duration: </span><span>Initializing...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
+        li.append(thumbnailContainer, tmg.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${files[i].name}</span></p><p class="file-size"><span>Size: </span><span>${tmg.formatSize(files[i].size)}</span></p><p class="file-duration"><span>Duration: </span><span>Loading...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
         fragment.append(li);
       }
       (list.append(fragment), fileList.append(list));
@@ -504,6 +508,8 @@ function handleFiles(files, restored = null, handles = null) {
             () => {
               const i = restored && playlist.findIndex((item) => item.media.id === restored.media.id);
               restored && mP.Controller?.movePlaylistTo(Math.max(0, i), !restored.paused);
+              restored && thumbnails[i]?.closest("li")?.classList.add("playing");
+              restored && containers[i]?.classList.toggle("paused", video.paused);
               mP.Controller.config.on("*", () => mP.Controller?.throttle("TVP_session_save", saveSession, 2000), { immediate: true });
               readyUI();
             },
@@ -546,19 +552,16 @@ function handleFiles(files, restored = null, handles = null) {
   }
 }
 
-async function deployCaption(file, thumbnail, autocancel = tmg.queryMediaMobile(), restored) {
-  let item = restored,
-    track = item?.tracks?.[0];
-  const id = track?.id ?? thumbnail.dataset.captionId ?? tmg.uid(); // checking caption id since we never clear it, incase in IDB; Magic! :)
+async function deployCaption(file, thumbnail, autocancel = tmg.queryMediaMobile(), item) {
+  const id = item?.tracks?.[0]?.id ?? thumbnail.dataset.captionId ?? tmg.uid(); // checking captionId since we never clear it, incase in IDB; Magic! :)
   thumbnail.setAttribute("data-caption-id", id);
-  thumbnail.setAttribute("data-caption-state", track ? "loading" : "waiting");
+  thumbnail.setAttribute("data-caption-state", item?.tracks?.[0] ? "loading" : "waiting");
   // 1. THE VAULT CHECK (Instant)
   const buffer = await DB.vault.subtitles.get(id);
   if (buffer) {
     console.log(`✨TVP IDB Vault Hit: Subtitles restored for ${id}`);
-    track ??= { id, kind: "captions", label: "English", srclang: "en", default: true };
-    track.src = URL.createObjectURL(new Blob([buffer], { type: "text/vtt" }));
-    item.tracks = [track];
+    const track = item?.tracks?.[0] ?? { id, kind: "captions", label: "English", srclang: "en", default: true };
+    (item ??= thumbnail.getPlItem()).tracks = [((track.src = URL.createObjectURL(new Blob([buffer], { type: "text/vtt" }))), track)];
     if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === item.media.id) mP.Controller.config.tracks = item.tracks;
     return thumbnail.setAttribute("data-caption-state", "filled");
   }
@@ -572,8 +575,8 @@ async function deployCaption(file, thumbnail, autocancel = tmg.queryMediaMobile(
   );
   if (res.success) await DB.vault.subtitles.put(res.vttData.buffer, id);
   if (!res.cancelled) thumbnail.setAttribute("data-caption-state", res.success ? "filled" : "empty");
-  if (!(item = thumbnail.getPlItem()) || !res.success) return;
-  item.tracks = [res.track];
+  if (!res.success) return;
+  (item = thumbnail.getPlItem()).tracks = [res.track];
   if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === item.media.id) mP.Controller.config.tracks = item.tracks;
 }
 async function extractCaptions(file, id) {

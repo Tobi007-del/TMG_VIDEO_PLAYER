@@ -42,10 +42,10 @@
   --t007-confirm-button-color: var(--T_M_G-theme-accent-2-color);
   --t007-cancel-button-color: var(--T_M_G-brand-color);
 }
-.tmg-media-container {
+body .tmg-media-container {
   --tmg-video-brand-color: var(--T_M_G-brand-color);
-  --tmg-video-current-mini-player-x: calc((var(--T_M_G-video-current-container-width) / 2) + 7.5px);
-  --tmg-video-current-mini-player-y: calc((var(--T_M_G-video-current-container-height) / 2) + 7.5px);
+  --tmg-video-current-miniplayer-x: calc((var(--tmg-video-current-container-width) / 2) + 7.5px);
+  --tmg-video-current-miniplayer-y: calc((var(--tmg-video-current-container-height) / 2) + 7.5px);
 }
 
 @keyframes rotateLight {
