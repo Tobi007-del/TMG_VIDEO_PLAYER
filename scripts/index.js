@@ -193,7 +193,7 @@ if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load()); // let the UI brea
 })();
 (async function requestRestore() {
   const session = await Memory.getSession();
-  if (session) sessionTId = Toast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", autoClose: false, closeButton: false, dragToClose: false, onClose: () => clearInterval(sessionTInt), actions: { Restore: () => restoreSession(session), Dismiss: () => Toast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, actions: false, autoClose: true, closeButton: true, actions: { Reload: () => location.reload() } }) } });
+  if (session) sessionTId = Toast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", autoClose: false, closeButton: false, dragToClose: false, onClose: () => clearInterval(sessionTInt), actions: { Restore: () => restoreSession(session), Dismiss: () => Toast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, actions: false, autoClose: true, closeButton: true, dragToClose: true, dragToClose: true, actions: { Reload: () => location.reload() } }) } });
   if (session) sessionTInt = setInterval(() => Toast.update(sessionTId, { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
 })();
 (async function checkVaultUsage() {
