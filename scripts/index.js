@@ -116,7 +116,7 @@ const installButton = document.getElementById("install"),
   videosDropBox = document.getElementById("videos-drop-box"),
   foldersDropBox = document.getElementById("folders-drop-box"),
   clearFilesBtn = document.getElementById("clear-files-button"),
-  containers = document.getElementsByClassName("thumbnail-container"),
+  containers = document.getElementsByClassName("thumbnail-container"), // only playlist index is a guaranteed index
   readyLines = {
     morning: [
       { icon: "🌅", body: "A new day, a new story begins." },
@@ -239,8 +239,8 @@ clearFilesBtn.addEventListener("click", clearFiles);
     const handles = useHandles ? await getPickedHandles(recurse) : null;
     if (useHandles && !handles?.length) return defaultUI();
     console.log("DEBUG - Handle Kind:", handles?.[0]?.kind, "Full Object:", handles?.[0]);
-    const allFiles = useHandles ? await getHandlesFiles(handles) : [...e.target.files],
-      videoFiles = allFiles.filter((file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
+    const allFiles = useHandles ? await getHandlesFiles(handles) : e.target.files,
+      videoFiles = Array.prototype.filter.call(allFiles, (file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
       rejectedCount = allFiles.length - videoFiles.length;
     if (rejectedCount > 0) Toast.warn(`You picked ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
     handleFiles(videoFiles, null, handles);
@@ -327,7 +327,7 @@ async function restoreSession({ state, handles }) {
       (tmg.isArr(file) ? files.push(...file.filter((file) => file.type.startsWith("video/"))) : files.push(file), sureHandles.push(handle));
       Toast.success(sessionTId, { render: `Restored ${name} successfully`, actions: false });
     } catch (e) {
-      console.error(`TVP Skipping zombie ${name} handle`);
+      console.error(`TVP Skipping zombie "${name}" handle`);
       Toast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false });
     }
   }
@@ -345,7 +345,7 @@ async function clearFiles() {
   video.onplay = video.onpause = video.ontimeupdate = null;
   video = mP?.detach();
   mP = null;
-  [...containers].forEach((c) => {
+  Array.prototype.forEach.call(containers, (c) => {
     const vid = c.querySelector("video");
     URL.revokeObjectURL(vid.src);
     const playlistItem = vid.getPlItem?.();
@@ -364,14 +364,14 @@ function handleFiles(files, restored = null, handles = null) {
       for (const file of (files = smartFlatSort(files))) (numOfFiles++, (numOfBytes += file.size)); // providing some available metrics to the user
       updateUI();
       const stateMap = new Map(restored?.playlist?.map((v) => [v.media.title, v]) || []), // Pre-map for O(1) lookups
-        list = document.getElementById("media-list") || tmg.createEl("ul", { id: "media-list" }), //building the media list
-        fragment = document.createDocumentFragment(),
+        list = fileList.appendChild(document.getElementById("media-list") || tmg.createEl("ul", { id: "media-list" })), // building the media list
         thumbnails = [];
       for (let i = 0; i < files.length; i++) {
-        const state = stateMap.get(tmg.noExtension(files[i].name));
-        if (restored && !state) {
+        const ffName = tmg.noExtension(files[i].name); // file formatted name
+        state = stateMap.get(ffName);
+        if ((restored && !state) || !!Array.prototype.find.call(containers, (c) => c.lastElementChild.ffName === ffName)) {
           (numOfFiles--, (numOfBytes -= files[i].size), thumbnails.push(null));
-          continue; // skip files incase user deleted file but not directory handle
+          continue; // prevents duplicates & skips files incase user deleted file but not directory handle
         }
         const li = tmg.createEl("li", { className: "content-line" }, { fileName: files[i].name });
         const thumbnail = tmg.createEl(
@@ -386,7 +386,7 @@ function handleFiles(files, restored = null, handles = null) {
               if (tmg.safeNum(target.duration) > 12) target.currentTime = 2;
               document.getElementById("total-time").textContent = tmg.formatMediaTime({ time: totalTime });
               li.querySelector(".file-duration span:last-child").innerHTML = `${tmg.formatMediaTime({ time: target.duration })}`;
-              restored && containers[i]?.style.setProperty("--video-progress-position", tmg.safeNum(state.settings.time.start / target.duration));
+              restored && thumbnails[i]?.parentElement?.style.setProperty("--video-progress-position", tmg.safeNum(state.settings.time.start / target.duration));
             },
             onerror: ({ target }) => {
               li.classList.add("error");
@@ -397,7 +397,7 @@ function handleFiles(files, restored = null, handles = null) {
           },
           { captionState: "waiting" }
         );
-        thumbnails.push(thumbnail);
+        thumbnails.push(((thumbnail.ffName = ffName), thumbnail));
         const thumbnailContainer = tmg.createEl("span", { className: "thumbnail-container", innerHTML: `<button><svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated"><rect x="4" width="3" height="10" fill="white"></rect><rect x="10" width="3" height="10" fill="white"></rect><rect x="16" width="3" height="10" fill="white"></rect></svg></button>`, onclick: () => mP.Controller?.movePlaylistTo(thumbnail.getPlIndex(), true) }).appendChild(thumbnail).parentElement;
         const captionsInput = tmg.createEl("input", {
           type: "file",
@@ -471,7 +471,7 @@ function handleFiles(files, restored = null, handles = null) {
               mP.Controller?.RAFLoop("listItemDragging", () => {
                 li.style.top = `${(li.top = tmg.clamp(0, window.scrollY - initialScrollY + e.clientY - initialOffsetY - li.offsetHeight / 2, list.offsetHeight - li.offsetHeight))}px`;
                 scroller.drive(e.clientY, !(li.top > 0 && li.top < list.offsetHeight - li.offsetHeight));
-                const afterLine = tmg.getElSiblingAt(e.clientY, "y", [...list.querySelectorAll(".content-line:not(.dragging)")]);
+                const afterLine = tmg.getElSiblingAt(e.clientY, "y", list.querySelectorAll(".content-line:not(.dragging)"));
                 afterLine ? list.insertBefore(placeholderItem, afterLine) : list.append(placeholderItem);
               });
             }
@@ -487,16 +487,15 @@ function handleFiles(files, restored = null, handles = null) {
           },
           { passive: false }
         );
-        li.append(thumbnailContainer, tmg.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${files[i].name}</span></p><p class="file-size"><span>Size: </span><span>${tmg.formatSize(files[i].size)}</span></p><p class="file-duration"><span>Duration: </span><span>Loading...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
-        fragment.append(li);
+        li.append(thumbnailContainer, tmg.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${files[i].name}</span></p><p class="file-size"><span>Size: </span><span>${tmg.formatSize(files[i].size)}</span></p><p class="file-duration"><span>Duration: </span><span>Initializing...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
+        list.append(li); // avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
       }
-      (list.append(fragment), fileList.append(list));
       const playlist = [];
-      const deployVideos = (files, objectURLs) => {
-        objectURLs.forEach((url, i) => {
+      const deployVideos = (URLs) => {
+        URLs.forEach((url, i) => {
           if (!thumbnails[i]) return URL.revokeObjectURL(url); // skip files incase user deleted file but not directory handle
-          const state = stateMap.get(tmg.noExtension(files[i].name)),
-            item = state ?? { media: { id: tmg.uid(), title: tmg.noExtension(files[i].name) }, "settings.time.previews": true, "settings.time.start": 0 };
+          const state = stateMap.get(thumbnails[i].ffName),
+            item = state ?? { media: { id: tmg.uid(), title: thumbnails[i].ffName }, "settings.time.previews": true, "settings.time.start": 0 };
           playlist.push(((item.src = url), item));
           ((thumbnails[i].src = url), (thumbnails[i].mediaId = item.media.id));
           thumbnails[i].getPlItem = () => (thumbnails[i].playlistItem = mP?.Controller?.config?.playlist?.find((v) => v.media.id === item.media.id) ?? thumbnails[i].playlistItem ?? {});
@@ -509,7 +508,7 @@ function handleFiles(files, restored = null, handles = null) {
               const i = restored && playlist.findIndex((item) => item.media.id === restored.media.id);
               restored && mP.Controller?.movePlaylistTo(Math.max(0, i), !restored.paused);
               restored && thumbnails[i]?.closest("li")?.classList.add("playing");
-              restored && containers[i]?.classList.toggle("paused", video.paused);
+              restored && thumbnails[i]?.parentElement?.classList.toggle("paused", video.paused);
               mP.Controller.config.on("*", () => mP.Controller?.throttle("TVP_session_save", saveSession, 2000), { immediate: true });
               readyUI();
             },
@@ -542,8 +541,8 @@ function handleFiles(files, restored = null, handles = null) {
           video.onpause = () => containers[mP.Controller?.currentPlaylistIndex]?.classList.add("paused");
         } else mP.Controller.config.playlist = [...mP.Controller.config.playlist, ...playlist];
       };
-      numOfFiles && deployVideos(files, files.map(URL.createObjectURL));
-      numOfFiles && (async () => await Promise.all(playlist.map(async (_, i) => await deployCaption(files[i], thumbnails[i], undefined, stateMap.get(tmg.noExtension(files[i].name))))))();
+      numOfFiles && deployVideos(files.map(URL.createObjectURL));
+      numOfFiles && (async () => await Promise.all(files.map(async (_, i) => thumbnails[i] && (await deployCaption(files[i], thumbnails[i], undefined, stateMap.get(tmg.noExtension(files[i].name)))))))();
     }
     if (numOfFiles < 1) defaultUI();
   } catch (error) {
@@ -606,7 +605,7 @@ async function extractCaptions(file, id) {
 
 async function getDroppedFiles(e, preTask) {
   e.preventDefault();
-  const dtItems = [...(e.dataTransfer.items || [])];
+  const dtItems = e.dataTransfer.items || [];
   if (dtItems.length > 0) preTask?.();
   const traverseFileTree = async (item) => {
     return new Promise((resolve) => {
@@ -631,8 +630,8 @@ async function getDroppedFiles(e, preTask) {
   return (await Promise.all(promises)).flat().filter(Boolean);
 }
 async function getDroppedHandles(e) {
-  const items = [...(e.dataTransfer.items || [])],
-    handlePromises = items.map((item) => (item.getAsFileSystemHandle ? item.getAsFileSystemHandle() : null));
+  const items = e.dataTransfer.items || [],
+    handlePromises = Array.prototype.map.call(items, (item) => (item.getAsFileSystemHandle ? item.getAsFileSystemHandle() : null));
   return (await Promise.all(handlePromises)).filter(Boolean);
 }
 async function getPickedHandles(directory = false) {
@@ -665,6 +664,7 @@ function syncPlaylist() {
   mP.Controller.config.playlist = Array.from(fileList.querySelectorAll(".content-line"), (li) => map[li.querySelector("video")?.mediaId]).filter(Boolean);
 }
 function dispatchPlayerReadyToast(hour = new Date().getHours()) {
+  if (!numOfFiles) return;
   const timeLines = readyLines[hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : hour >= 17 && hour < 21 ? "evening" : "night"] || [],
     combined = [...timeLines, ...readyLines.default, ...timeLines],
     { body, icon } = combined[Math.floor(Math.random() * combined.length)];

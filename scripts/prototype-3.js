@@ -535,7 +535,7 @@ class tmg_Video_Controller {
     });
   }
   bindNotifiers() {
-    [...(this.DOM.notifiersContainer?.children ?? [])].forEach((n) => n.addEventListener("animationend", () => this.resetNotifiers("", true)));
+    Array.prototype.forEach.call(this.DOM.notifiersContainer?.children ?? [], (n) => n.addEventListener("animationend", () => this.resetNotifiers("", true)));
     tmg.NOTIFIER_EVENTS.forEach((eN) => this.DOM.notifiersContainer?.addEventListener(eN, this._handleNotifierEvent));
   }
   _handleNotifierEvent = ({ type: eN }) => (this.resetNotifiers(), this.RAFLoop("notifying", () => this.resetNotifiers(eN)));
@@ -595,7 +595,7 @@ class tmg_Video_Controller {
         `settings.css.${key}`,
         () => {
           const pre = `tmg-video-${tmg.uncamelize(key, "-")}`,
-            value = [...(this.DOM.captionsContainer?.classList ?? [])].find((cls) => cls.startsWith(pre))?.replace(`${pre}-`, "");
+            value = Array.prototype.find.call(this.DOM.captionsContainer?.classList ?? [], (cls) => cls.startsWith(pre))?.replace(`${pre}-`, "");
           return tmg.parseUIObj(this.settings.captions)[tmg.camelize(key.slice(8))].values.includes(value) ? value : "none";
         },
         true
@@ -1173,7 +1173,7 @@ class tmg_Video_Controller {
     this._handleMediaParentResize();
     tmg.initScrollAssist(this.DOM.videoTitle, { pxPerSecond: 60 });
     tmg.initScrollAssist(this.DOM.videoArtist, { pxPerSecond: 30 });
-    [...this.DOM.sideControlWrappers].forEach((el) => {
+    Array.prototype.forEach.call(this.DOM.sideControlWrappers, (el) => {
       this._handleControlsWrapperResize(el);
       tmg.initScrollAssist(el, { pxPerSecond: 60 });
       el && tmg.resizeObserver.observe(el);
@@ -1184,7 +1184,7 @@ class tmg_Video_Controller {
   unobserveResize() {
     tmg.removeScrollAssist(this.DOM.videoTitle);
     tmg.removeScrollAssist(this.DOM.videoArtist);
-    [...this.DOM.sideControlWrappers].forEach((el) => {
+    Array.prototype.forEach.call(this.DOM.sideControlWrappers, (el) => {
       tmg.removeScrollAssist(el);
       el && tmg.resizeObserver.unobserve(el);
     });
@@ -1257,7 +1257,7 @@ class tmg_Video_Controller {
     w.scrollLeft = w.scrollWidth - w.clientWidth;
   }
   setUpSvgs() {
-    [...this.DOM.svgs].forEach((svg) => {
+    Array.prototype.forEach.call(this.DOM.svgs, (svg) => {
       svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
       const title = svg.getAttribute("data-control-title");
       if (title) svg.addEventListener("mouseover", () => (svg.parentElement.title = title));
@@ -1836,7 +1836,7 @@ class tmg_Video_Controller {
   }
   setCaptionsState() {
     this.textTrackIndex = 0;
-    [...this.video.textTracks].forEach((track, i) => {
+    Array.prototype.forEach.call(this.video.textTracks, (track, i) => {
       track.oncuechange = () => i === this.textTrackIndex && !(!this.isUIActive("captions") && this.isUIActive("captionsPreview")) && this._handleCueChange(track.activeCues?.[0]);
       if (track.mode === "showing" || track.default) this.textTrackIndex = i;
       track.mode = "hidden";
@@ -2812,15 +2812,15 @@ class tmg_Video_Controller {
       "dragOver",
       () => {
         if (t.dataset.dragId === "wrapper") {
-          const atWrapper = tmg.getElSiblingAt(x, "x", [...t.querySelectorAll('.tmg-video-side-controls-wrapper-cover:has([data-drop-zone="true"][data-drag-id=""]:empty)')], "at");
+          const atWrapper = tmg.getElSiblingAt(x, "x", t.querySelectorAll('.tmg-video-side-controls-wrapper-cover:has([data-drop-zone="true"][data-drag-id=""]:empty)'), "at");
           if (!atWrapper) return;
           this.dragReplaced?.target.replaceChild(this.dragReplaced.child, this.dragging);
           this.dragReplaced = { target: t, child: atWrapper };
           return t.replaceChild(this.dragging, atWrapper);
         }
-        const afterControl = tmg.getElSiblingAt(x, "x", [...t.querySelectorAll("[draggable=true]:not(.tmg-video-control-dragging)")]);
+        const afterControl = tmg.getElSiblingAt(x, "x", t.querySelectorAll("[draggable=true]:not(.tmg-video-control-dragging)"));
         afterControl ? t.insertBefore(this.dragging, afterControl) : t.append(this.dragging);
-        !t.dataset.dragId && [...this.DOM.sideControlWrappers].forEach(this._handleControlsWrapperResize);
+        !t.dataset.dragId && Array.prototype.forEach.call(this.DOM.sideControlWrappers, this._handleControlsWrapperResize);
       },
       500,
       false
@@ -3026,7 +3026,7 @@ var tmg = {
   supportsPictureInPicture: () => !!(document.pictureInPictureEnabled || HTMLVideoElement.prototype.requestPictureInPicture || window.documentPictureInPicture),
   loadResource(src, type = "style", { module, media, crossOrigin, integrity } = {}) {
     if (tmg._resourceCache[src]) return tmg._resourceCache[src];
-    if (type === "script" ? [...document.scripts].some((s) => tmg.isSameURL(s.src, src)) : type === "style" ? [...document.styleSheets].some((s) => tmg.isSameURL(s.href, src)) : false) return Promise.resolve();
+    if (type === "script" ? Array.prototype.some.call(document.scripts, (s) => tmg.isSameURL(s.src, src)) : type === "style" ? Array.prototype.some.call(document.styleSheets, (s) => tmg.isSameURL(s.href, src)) : false) return Promise.resolve();
     tmg._resourceCache[src] = new Promise((resolve, reject) => {
       if (type === "script") {
         const script = tmg.createEl("script", { src, type: module ? "module" : "text/javascript", crossOrigin, integrity, onload: () => resolve(script), onerror: () => reject(new Error(`Script load error: ${src}`)) });
@@ -3426,15 +3426,18 @@ var tmg = {
     if (src?.canvas) src = src.canvas;
     const c = document.createElement("canvas"),
       x = c.getContext("2d"),
-      s = Math.min(100, src.width, src.height);
+      s = Math.min(64, src.width, src.height);
     c.width = c.height = s;
     src && x.drawImage(src, 0, 0, s, s);
     const d = src && x.getImageData(0, 0, s, s).data,
       ct = {}, // count
-      pt = {}; // per total
+      pt = {}; // per totaljust
     for (let i = 0; i < d?.length; i += 4) {
       if (d[i + 3] < 128) continue;
-      const k = (d[i] & 0xf0) + "," + (d[i + 1] & 0xf0) + "," + (d[i + 2] & 0xf0);
+      const r = d[i] & 0xf0,
+        g = d[i + 1] & 0xf0,
+        b = d[i + 2] & 0xf0; // Optimized bitwise extraction
+      const k = (r << 16) | (g << 8) | b;
       ct[k] = (ct[k] || 0) + 1;
       pt[k] = pt[k] ? [pt[k][0] + d[i], pt[k][1] + d[i + 1], pt[k][2] + d[i + 2]] : [d[i], d[i + 1], d[i + 2]];
     }
@@ -3476,7 +3479,8 @@ var tmg = {
     return newV;
   },
   getElSiblingAt: (p, dir, els, pos = "after") =>
-    els?.reduce(
+    els.length &&
+    Array.prototype.reduce.call(
       (closest, child) => {
         const { top: cT, left: cL, width: cW, height: cH } = child.getBoundingClientRect(),
           offset = p - (dir === "y" ? cT : cL) - (dir === "y" ? cH : cW) / 2,

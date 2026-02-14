@@ -435,7 +435,7 @@ function isSameURL(src1, src2) {
 // prettier-ignore
 function loadResource(src, type = "style", { module, media, crossOrigin, integrity } = {}) {
   if (t007._resourceCache[src]) return t007._resourceCache[src];
-  if (type === "script" ? [...document.scripts].some((s) => isSameURL(s.src, src)) : type === "style" ? [...document.styleSheets].some((s) => isSameURL(s.href, src)) : false) return Promise.resolve();
+  if (type === "script" ? Array.prototype.some.call(document.scripts, (s) => isSameURL(s.src, src)) : type === "style" ? Array.prototype.some.call(document.styleSheets, (s) => isSameURL(s.href, src)) : false) return Promise.resolve();
   t007._resourceCache[src] = new Promise((resolve, reject) => {
     if (type === "script") {
       const script = Object.assign(document.createElement("script"), { src, type: module ? "module" : "text/javascript", onload: () => resolve(script), onerror: () => reject(new Error(`Script load error: ${src}`)) });
