@@ -623,20 +623,29 @@ class tmg_Video_Controller {
         { option: "Hot Pink", value: "hotpink" },
         { option: "Fiery Red", value: "#FF0033" }, // more like, Youtube red :)
         { option: "Dark Turquoise", value: "darkturquoise" },
-        { option: "Video Adaptive", value: "auto" },
+        { option: "Video Derived", value: "auto" },
       ],
       brandSelector = createField?.({ type: "select", label: "Brand Color", helperText: { info: "You should just try changing your brand color for now" }, options: [{ option: "Tastey Orange", value: "rgb(226, 110, 2)" }, ...options], value: this.settings.css.syncWithMedia.brandColor ? "auto" : (this.settings.css.brandColor ?? "rgb(226, 110, 2)") }),
       themeSelector = createField?.({ type: "select", label: "Theme Color", helperText: { info: "You should also try changing your theme color for now" }, options: [{ option: "Pure White", value: "white" }, ...options], value: this.settings.css.syncWithMedia.themeColor ? "auto" : (this.settings.css.themeColor ?? "white") });
     this.queryDOM(".tmg-video-settings-bottom-panel").append(brandSelector, themeSelector);
+    const id = { theme: "", brand: "" },
+      sync = (req = true, type = "brand") => (this.settings.css.syncWithMedia[`${type}Color`] = req),
+      assert = (opts, type = "brand") => this.toast?.update(id[type], { render: `Still here incase your mind's changed about the ${type}?`, ...opts });
     brandSelector.querySelector("select").addEventListener("input", async ({ target: i }) => {
+      this.toast?.dismiss(id.brand);
       if (i.value !== "auto") this.settings.css.brandColor = i.value;
       else this.settings.css.brandColor = (this.loaded ? await this.getMediaMainColor(this.currentTime, null) : null) ?? this.CSSCache.brandColor;
-      this.settings.css.syncWithMedia.brandColor = i.value === "auto";
+      const No = () => (sync(false), assert({ actions: { Yes } })),
+        Yes = () => (sync(true), assert({ actions: { No } }));
+      (sync(i.value === "auto"), i.value === "auto" && (id.brand = this.toast?.("Should the brand color to change anytime a video loads?", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Yes, No } })));
     });
     themeSelector.querySelector("select").addEventListener("input", async ({ target: i }) => {
+      this.toast?.dismiss(id.theme);
       if (i.value !== "auto") this.settings.css.themeColor = i.value;
       else this.settings.css.themeColor = (this.loaded ? await this.getMediaMainColor(this.currentTime, null) : null) ?? this.CSSCache.themeColor;
-      this.settings.css.syncWithMedia.themeColor = i.value === "auto";
+      const No = () => (sync(false, "theme"), assert({ actions: { Yes } }, "theme")),
+        Yes = () => (sync(true, "theme"), assert({ actions: { No } }, "theme"));
+      (sync(i.value === "auto", "theme"), i.value === "auto" && (id.theme = this.toast?.("Should the theme color to change anytime a video loads?", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Yes, No } })));
     });
   }
   buildContainers() {
@@ -1281,7 +1290,7 @@ class tmg_Video_Controller {
         (this.togglePlay(false), this.showOverlay());
         this.DOM.videoContainerContent.setAttribute("inert", "");
         this.setKeyEventListeners("remove");
-        this.toast.warn("You cannot access the custom controls when disabled");
+        this.toast?.warn("You cannot access the custom controls when disabled");
         this.log("You cannot access the custom controls when disabled", "warn");
       } else {
         this.videoContainer.classList.remove("tmg-video-disabled");

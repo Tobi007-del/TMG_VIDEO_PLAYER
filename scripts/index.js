@@ -93,8 +93,6 @@ var Memory = {
 // immediate runs
 const initState = Memory.getState();
 initState?.settings && setColors(initState.settings.css.brandColor, initState.settings.css.themeColor);
-if (!("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker" in window && tmg.ON_MOBILE)) foldersDropBox.remove(); // dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data
-if (!("files" in HTMLInputElement.prototype)) videosDropBox.remove();
 // app logic variables
 let sessionHandles = [],
   sessionTId, // session toast id
@@ -157,6 +155,8 @@ const installButton = document.getElementById("install"),
   ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" }),
   formatVisit = (d, sx = "") => ((d = Math.floor((new Date().getTime() - new Date(d).getTime()) / 1000)), `${d < 60 ? `${d} second` : d < 3600 ? `${Math.floor(d / 60)} minute` : d < 86400 ? `${Math.floor(d / 3600)} hour` : `${Math.floor(d / 86400)} day`}`.replace(/(\d+)\s(\w+)/g, (_, n, u) => `${n} ${u}${n == 1 ? "" : "s"}`) + sx); // this one's just for terse practice :)
 // initial runs
+if (!("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker" in window && tmg.ON_MOBILE)) foldersDropBox.remove(); // dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data
+if (!("files" in HTMLInputElement.prototype)) videosDropBox.remove();
 if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load()); // let the UI breathe, don't suffocate it
 (async function logVisitor() {
   vi.isNew = vi.isNew == null ? true : false;
