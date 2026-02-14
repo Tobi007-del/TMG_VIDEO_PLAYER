@@ -2338,7 +2338,7 @@ class tmg_Video_Controller {
     }
   }
   _handleMiniplayerDragStart({ target, clientX, clientY, targetTouches }) {
-    if (!this.isUIActive("miniplayer") || target.scrollWidth > target.clientWidth || [this.DOM.topControlsWrapper, this.DOM.bigControlsWrapper, this.DOM.bottomControlsWrapper, this.DOM.captionsContainer].some((w) => w?.contains(target)) || target.closest("[class$='toast-container']")) return;
+    if (!this.isUIActive("miniplayer") || target.scrollWidth > target.clientWidth || [this.DOM.topControlsWrapper, tmg.inBoolArrOpt(this.settings.controlPanel.draggable, "big") ? this.DOM.bigControlsWrapper : null, this.DOM.bottomControlsWrapper, this.DOM.captionsContainer].some((w) => w?.contains?.(target)) || target.closest("[class$='toast-container']")) return;
     const { left, bottom } = getComputedStyle(this.videoContainer);
     ((this.lastMiniplayerXPos = parseFloat(left)), (this.lastMiniplayerYPos = parseFloat(bottom)));
     ((this.lastMiniplayerDragX = clientX ?? targetTouches[0].clientX), (this.lastMiniplayerDragY = clientY ?? targetTouches[0].clientY));
