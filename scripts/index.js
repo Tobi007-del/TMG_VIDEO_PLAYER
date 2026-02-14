@@ -196,7 +196,7 @@ window.addEventListener("load", async () => {
   }
   (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && Toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
   const session = await Memory.getSession();
-  if (session) sessionTId = Toast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", autoClose: false, closeButton: false, dragToClose: false, actions: { Restore: () => restoreSession(session), Dismiss: () => Toast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, actions: false, autoClose: true, closeButton: true }) } });
+  if (session) sessionTId = Toast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", autoClose: false, closeButton: false, dragToClose: false, onClose: () => clearInterval(sessionTInt), actions: { Restore: () => restoreSession(session), Dismiss: () => Toast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, actions: false, autoClose: true, closeButton: true }) } });
   if (session) sessionTInt = setInterval(() => Toast.update(sessionTId, { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
 });
 window.addEventListener("online", () => document.body.classList.remove("offline"));
@@ -229,8 +229,10 @@ clearFilesBtn.addEventListener("click", clearFiles);
   }
   !((!recurse ? "showOpenFilePicker" : "showDirectoryPicker") in window) ? input.addEventListener("change", handleInput) : input.addEventListener("click", (e) => handleInput(e, true));
 });
+if (!("files" in HTMLInputElement.prototype)) videosDropBox.remove();
+if (!("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker" in window && tmg.ON_MOBILE)) foldersDropBox.remove(); // dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data
 [videosDropBox, foldersDropBox].forEach((dropBox, i) => {
-  if (!((i ? "webkitdirectory" : "files") in HTMLInputElement.prototype)) return dropBox.remove();
+  if (!dropBox.isConnected) return;
   dropBox.addEventListener("dragenter", (e) => (e.preventDefault(), e.currentTarget.classList.add("active")));
   dropBox.addEventListener("dragover", (e) => (e.preventDefault(), (e.dataTransfer.dropEffect = "copy")));
   dropBox.addEventListener("dragleave", (e) => (e.preventDefault(), e.currentTarget.classList.remove("active")));
@@ -628,7 +630,7 @@ async function getDroppedFiles(e, preTask) {
 async function getDroppedHandles(e) {
   const items = [...(e.dataTransfer.items || [])],
     handlePromises = items.map((item) => (item.getAsFileSystemHandle ? item.getAsFileSystemHandle() : null));
-  return await Promise.all(handlePromises.filter(Boolean));
+  return (await Promise.all(handlePromises)).filter(Boolean);
 }
 async function getPickedHandles(directory = false) {
   try {
