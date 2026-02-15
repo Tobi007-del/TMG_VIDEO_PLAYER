@@ -973,7 +973,7 @@ class tmg_Video_Controller {
     this.setUpSvgs();
     (this.setVideoEventListeners(), this.setControlsEventListeners());
     (this.plugMedia(), this.plugLightState(), this.plugVolumeSettings(), this.plugBrightnessSettings(), this.plugPlaybackRateSettings(), this.plugCaptionsSettings());
-    (this.plugTimeSettings(), this.plugModesSettings(), this.plugBetaSettings(), this.plugKeysSettings(), this.plugToastsSettings());
+    (this.plugTimeSettings(), this.plugModesSettings(), this.plugBetaSettings(), this.plugKeysSettings(), this.plugToastsSettings(), this.plugLocked());
     this[`toggle${tmg.capitalize(this.config.initialMode)}Mode`]?.(true);
     !this.video.currentSrc && this._handleLoadedError();
     this._handleLoadStart();
@@ -1299,7 +1299,7 @@ class tmg_Video_Controller {
         this.setKeyEventListeners("add");
       }
     });
-    this.disabled = this.disabled;
+    this.config.disabled = this.config.disabled;
   }
   plugLocked() {
     this.config.on("settings.locked", async ({ target: { value } }) => {
@@ -1318,9 +1318,10 @@ class tmg_Video_Controller {
         this.setKeyEventListeners("add");
       }
     });
+    this.settings.locked = this.settings.locked;
   }
-  lock = () => (this.config.settings.locked = true);
-  unlock = () => (this.config.settings.locked = false);
+  lock = () => (this.settings.locked = true);
+  unlock = () => (this.settings.locked = false);
   _handleLockBtnClick(e) {
     e.stopPropagation();
     this.delayLockedOverlay();
@@ -3300,8 +3301,8 @@ var tmg = {
   },
   safeNum: (number, fallback = 0) => (tmg.isValidNum(number) ? number : fallback),
   parseIfPercent: (percent, amount = 100) => (percent?.endsWith?.("%") ? tmg.safeNum((parseFloat(percent) / 100) * amount) : percent),
-  parseCSSTime: (time) => (time.endsWith("ms") ? parseFloat(time) : parseFloat(time) * 1000),
-  parseCSSUnit: (val) => (val.endsWith("px") ? parseFloat(val) : tmg.remToPx(parseFloat(val))),
+  parseCSSTime: (time) => (time?.endsWith?.("ms") ? parseFloat(time) : parseFloat(time) * 1000),
+  parseCSSUnit: (val) => (val?.endsWith?.("px") ? parseFloat(val) : tmg.remToPx(parseFloat(val))),
   parseUIObj(obj) {
     const result = {};
     for (const key of Object.keys(obj)) {
