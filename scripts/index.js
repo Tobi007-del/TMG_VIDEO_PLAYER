@@ -78,7 +78,7 @@ var Memory = {
     return (Date.now() - session.lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (this.clear(), console.log("TVP expired session cleaned up.")) : { state, handles: session.handles, lastUpdated: session.lastUpdated };
   },
   async save(snapshot) {
-    localStorage.setItem(this._stateKey, JSON.stringify({ settings: snapshot.settings, playlist: snapshot.playlist, media: snapshot.media, paused: video.paused }));
+    localStorage.setItem(this._stateKey, JSON.stringify({ settings: snapshot.settings, playlist: snapshot.playlist, media: snapshot.media, lightState: snapshot.lightState, paused: video.paused }));
     sessionHandles.length ? await DB.vault.handles.put({ handles: sessionHandles, lastUpdated: Date.now() }, "last_handles") : await this.clear();
   },
   async clear() {
@@ -505,10 +505,11 @@ function handleFiles(files, restored = null, handles = null) {
           video.addEventListener(
             "tmgattached",
             () => {
-              const i = restored && playlist.findIndex((item) => item.media.id === restored.media.id);
-              restored && mP.Controller?.movePlaylistTo(Math.max(0, i), !restored.paused);
-              restored && thumbnails[i]?.closest("li")?.classList.add("playing");
-              restored && thumbnails[i]?.parentElement?.classList.toggle("paused", video.paused);
+              const i = restored && playlist.findIndex((item) => item.media.id === restored.media.id),
+                should = restored?.lightState.disabled && i !== -1;
+              should && mP.Controller?.movePlaylistTo(i, !restored.paused);
+              should && thumbnails[i]?.closest("li")?.classList.add("playing");
+              should && thumbnails[i]?.parentElement?.classList.toggle("paused", video.paused);
               mP.Controller.config.on("*", () => mP.Controller?.throttle("TVP_session_save", saveSession, 2000), { immediate: true });
               readyUI();
             },
@@ -517,7 +518,6 @@ function handleFiles(files, restored = null, handles = null) {
           mP = new tmg.Player({
             cloneOnDetach: true,
             playlist,
-            "lightState.disabled": !!restored,
             "media.artist": "TMG Video Player",
             "media.profile": "assets/icons/tmg-icon.jpeg",
             "media.links.artist": "https://tmg-video-player.vercel.app",
@@ -528,7 +528,7 @@ function handleFiles(files, restored = null, handles = null) {
             "settings.captions.characterEdgeStyle.value": "drop-shadow",
             "settings.overlay.behavior": "auto",
           });
-          mP.configure({ settings: (restored ?? Memory.getState())?.settings ?? {} }); // recursive mixing in
+          mP.configure({ settings: (restored ?? Memory.getState())?.settings ?? {}, lightState: restored?.lightState ?? {} }); // recursive mixing in
           mP.attach(video);
           window.addEventListener("pagehide", saveSession);
           document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && saveSession());
