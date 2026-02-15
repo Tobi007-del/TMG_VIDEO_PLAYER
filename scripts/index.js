@@ -507,7 +507,7 @@ async function handleFiles(files, restored = null, handles = null) {
           "tmgattached",
           () => {
             const i = restored && playlist.findIndex((item) => item.media.id === restored.media.id),
-              should = restored?.lightState.disabled && i !== -1;
+              should = restored?.lightState?.disabled && i !== -1;
             should && mP.Controller?.movePlaylistTo(i, !restored.paused);
             should && thumbnails[i]?.closest("li")?.classList.add("playing");
             should && thumbnails[i]?.parentElement?.classList.toggle("paused", video.paused);
