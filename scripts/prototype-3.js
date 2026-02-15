@@ -1464,7 +1464,8 @@ class tmg_Video_Controller {
   }
   _handleLoadedMetadata() {
     this.loaded = true;
-    if (this.settings.time.start != null && this.config.lightState.disabled) this.actualTimeStart = this.currentTime = this.settings.time.start;
+    this.actualTimeStart = this.settings.time.start;
+    if (this.settings.time.start != null && this.config.lightState.disabled) this.currentTime = this.actualTimeStart;
     this.pseudoVideo.src = this.video.currentSrc;
     this.pseudoVideo.crossOrigin = this.video.crossOrigin;
     this.pseudoVideo.addEventListener("timeupdate", ({ target: v }) => (v.ontimeupdate = this.syncCanvasPreviews), { once: true }); // anonymous low cost
@@ -1697,8 +1698,8 @@ class tmg_Video_Controller {
     this.DOM.currentTimeElement.textContent = this.toTimeText(t.vc, true);
     if (this.speedCheck && !this.video.paused) this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.toTimeText(t.vc, true));
     if (Math.floor((t.s.time.end ?? t.d) - t.c) <= t.s.auto.next) this.autonextVideo();
-    if (this.video.readyState) t.s.time.start = t.c > 3 && t.c < (t.s.time.end ?? t.d) - 3 ? t.c : this.actualTimeStart;
-    if (this.video.readyState && this.config.playlist) this.config.playlist[this.currentPlaylistIndex].settings.time.start = t.s.time.start;
+    if (this.video.readyState && t.c) t.s.time.start = t.c > 3 && t.c < (t.s.time.end ?? t.d) - 3 ? t.c : this.actualTimeStart;
+    if (this.video.readyState && t.c && this.config.playlist) this.config.playlist[this.currentPlaylistIndex].settings.time.start = t.s.time.start;
     this.DOM.timelineContainer?.setAttribute("aria-valuenow", Math.floor(t.c));
     this.DOM.timelineContainer?.setAttribute("aria-valuetext", `${tmg.formatMediaTime({ time: t.c, format: "human-long" })} out of ${tmg.formatMediaTime({ time: t.d, format: "human-long" })}`);
     this.videoContainer.classList.remove("tmg-video-replay");
@@ -2008,7 +2009,7 @@ class tmg_Video_Controller {
   setUpAudio() {
     if (this.audioSetup) return;
     if (tmg.connectMediaToAudioManager(this.video) === "unavailable") return;
-    this.config.mediaElementSourceNode = this.video.mediaElementSourceNode;
+    this._mediaElementSourceNode = this.video.mediaElementSourceNode;
     this._tmgGainNode = this.video._tmgGainNode;
     const DCN = (this._tmgDynamicsCompressorNode = this.video._tmgDynamicsCompressorNode);
     ((DCN.threshold.value = -30), (DCN.knee.value = 20), (DCN.ratio.value = 12), (DCN.attack.value = 0.003), (DCN.release.value = 0.25));
@@ -2016,7 +2017,7 @@ class tmg_Video_Controller {
   }
   cancelAudio() {
     this.video.volume = tmg.clamp(0, (this._tmgGainNode?.gain?.value ?? 2) / 2, 1);
-    this.config.mediaElementSourceNode?.disconnect();
+    this._mediaElementSourceNode?.disconnect();
     this._tmgGainNode?.disconnect();
     this.audioSetup = false;
   }
