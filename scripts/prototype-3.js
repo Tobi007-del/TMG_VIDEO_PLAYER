@@ -630,7 +630,7 @@ class tmg_Video_Controller {
     this.queryDOM(".tmg-video-settings-bottom-panel").append(brandSelector, themeSelector);
     const id = { theme: "", brand: "" },
       sync = (req = true, type = "brand") => (this.settings.css.syncWithMedia[`${type}Color`] = req),
-      assert = (opts, type = "brand") => this.toast?.update(id[type], { render: `Still here incase your mind's changed about the ${type}?`, ...opts });
+      assert = (opts, type = "brand") => this.toast?.update(id[type], { render: `Still here incase you change your choice about the ${type}?`, ...opts });
     brandSelector.querySelector("select").addEventListener("input", async ({ target: i }) => {
       this.toast?.dismiss(id.brand);
       if (i.value !== "auto") this.settings.css.brandColor = i.value;
