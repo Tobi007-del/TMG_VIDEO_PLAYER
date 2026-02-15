@@ -1515,7 +1515,7 @@ class tmg_Video_Controller {
         <h2>Next Video in <span class="tmg-video-next-countdown">${count}</span></h2>
         ${v.media.title ? `<p class="tmg-video-next-title">${v.media.title}</p>` : ""}
       </span>`,
-      onTimeUpdate: (time) => this.throttle("nextVideoCountdown", () => (this.queryDOM(".tmg-video-next-countdown").textContent = Math.round((count * 1000 - time) / 1000)) || 1, 250),
+      onTimeUpdate: (time) => this.throttle("nextVideoCountdown", () => ((this.queryDOM(".tmg-video-next-countdown").textContent = Math.max(Math.round(count - time / 1000), 1)), 250)),
       onClose: (timeElapsed) => (removeListeners(), timeElapsed && this.nextVideo()),
       tag: "tmg-anvi",
     });
@@ -1697,7 +1697,7 @@ class tmg_Video_Controller {
     if (!this.isScrubbing) t.s.css.currentPlayedPosition = t.s.css.currentThumbPosition = tmg.safeNum(t.vc / tmg.safeNum(this.video.duration, 60)); // progress fallback, shouldn't take more than a min for duration to be available
     this.DOM.currentTimeElement.textContent = this.toTimeText(t.vc, true);
     if (this.speedCheck && !this.video.paused) this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.toTimeText(t.vc, true));
-    if (Math.floor((t.s.time.end ?? t.d) - t.c) <= t.s.auto.next) this.autonextVideo();
+    if (this.video.readyState && t.c && Math.floor((t.s.time.end ?? t.d) - t.c) <= t.s.auto.next) this.autonextVideo();
     if (this.video.readyState && t.c) t.s.time.start = t.c > 3 && t.c < (t.s.time.end ?? t.d) - 3 ? t.c : this.actualTimeStart;
     if (this.video.readyState && t.c && this.config.playlist) this.config.playlist[this.currentPlaylistIndex].settings.time.start = t.s.time.start;
     this.DOM.timelineContainer?.setAttribute("aria-valuenow", Math.floor(t.c));
