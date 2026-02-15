@@ -1085,6 +1085,7 @@ class tmg_Video_Controller {
     this.video[`${act}EventListener`]("webkitendfullscreen", this._handleIOSFullscreenEnd);
     this.video.textTracks[`${act}EventListener`]("addtrack", this._handleTextTrackChange);
     this.video.textTracks[`${act}EventListener`]("removetrack", this._handleTextTrackChange);
+    this.video.textTracks[`${act}EventListener`]("change", this._handleTextTrackChange);
   }
   setControlsEventListeners() {
     this.bindNotifiers(); // notifiers event listeners
@@ -1856,7 +1857,6 @@ class tmg_Video_Controller {
     this._handleCueChange(this.video.textTracks[this.textTrackIndex]?.activeCues?.[0]);
   }
   plugCaptionsSettings() {
-    this.config.get("settings.captions.disabled", (value) => (this.video.textTracks[this.textTrackIndex] ? value : true));
     Object.entries(this.settings.captions.font).forEach(([k, { value }]) => (this.settings.css[`captionsFont${tmg.capitalize(k)}`] = value));
     Object.entries(this.settings.captions.background).forEach(([k, { value }]) => (this.settings.css[`captionsBackground${tmg.capitalize(k)}`] = value));
     Object.entries(this.settings.captions.window).forEach(([k, { value }]) => (this.settings.css[`captionsWindow${tmg.capitalize(k)}`] = value));
@@ -2798,12 +2798,13 @@ class tmg_Video_Controller {
     dataTransfer.effectAllowed = "move";
     this.dragging = t;
     requestAnimationFrame(() => t.classList.add("tmg-video-control-dragging"));
+    this.dragSafeTimeoutId = setTimeout(() => t.classList.remove("tmg-video-control-dragging"), 1000); // for mobile browsers supporting the API but not living up
     if (t.dataset.dragId !== "wrapper" || t.parentElement?.dataset.dragId !== "wrapper") return;
     const { coord, zoneW } = this.getUIZoneWCoord(t, true);
     tmg.setAny(this.cZoneWs, coord, zoneW);
     this.dragReplaced = { target: t.parentElement, child: zoneW.cover };
   }
-  _handleDrag = () => this.delayOverlay();
+  _handleDrag = () => (this.delayOverlay(), clearTimeout(this.dragSafeTimeoutId));
   _handleDragEnd({ target: t }) {
     t.classList.remove("tmg-video-control-dragging");
     this.dragReplaced = this.dragging = null;
@@ -3490,6 +3491,7 @@ var tmg = {
   getElSiblingAt: (p, dir, els, pos = "after") =>
     els.length &&
     Array.prototype.reduce.call(
+      els,
       (closest, child) => {
         const { top: cT, left: cL, width: cW, height: cH } = child.getBoundingClientRect(),
           offset = p - (dir === "y" ? cT : cL) - (dir === "y" ? cH : cW) / 2,
