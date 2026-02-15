@@ -254,7 +254,7 @@ clearFilesBtn.addEventListener("click", clearFiles);
   dropBox.addEventListener("dragleave", (e) => (e.preventDefault(), e.currentTarget.classList.remove("active")));
   async function handleDrop(e, useHandles = false) {
     e.preventDefault();
-    const handles = useHandles ? await getDroppedHandles(e) : null,
+    const handles = useHandles ? await getDroppedHandles(e, initUI) : null,
       allFiles = useHandles ? await getHandlesFiles(handles) : await getDroppedFiles(e, initUI),
       videoFiles = allFiles.filter((file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
       rejectedCount = allFiles.length - videoFiles.length;
@@ -284,7 +284,7 @@ function initUI() {
 function readyUI() {
   video.classList.remove("stall");
   videoPlayerContainer.classList.remove("loading");
-  setTimeout(() => mP.Controller?.toast(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }));
+  setTimeout(() => mP.Controller?.toast?.(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }), 1000);
   mP.Controller?.config.on("settings.css.brandColor", ({ target: { value } }) => setColors(value, false), { immediate: "auto" });
   mP.Controller?.config.on("settings.css.themeColor", ({ target: { value } }) => setColors(false, value), { immediate: "auto" });
 }
@@ -356,198 +356,198 @@ async function clearFiles() {
   (Memory.clear(), defaultUI());
   const tId = Toast.success("Cleared your files and session data, Settings too?", { actions: { Clear: () => (Memory.clearSettings(), setColors(), Toast.success(tId, { render: "Settings cleared successfully", actions: false })) } });
 }
-function handleFiles(files, restored = null, handles = null) {
+async function handleFiles(files, restored = null, handles = null) {
   try {
-    if (files?.length > 0) {
-      (initUI(), Toast.dismiss(sessionTId));
-      if (handles?.length) sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))];
-      for (const file of (files = smartFlatSort(files))) (numOfFiles++, (numOfBytes += file.size)); // providing some available metrics to the user
-      updateUI();
-      const stateMap = new Map(restored?.playlist?.map((v) => [v.media.title, v]) || []), // Pre-map for O(1) lookups
-        list = fileList.appendChild(document.getElementById("media-list") || tmg.createEl("ul", { id: "media-list" })), // building the media list
-        thumbnails = [];
-      for (let i = 0; i < files.length; i++) {
-        const ffName = tmg.noExtension(files[i].name), // file formatted name
-          state = stateMap.get(ffName);
-        if ((restored && !state) || !!Array.prototype.find.call(containers, (c) => c.lastElementChild.ffName === ffName)) {
-          (numOfFiles--, (numOfBytes -= files[i].size), thumbnails.push(null));
-          continue; // prevents duplicates & skips files incase user deleted file but not directory handle
-        }
-        const li = tmg.createEl("li", { className: "content-line" }, { fileName: files[i].name });
-        const thumbnail = tmg.createEl(
-          "video",
-          {
-            className: "thumbnail",
-            preload: "metadata",
-            muted: true,
-            playsInline: true,
-            onloadedmetadata: ({ target }) => {
-              totalTime += tmg.safeNum(target.duration);
-              if (tmg.safeNum(target.duration) > 12) target.currentTime = 2;
-              document.getElementById("total-time").textContent = tmg.formatMediaTime({ time: totalTime });
-              li.querySelector(".file-duration span:last-child").innerHTML = `${tmg.formatMediaTime({ time: target.duration })}`;
-              restored && thumbnails[i]?.parentElement?.style.setProperty("--video-progress-position", tmg.safeNum(state.settings.time.start / target.duration));
-            },
-            onerror: ({ target }) => {
-              li.classList.add("error");
-              if (tmg.safeNum(target.duration)) return;
-              li.querySelector(".file-duration span:last-child").classList.add("failed");
-              li.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load";
-            },
-          },
-          { captionState: "waiting" }
-        );
-        thumbnails.push(((thumbnail.ffName = ffName), thumbnail));
-        const thumbnailContainer = tmg.createEl("span", { className: "thumbnail-container", innerHTML: `<button><svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated"><rect x="4" width="3" height="10" fill="white"></rect><rect x="10" width="3" height="10" fill="white"></rect><rect x="16" width="3" height="10" fill="white"></rect></svg></button>`, onclick: () => mP.Controller?.movePlaylistTo(thumbnail.getPlIndex(), true) }).appendChild(thumbnail).parentElement;
-        const captionsInput = tmg.createEl("input", {
-          type: "file",
-          accept: ".srt, .vtt",
-          onchange: async (e) => {
-            const f = e.target.files[0];
-            if (!f) return;
-            const ext = tmg.getExtension(f.name);
-            if (!["srt", "vtt"].includes(ext)) return ((thumbnail.dataset.captionState = "empty"), Toast.warn("Only .srt and .vtt files are currently supported"));
-            let txt = await f.text();
-            if (ext === "srt") txt = tmg.srtToVtt(txt);
-            DB.vault.subtitles.put(new TextEncoder().encode(txt), (thumbnail.dataset.captionId = f.name)); // storing these too for the magic tricks, no need for file pickers, it's light
-            const playlistItem = thumbnail.getPlItem(); // storing name as id so it will not be `tmg-` prefixed like our UID's for later logic
-            playlistItem.tracks = [{ id: f.name, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
-            if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === playlistItem.media?.id) mP.Controller.config.tracks = playlistItem.tracks;
-            thumbnail.dataset.captionState = "filled";
-          },
-          oncancel: () => (thumbnail.dataset.captionState = "empty"),
-        });
-        const captionsBtn = tmg.createEl("button", { title: "(Toggle / DblClick→Load) Captions", className: "captions-btn", innerHTML: `<svg viewBox="0 0 25 25" style="scale: 1.15;"><path d="M18,11H16.5V10.5H14.5V13.5H16.5V13H18V14A1,1 0 0,1 17,15H14A1,1 0 0,1 13,14V10A1,1 0 0,1 14,9H17A1,1 0 0,1 18,10M11,11H9.5V10.5H7.5V13.5H9.5V13H11V14A1,1 0 0,1 10,15H7A1,1 0 0,1 6,14V10A1,1 0 0,1 7,9H10A1,1 0 0,1 11,10M19,4H5C3.89,4 3,4.89 3,6V18A2,2 0 0,0 5,20H19A2,2 0 0,0 21,18V6C21,4.89 20.1,4 19,4Z"/><svg>` }).appendChild(captionsInput).parentElement;
-        tmg.addSafeClicks(
-          captionsBtn,
-          ({ target }) => {
-            if (target.matches("input")) return;
-            if (thumbnail.dataset.captionState === "empty") {
-              setTimeout(() => (thumbnail.dataset.captionState = "loading"), 1000);
-              return captionsBtn.querySelector("input").click();
-            } else if (thumbnail.dataset.captionState === "filled") {
-              const playlistItem = thumbnail.getPlItem();
-              URL.revokeObjectURL(playlistItem.tracks?.[0]?.src); // no deleting from IDB just yet, KB's for restoration magic tricks
-              if (!thumbnail.dataset.captionId.startsWith("tmg-")) DB.vault.subtitles.delete(thumbnail.dataset.captionId); // delete if not ffmpeg's, we can't guarantee identity when repicked, input ain't slow like ffmpeg
-              playlistItem.tracks = [];
-              if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === playlistItem.media?.id) mP.Controller.config.tracks = [];
-            } else if (!queue.drop(thumbnail.dataset.captionId)) return; // cancels if waiting and returns if loading since current job is shifted from queue
-            thumbnail.dataset.captionState = "empty";
-          },
-          async () => thumbnail.dataset.captionState === "empty" && (await deployCaption(files[i], thumbnail, false))
-        );
-        const deleteBtn = tmg.createEl("button", {
-          title: "Remove Video",
-          className: "delete-btn",
-          innerHTML: `<svg width="20px" height="20px" viewBox="0 0 24 24" fill="none"><path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="#0D0D0D"/></svg>`,
-          onclick() {
-            URL.revokeObjectURL(thumbnail.src);
-            const playlistItem = thumbnail.getPlItem();
-            if (playlistItem.tracks?.[0]?.src?.startsWith("blob:")) URL.revokeObjectURL(playlistItem.tracks[0].src);
-            queue.drop(thumbnail.dataset.captionId);
-            DB.vault.subtitles.delete(thumbnail.dataset.captionId);
-            li.remove();
-            const hIdx = sessionHandles.findIndex((h) => h.name === files[i].name);
-            if (hIdx !== -1) sessionHandles.splice(hIdx, 1);
-            saveSession();
-            if (numOfFiles <= 1) return clearFiles();
-            else syncPlaylist();
-            (numOfFiles--, (numOfBytes -= files[i].size), (totalTime -= tmg.safeNum(thumbnail.duration)));
-            updateUI();
-          },
-        });
-        const dragHandle = tmg.createEl("span", { title: "Drag to Reorder", className: "drag-handle", innerHTML: `<svg fill="#000000" height="20px" width="20px" viewBox="0 0 24 24"><path d="M10,6H6V2h4V6z M18,2h-4v4h4V2z M10,10H6v4h4V10z M18,10h-4v4h4V10z M10,18H6v4h4V18z M18,18h-4v4h4V18z"/></svg>` });
-        dragHandle.addEventListener(
-          "pointerdown",
-          () => {
-            navigator.vibrate?.([50]);
-            let initialOffsetY = list.getBoundingClientRect().top,
-              initialScrollY = window.scrollY;
-            li.classList.add("dragging");
-            li.parentElement.insertBefore((placeholderItem = tmg.createEl("div", { className: "drag-placeholder" }, {}, { cssText: `height:${li.offsetHeight}px;width:${li.offsetWidth}px;` })), li.nextElementSibling);
-            ["pointermove", "pointerup", "pointercancel"].forEach((e, i) => document.addEventListener(e, !i ? onPointerMove : onPointerUp));
-            function onPointerMove(e) {
-              e.preventDefault();
-              mP.Controller?.RAFLoop("listItemDragging", () => {
-                li.style.top = `${(li.top = tmg.clamp(0, window.scrollY - initialScrollY + e.clientY - initialOffsetY - li.offsetHeight / 2, list.offsetHeight - li.offsetHeight))}px`;
-                scroller.drive(e.clientY, !(li.top > 0 && li.top < list.offsetHeight - li.offsetHeight));
-                const afterLine = tmg.getElSiblingAt(e.clientY, "y", list.querySelectorAll(".content-line:not(.dragging)"));
-                afterLine ? list.insertBefore(placeholderItem, afterLine) : list.append(placeholderItem);
-              });
-            }
-            function onPointerUp() {
-              navigator.vibrate?.([50]);
-              mP.Controller?.cancelRAFLoop("listItemDragging");
-              scroller.reset();
-              li.classList.remove("dragging");
-              (placeholderItem.parentElement.replaceChild(li, placeholderItem), (placeholderItem = null));
-              syncPlaylist();
-              ["pointermove", "pointerup", "pointercancel"].forEach((e, i) => document.removeEventListener(e, !i ? onPointerMove : onPointerUp));
-            }
-          },
-          { passive: false }
-        );
-        li.append(thumbnailContainer, tmg.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${files[i].name}</span></p><p class="file-size"><span>Size: </span><span>${tmg.formatSize(files[i].size)}</span></p><p class="file-duration"><span>Duration: </span><span>${restored ? "Rei" : "I"}nitializing...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
-        list.append(li); // avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
+    if (!files?.length && !numOfFiles) return defaultUI();
+    (Toast.dismiss(sessionTId), initUI());
+    if (handles?.length) sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))];
+    for (const file of (files = smartFlatSort(files))) (numOfFiles++, (numOfBytes += file.size)); // providing some available metrics to the user
+    updateUI();
+    await tmg.mockAsync(250); // browser breathe small first, UI; u still update nah
+    const stateMap = new Map(restored?.playlist?.map((v) => [v.media.title, v]) || []), // Pre-map for O(1) lookups
+      list = fileList.appendChild(document.getElementById("media-list") || tmg.createEl("ul", { id: "media-list" })), // building the media list
+      thumbnails = [];
+    for (let i = 0; i < files.length; i++) {
+      const ffName = tmg.noExtension(files[i].name), // file formatted name
+        state = stateMap.get(ffName);
+      if ((restored && !state) || !!Array.prototype.find.call(containers, (c) => c.lastElementChild.ffName === ffName)) {
+        (numOfFiles--, (numOfBytes -= files[i].size), thumbnails.push(null));
+        continue; // prevents duplicates & skips files incase user deleted file but not directory handle
       }
-      const playlist = [];
-      const deployVideos = (URLs) => {
-        URLs.forEach((url, i) => {
-          if (!thumbnails[i]) return URL.revokeObjectURL(url); // skip files incase user deleted file but not directory handle
-          const state = stateMap.get(thumbnails[i].ffName),
-            item = state ?? { media: { id: tmg.uid(), title: thumbnails[i].ffName }, "settings.time.previews": true, "settings.time.start": 0 };
-          playlist.push(((item.src = url), item));
-          ((thumbnails[i].src = url), (thumbnails[i].mediaId = item.media.id));
-          thumbnails[i].getPlItem = () => (thumbnails[i].playlistItem = mP?.Controller?.config?.playlist?.find((v) => v.media.id === item.media.id) ?? thumbnails[i].playlistItem ?? {});
-          thumbnails[i].getPlIndex = () => mP?.Controller?.config?.playlist?.findIndex((v) => v.media.id === item.media.id);
-        });
-        if (!mP) {
-          video.addEventListener(
-            "tmgattached",
-            () => {
-              const i = restored && playlist.findIndex((item) => item.media.id === restored.media.id),
-                should = restored?.lightState.disabled && i !== -1;
-              should && mP.Controller?.movePlaylistTo(i, !restored.paused);
-              should && thumbnails[i]?.closest("li")?.classList.add("playing");
-              should && thumbnails[i]?.parentElement?.classList.toggle("paused", video.paused);
-              mP.Controller.config.on("*", () => mP.Controller?.throttle("TVP_session_save", saveSession, 2000), { immediate: true });
-              readyUI();
-            },
-            { once: true }
-          );
-          mP = new tmg.Player({
-            cloneOnDetach: true,
-            playlist,
-            "media.artist": "TMG Video Player",
-            "media.profile": "assets/icons/tmg-icon.jpeg",
-            "media.links.artist": "https://tmg-video-player.vercel.app",
-            "media.links.profile": "https://tobi007-del.github.io/TMG_MEDIA_PROTOTYPE",
-            "settings.captions.font.size.value": 200,
-            "settings.captions.font.weight.value": 700,
-            "settings.captions.background.opacity.value": 0,
-            "settings.captions.characterEdgeStyle.value": "drop-shadow",
-            "settings.overlay.behavior": "auto",
-          });
-          mP.configure({ settings: (restored ?? Memory.getState())?.settings ?? {}, lightState: restored?.lightState ?? {} }); // recursive mixing in
-          mP.attach(video);
-          window.addEventListener("pagehide", saveSession);
-          document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && saveSession());
-          video.addEventListener("loadedmetadata", () => dispatchPlayerReadyToast(), { once: true });
-          video.ontimeupdate = ({ target: { currentTime: ct, duration: d } }) => mP.Controller?.throttle("TVP_thumbnail_update", () => ct > 3 && containers[mP.Controller?.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.safeNum(ct / d)), 2000);
-          video.onplay = () => {
-            fileList.querySelectorAll(".content-line").forEach((li, i) => li.classList.toggle("playing", i === mP.Controller?.currentPlaylistIndex));
-            containers[mP.Controller?.currentPlaylistIndex]?.classList.remove("paused");
-          };
-          video.onpause = () => containers[mP.Controller?.currentPlaylistIndex]?.classList.add("paused");
-        } else mP.Controller.config.playlist = [...mP.Controller.config.playlist, ...playlist];
-      };
-      numOfFiles && deployVideos(files.map(URL.createObjectURL));
-      numOfFiles && (async () => await Promise.all(files.map(async (_, i) => thumbnails[i] && (await deployCaption(files[i], thumbnails[i], undefined, stateMap.get(tmg.noExtension(files[i].name)))))))();
+      const li = tmg.createEl("li", { className: "content-line" }, { fileName: files[i].name });
+      const thumbnail = tmg.createEl(
+        "video",
+        {
+          className: "thumbnail",
+          preload: "metadata",
+          muted: true,
+          playsInline: true,
+          onloadedmetadata: ({ target }) => {
+            totalTime += tmg.safeNum(target.duration);
+            if (tmg.safeNum(target.duration) > 12) target.currentTime = 2;
+            document.getElementById("total-time").textContent = tmg.formatMediaTime({ time: totalTime });
+            li.querySelector(".file-duration span:last-child").innerHTML = `${tmg.formatMediaTime({ time: target.duration })}`;
+            restored && thumbnails[i]?.parentElement?.style.setProperty("--video-progress-position", tmg.safeNum(state.settings.time.start / target.duration));
+          },
+          onerror: ({ target }) => {
+            li.classList.add("error");
+            if (tmg.safeNum(target.duration)) return;
+            li.querySelector(".file-duration span:last-child").classList.add("failed");
+            li.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load";
+          },
+        },
+        { captionState: "waiting" }
+      );
+      thumbnails.push(((thumbnail.ffName = ffName), thumbnail));
+      const thumbnailContainer = tmg.createEl("span", { className: "thumbnail-container", innerHTML: `<button><svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated"><rect x="4" width="3" height="10" fill="white"></rect><rect x="10" width="3" height="10" fill="white"></rect><rect x="16" width="3" height="10" fill="white"></rect></svg></button>`, onclick: () => mP.Controller?.movePlaylistTo(thumbnail.getPlIndex(), true) }).appendChild(thumbnail).parentElement;
+      const captionsInput = tmg.createEl("input", {
+        type: "file",
+        accept: ".srt, .vtt",
+        onchange: async (e) => {
+          const f = e.target.files[0];
+          if (!f) return;
+          const ext = tmg.getExtension(f.name);
+          if (!["srt", "vtt"].includes(ext)) return ((thumbnail.dataset.captionState = "empty"), Toast.warn("Only .srt and .vtt files are currently supported"));
+          let txt = await f.text();
+          if (ext === "srt") txt = tmg.srtToVtt(txt);
+          DB.vault.subtitles.put(new TextEncoder().encode(txt), (thumbnail.dataset.captionId = f.name)); // storing these too for the magic tricks, no need for file pickers, it's light
+          const playlistItem = thumbnail.getPlItem(); // storing name as id so it will not be `tmg-` prefixed like our UID's for later logic
+          playlistItem.tracks = [{ id: f.name, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
+          if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === playlistItem.media?.id) mP.Controller.config.tracks = playlistItem.tracks;
+          thumbnail.dataset.captionState = "filled";
+        },
+        oncancel: () => (thumbnail.dataset.captionState = "empty"),
+      });
+      const captionsBtn = tmg.createEl("button", { title: "(Toggle / DblClick→Load) Captions", className: "captions-btn", innerHTML: `<svg viewBox="0 0 25 25" style="scale: 1.15;"><path d="M18,11H16.5V10.5H14.5V13.5H16.5V13H18V14A1,1 0 0,1 17,15H14A1,1 0 0,1 13,14V10A1,1 0 0,1 14,9H17A1,1 0 0,1 18,10M11,11H9.5V10.5H7.5V13.5H9.5V13H11V14A1,1 0 0,1 10,15H7A1,1 0 0,1 6,14V10A1,1 0 0,1 7,9H10A1,1 0 0,1 11,10M19,4H5C3.89,4 3,4.89 3,6V18A2,2 0 0,0 5,20H19A2,2 0 0,0 21,18V6C21,4.89 20.1,4 19,4Z"/><svg>` }).appendChild(captionsInput).parentElement;
+      tmg.addSafeClicks(
+        captionsBtn,
+        ({ target }) => {
+          if (target.matches("input")) return;
+          if (thumbnail.dataset.captionState === "empty") {
+            setTimeout(() => (thumbnail.dataset.captionState = "loading"), 1000);
+            return captionsBtn.querySelector("input").click();
+          } else if (thumbnail.dataset.captionState === "filled") {
+            const playlistItem = thumbnail.getPlItem();
+            URL.revokeObjectURL(playlistItem.tracks?.[0]?.src); // no deleting from IDB just yet, KB's for restoration magic tricks
+            if (!thumbnail.dataset.captionId.startsWith("tmg-")) DB.vault.subtitles.delete(thumbnail.dataset.captionId); // delete if not ffmpeg's, we can't guarantee identity when repicked, input ain't slow like ffmpeg
+            playlistItem.tracks = [];
+            if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === playlistItem.media?.id) mP.Controller.config.tracks = [];
+          } else if (!queue.drop(thumbnail.dataset.captionId)) return; // cancels if waiting and returns if loading since current job is shifted from queue
+          thumbnail.dataset.captionState = "empty";
+        },
+        async () => thumbnail.dataset.captionState === "empty" && (await deployCaption(files[i], thumbnail, false))
+      );
+      const deleteBtn = tmg.createEl("button", {
+        title: "Remove Video",
+        className: "delete-btn",
+        innerHTML: `<svg width="20px" height="20px" viewBox="0 0 24 24" fill="none"><path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="#0D0D0D"/></svg>`,
+        onclick() {
+          URL.revokeObjectURL(thumbnail.src);
+          const playlistItem = thumbnail.getPlItem();
+          if (playlistItem.tracks?.[0]?.src?.startsWith("blob:")) URL.revokeObjectURL(playlistItem.tracks[0].src);
+          queue.drop(thumbnail.dataset.captionId);
+          DB.vault.subtitles.delete(thumbnail.dataset.captionId);
+          li.remove();
+          const hIdx = sessionHandles.findIndex((h) => h.name === files[i].name);
+          if (hIdx !== -1) sessionHandles.splice(hIdx, 1);
+          saveSession();
+          if (numOfFiles <= 1) return clearFiles();
+          else syncPlaylist();
+          (numOfFiles--, (numOfBytes -= files[i].size), (totalTime -= tmg.safeNum(thumbnail.duration)));
+          updateUI();
+        },
+      });
+      const dragHandle = tmg.createEl("span", { title: "Drag to Reorder", className: "drag-handle", innerHTML: `<svg fill="#000000" height="20px" width="20px" viewBox="0 0 24 24"><path d="M10,6H6V2h4V6z M18,2h-4v4h4V2z M10,10H6v4h4V10z M18,10h-4v4h4V10z M10,18H6v4h4V18z M18,18h-4v4h4V18z"/></svg>` });
+      dragHandle.addEventListener(
+        "pointerdown",
+        () => {
+          navigator.vibrate?.([50]);
+          let initialOffsetY = list.getBoundingClientRect().top,
+            initialScrollY = window.scrollY;
+          li.classList.add("dragging");
+          li.parentElement.insertBefore((placeholderItem = tmg.createEl("div", { className: "drag-placeholder" }, {}, { cssText: `height:${li.offsetHeight}px;width:${li.offsetWidth}px;` })), li.nextElementSibling);
+          ["pointermove", "pointerup", "pointercancel"].forEach((e, i) => document.addEventListener(e, !i ? onPointerMove : onPointerUp));
+          function onPointerMove(e) {
+            e.preventDefault();
+            mP.Controller?.RAFLoop("listItemDragging", () => {
+              li.style.top = `${(li.top = tmg.clamp(0, window.scrollY - initialScrollY + e.clientY - initialOffsetY - li.offsetHeight / 2, list.offsetHeight - li.offsetHeight))}px`;
+              scroller.drive(e.clientY, !(li.top > 0 && li.top < list.offsetHeight - li.offsetHeight));
+              const afterLine = tmg.getElSiblingAt(e.clientY, "y", list.querySelectorAll(".content-line:not(.dragging)"));
+              afterLine ? list.insertBefore(placeholderItem, afterLine) : list.append(placeholderItem);
+            });
+          }
+          function onPointerUp() {
+            navigator.vibrate?.([50]);
+            mP.Controller?.cancelRAFLoop("listItemDragging");
+            scroller.reset();
+            li.classList.remove("dragging");
+            (placeholderItem.parentElement.replaceChild(li, placeholderItem), (placeholderItem = null));
+            syncPlaylist();
+            ["pointermove", "pointerup", "pointercancel"].forEach((e, i) => document.removeEventListener(e, !i ? onPointerMove : onPointerUp));
+          }
+        },
+        { passive: false }
+      );
+      li.append(thumbnailContainer, tmg.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${files[i].name}</span></p><p class="file-size"><span>Size: </span><span>${tmg.formatSize(files[i].size)}</span></p><p class="file-duration"><span>Duration: </span><span>${restored ? "Rei" : "I"}nitializing...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
+      list.append(li); // avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
     }
-    if (numOfFiles < 1) defaultUI();
+    const playlist = [];
+    const deployVideos = (URLs) => {
+      URLs.forEach((url, i) => {
+        if (!thumbnails[i]) return URL.revokeObjectURL(url); // skip files incase user deleted file but not directory handle
+        const state = stateMap.get(thumbnails[i].ffName),
+          item = state ?? { media: { id: tmg.uid(), title: thumbnails[i].ffName }, "settings.time.previews": true, "settings.time.start": 0 };
+        playlist.push(((item.src = url), item));
+        ((thumbnails[i].src = url), (thumbnails[i].mediaId = item.media.id));
+        thumbnails[i].getPlItem = () => (thumbnails[i].playlistItem = mP?.Controller?.config?.playlist?.find((v) => v.media.id === item.media.id) ?? thumbnails[i].playlistItem ?? {});
+        thumbnails[i].getPlIndex = () => mP?.Controller?.config?.playlist?.findIndex((v) => v.media.id === item.media.id);
+      });
+      if (!mP) {
+        video.addEventListener(
+          "tmgattached",
+          () => {
+            const i = restored && playlist.findIndex((item) => item.media.id === restored.media.id),
+              should = restored?.lightState.disabled && i !== -1;
+            should && mP.Controller?.movePlaylistTo(i, !restored.paused);
+            should && thumbnails[i]?.closest("li")?.classList.add("playing");
+            should && thumbnails[i]?.parentElement?.classList.toggle("paused", video.paused);
+            mP.Controller.config.on("*", () => mP.Controller?.throttle("TVP_session_save", saveSession, 2000), { immediate: true });
+            readyUI();
+          },
+          { once: true }
+        );
+        mP = new tmg.Player({
+          cloneOnDetach: true,
+          playlist,
+          "media.artist": "TMG Video Player",
+          "media.profile": "assets/icons/tmg-icon.jpeg",
+          "media.links.artist": "https://tmg-video-player.vercel.app",
+          "media.links.profile": "https://tobi007-del.github.io/TMG_MEDIA_PROTOTYPE",
+          "settings.captions.font.size.value": 200,
+          "settings.captions.font.weight.value": 700,
+          "settings.captions.background.opacity.value": 0,
+          "settings.captions.characterEdgeStyle.value": "drop-shadow",
+          "settings.overlay.behavior": "auto",
+        });
+        mP.configure({ settings: (restored ?? Memory.getState())?.settings ?? {}, lightState: restored?.lightState ?? {} }); // recursive mixing in
+        mP.attach(video);
+        window.addEventListener("pagehide", saveSession);
+        document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && saveSession());
+        video.addEventListener("loadedmetadata", () => setTimeout(dispatchPlayerReadyToast, 1000), { once: true });
+        video.ontimeupdate = ({ target: { currentTime: ct, duration: d } }) => mP.Controller?.throttle("TVP_thumbnail_update", () => ct > 3 && containers[mP.Controller?.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.safeNum(ct / d)), 2000);
+        video.onplay = () => {
+          fileList.querySelectorAll(".content-line").forEach((li, i) => li.classList.toggle("playing", i === mP.Controller?.currentPlaylistIndex));
+          containers[mP.Controller?.currentPlaylistIndex]?.classList.remove("paused");
+        };
+        video.onpause = () => containers[mP.Controller?.currentPlaylistIndex]?.classList.add("paused");
+      } else mP.Controller.config.playlist = [...mP.Controller.config.playlist, ...playlist];
+    };
+    await tmg.mockAsync(50); // catch ur breath again, you have the file list, but still render it
+    numOfFiles && deployVideos(files.map(URL.createObjectURL));
+    numOfFiles && (await Promise.all(files.map(async (_, i) => thumbnails[i] && (await deployCaption(files[i], thumbnails[i], undefined, stateMap.get(tmg.noExtension(files[i].name)))))));
+    if (!numOfFiles) return defaultUI();
   } catch (error) {
-    console.error(error);
-    errorUI(error);
+    (console.error(error), errorUI(error));
   }
 }
 
@@ -629,9 +629,10 @@ async function getDroppedFiles(e, preTask) {
   }
   return (await Promise.all(promises)).flat().filter(Boolean);
 }
-async function getDroppedHandles(e) {
-  const items = e.dataTransfer.items || [],
-    handlePromises = Array.prototype.map.call(items, (item) => (item.getAsFileSystemHandle ? item.getAsFileSystemHandle() : null));
+async function getDroppedHandles(e, preTask) {
+  const dtTtems = e.dataTransfer.items || [];
+  if (dtTtems.length > 0) preTask?.();
+  const handlePromises = Array.prototype.map.call(dtTtems, (item) => (item.getAsFileSystemHandle ? item.getAsFileSystemHandle() : null));
   return (await Promise.all(handlePromises)).filter(Boolean);
 }
 async function getPickedHandles(directory = false) {
