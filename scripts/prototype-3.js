@@ -1537,7 +1537,7 @@ class tmg_Video_Controller {
     this.syncMediaSession();
     this.leaveSettingsView();
     this.toggleMiniplayerMode();
-    this.frameCallbackId = this.video.requestVideoFrameCallback?.(this._handleFrameUpdate);
+    // this.frameCallbackId = this.video.requestVideoFrameCallback?.(this._handleFrameUpdate); // will start dis with S.I.A maybe, there's more efficient ways to log sef
     if (this.loaded || this.video.currentSrc) ((this.loaded = true), !this.video.error && this.reactivate());
   }
   _handlePause() {

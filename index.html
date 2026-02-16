@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -188,6 +188,20 @@
     </div>
     <p class="offline-notice">You're offline</p>
     <script>
+      // Conditional UI rendering before other scripts to avoid flashes for that magic feel :), using var so scripts don't have to duplicate logic btw
+      var foldersDropBox = document.getElementById("folders-drop-box");
+      if (!("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker" in window && /Mobi|Android|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent))) foldersDropBox.style.display = "none"; // dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data
+      var videosDropBox = document.getElementById("videos-drop-box");
+      if (!("files" in HTMLInputElement.prototype)) videosDropBox.style.display = "none";
+      var _lssk = "TVP_last_session_state"; // localStorage session key
+      var setColors = (brand = "rgb(226, 110, 2)", theme = "white") => {
+        brand && document.documentElement.style.setProperty("--T_M_G-brand-color", brand);
+        theme && document.documentElement.style.setProperty("--T_M_G-theme-color", theme);
+      }; // now to stop stored settings colors from flashing
+      const settings = JSON.parse(localStorage[_lssk] || "{}").settings;
+      settings && setColors(settings.css.brandColor, settings.css.themeColor);
+    </script>
+    <script>
       window.TMG_VIDEO_CSS_SRC = "styles/prototype-3-video.css";
       window.TMG_VIDEO_ALT_IMG_SRC = "/assets/icons/movie-tape.png";
       window.T007_INPUT_JS_SRC = "scripts/T007_input.js";
@@ -197,12 +211,12 @@
       window.T007_DIALOG_JS_SRC = "scripts/T007_dialog.js";
       window.T007_DIALOG_CSS_SRC = "styles/T007_dialog.css";
     </script>
+    <!-- <script src="/TMG_MEDIA_PROTOTYPE/prototype-3/prototype-3.js"></script> -->
+    <script src="scripts/prototype-3.js"></script>
     <script type="module" src="scripts/T007_toast.js"></script>
     <script type="module" src="scripts/T007_dialog.js"></script>
-    <script src="scripts/prototype-3.js"></script>
-    <!-- <script src="/TMG_MEDIA_PROTOTYPE/prototype-3/prototype-3.js"></script> -->
+    <script type="module" src="scripts/index.js"></script>
     <script src="assets/ffmpeg/ffmpeg.min.js"></script>
-    <script src="scripts/index.js"></script>
     <script>
       let index = 0,
         interval = 5000;
@@ -215,11 +229,14 @@
         star.style.animation = "";
       };
       for (const star of document.getElementsByClassName("magic-star")) {
-        setTimeout(() => {
-          animate(star);
-          // setInterval(animate, 1000, star);
-          setTimeout(animate, 1000, star);
-        }, index++ * (interval / 3));
+        setTimeout(
+          () => {
+            animate(star);
+            // setInterval(animate, 1000, star);
+            setTimeout(animate, 1000, star);
+          },
+          index++ * (interval / 3)
+        );
       }
     </script>
   </body>

@@ -1,5 +1,9 @@
+import Toast, { Toaster } from "./T007_toast.js";
+import { Confirm } from "./T007_dialog.js";
 // global variables
+var _lsik = "TVP_visitor_info"; // localStorage info key
 var canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype;
+var sessionHandles = []; // global handle access of current session handles
 var DB = {
   _db: null,
   onErr: (act, comment = "(likely a Support issue or Private Mode)") => (console.warn(`TVP_DB: ${act} failed ${comment}`), null),
@@ -66,10 +70,9 @@ var DB = {
   },
 };
 var Memory = {
-  _stateKey: "TVP_last_session_state",
   _expiryDays: 30, // 30 days of no sessions
   getState() {
-    return JSON.parse(localStorage.getItem(this._stateKey) || "null");
+    return JSON.parse(localStorage[_lssk] || "null");
   },
   async getSession() {
     const state = this.getState(),
@@ -78,42 +81,31 @@ var Memory = {
     return (Date.now() - session.lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (await this.clear(), console.log("TVP expired session cleaned up.")) : { state, handles: session.handles, lastUpdated: session.lastUpdated };
   },
   async save(snapshot) {
-    localStorage.setItem(this._stateKey, JSON.stringify({ settings: snapshot?.settings, playlist: snapshot?.playlist, media: snapshot?.media, lightState: snapshot?.lightState, paused: video.paused }));
+    localStorage[_lssk] = JSON.stringify({ settings: snapshot?.settings, playlist: snapshot?.playlist, media: snapshot?.media, lightState: snapshot?.lightState, paused: video.paused });
     sessionHandles.length ? await DB.vault.handles.put({ handles: sessionHandles, lastUpdated: Date.now() }, "last_handles") : await this.clear();
   },
   async clear() {
-    localStorage.setItem(this._stateKey, JSON.stringify({ settings: this.getState()?.settings || {} })); // might not wanna clear settings
+    localStorage[_lssk] = JSON.stringify({ settings: this.getState()?.settings || {} }); // might not wanna clear settings
     ((sessionHandles = []), await DB.clear());
   },
   clearSettings() {
     const { playlist, media, lightState, paused } = this.getState();
-    localStorage.setItem(this._stateKey, JSON.stringify({ playlist, media, lightState, paused }));
+    localStorage[_lssk] = JSON.stringify({ playlist, media, lightState, paused });
   },
 };
-// immediate runs
-const initState = Memory.getState();
-initState?.settings && setColors(initState.settings.css.brandColor, initState.settings.css.themeColor);
 // app logic variables
-let sessionHandles = [],
-  sessionTId, // session toast id
+let sessionTId, // session toast id
   sessionTInt, // session toast interval for updating last updated time every minute
   installed = true,
   installPrompt = null, // beforeinstallprompt event object
   readyTId, // ready toast id
   mP = null, // media player
   video = document.getElementById("video"),
-  numOfBytes = 0,
-  numOfFiles = 0,
-  totalTime = 0,
   placeholderItem = null;
 const installButton = document.getElementById("install"),
   videoPlayerContainer = document.getElementById("video-player-container"),
-  uploadVideosInput = document.getElementById("videos-file-input"),
-  uploadFoldersInput = document.getElementById("folders-file-input"),
   fileList = document.getElementById("file-list"),
-  videosDropBox = document.getElementById("videos-drop-box"),
-  foldersDropBox = document.getElementById("folders-drop-box"),
-  clearFilesBtn = document.getElementById("clear-files-button"),
+  contentLines = document.getElementsByClassName("content-line"),
   containers = document.getElementsByClassName("thumbnail-container"), // only playlist index is a guaranteed index
   readyLines = {
     morning: [
@@ -147,17 +139,17 @@ const installButton = document.getElementById("install"),
       { icon: "🎭", body: "Curtains Up. Prepare to Be Amazed." },
     ],
   },
-  lsk = "TVP_visitor_info",
-  vi = JSON.parse(localStorage[lsk] || `{ "visitorId": "${crypto?.randomUUID?.() || tmg.uid()}", "visitCount": 0 }`),
+  vi = JSON.parse(localStorage[_lsik] || `{ "visitorId": "${crypto?.randomUUID?.() || tmg.uid()}", "visitCount": 0 }`),
+  sToast = Toaster({ autoClose: false, closeButton: false, dragToClose: false }), // yeah, my lib supports toasters that store defaults in bulk, eg. for loading toast reset perks. restore toasts will sha stay put when needed
   scroller = tmg.initVScrollerator({ lineHeight: 80, margin: 80 }),
   queue = new tmg.AsyncQueue(),
+  nums = { bytes: 0, files: 0, time: 0 },
   { createFFmpeg, fetchFile } = FFmpeg,
   ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" }),
+  breath = () => new Promise(requestAnimationFrame), // The "Single Frame" breathe - syncs with GPU refresh
+  deepBreath = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))), // The "Double Frame" breathe - guaranteed layout completion
   formatVisit = (d, sx = "") => ((d = Math.floor((new Date().getTime() - new Date(d).getTime()) / 1000)), `${d < 60 ? `${d} second` : d < 3600 ? `${Math.floor(d / 60)} minute` : d < 86400 ? `${Math.floor(d / 3600)} hour` : `${Math.floor(d / 86400)} day`}`.replace(/(\d+)\s(\w+)/g, (_, n, u) => `${n} ${u}${n == 1 ? "" : "s"}`) + sx); // this one's just for terse practice :)
-// initial runs
-if (!("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker" in window && tmg.ON_MOBILE)) foldersDropBox.remove(); // dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data
-if (!("files" in HTMLInputElement.prototype)) videosDropBox.remove();
-if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load()); // let the UI breathe, don't suffocate it
+// async IIFEs for better readability and to run fire-and-forget important logic on page load
 (async function logVisitor() {
   vi.isNew = vi.isNew == null ? true : false;
   vi.visitCount += 1;
@@ -168,14 +160,14 @@ if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load()); // let the UI brea
   } catch (err) {
     console.error("TVP couldn't log info: ", err);
   }
-  localStorage[lsk] = JSON.stringify({ ...vi, lastVisit: new Date().toISOString() });
+  localStorage[_lsik] = JSON.stringify({ ...vi, lastVisit: new Date().toISOString() });
 })();
 (async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return Toast.warn("Offline support is currently unavailable");
   try {
     await navigator.serviceWorker.register("TVP_sw.js");
-  } catch (error) {
-    Toast.error("Offline caching failed: " + error.message);
+  } catch (err) {
+    Toast.error("Offline caching failed due to " + err.message);
     Toast("Don’t worry, your local videos still play fine", { vibrate: true, icon: "🎬" });
   }
 })();
@@ -193,8 +185,8 @@ if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load()); // let the UI brea
 })();
 (async function requestRestore() {
   const session = await Memory.getSession();
-  if (session) sessionTId = Toast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", autoClose: false, closeButton: false, dragToClose: false, actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: () => (clearInterval(sessionTInt), Toast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, actions: false, autoClose: true, closeButton: true, dragToClose: true, dragToClose: true, actions: { Reload: () => location.reload() } })) } });
-  if (session) sessionTInt = setInterval(() => Toast.update(sessionTId, { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
+  if (session) sessionTId = sToast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: () => (clearInterval(sessionTInt), sToast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, autoClose: 5000, closeButton: true, dragToClose: true, actions: { Reload: () => location.reload() } })) } });
+  if (session) sessionTInt = setInterval(() => sToast.update(sessionTId, { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
 })();
 (async function checkVaultUsage() {
   if (!navigator.storage || !navigator.storage.estimate) return;
@@ -206,6 +198,7 @@ if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load()); // let the UI brea
 (async function requestPersist() {
   if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist();
 })();
+!tmg.queryMediaMobile() && setTimeout(() => ffmpeg.load()); // let the UI breathe, don't suffocate it yet :)
 // window listeners
 window.addEventListener("load", () => {
   (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && Toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
@@ -224,10 +217,10 @@ installButton.addEventListener("click", async () => {
   const res = await installPrompt?.prompt?.();
   if (res.outcome === "accepted") ((installButton.style.display = "none"), (installPrompt = null));
 });
-clearFilesBtn.addEventListener("click", clearFiles);
+document.getElementById("clear-files-button").addEventListener("click", clearFiles);
 [
-  { input: uploadVideosInput, recurse: false },
-  { input: uploadFoldersInput, recurse: true },
+  { input: videosDropBox.lastElementChild, recurse: false },
+  { input: foldersDropBox.lastElementChild, recurse: true },
 ].forEach(({ input, recurse }) => {
   input.addEventListener("click", () => setTimeout(initUI, 1000));
   input.addEventListener("cancel", defaultUI);
@@ -235,7 +228,7 @@ clearFilesBtn.addEventListener("click", clearFiles);
     useHandles && e.preventDefault();
     const handles = useHandles ? await getPickedHandles(recurse) : null;
     if (useHandles && !handles?.length) return defaultUI();
-    console.log("DEBUG - Handle Kind:", handles?.[0]?.kind, "Full Object:", handles?.[0]);
+    console.log("TVP Handle Kind:", handles?.[0]?.kind, "Full Object:", handles?.[0]);
     const allFiles = useHandles ? await getHandlesFiles(handles) : e.target.files,
       videoFiles = Array.prototype.filter.call(allFiles, (file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
       rejectedCount = allFiles.length - videoFiles.length;
@@ -261,9 +254,9 @@ clearFilesBtn.addEventListener("click", clearFiles);
   }
   !("getAsFileSystemHandle" in DataTransferItem.prototype) ? dropBox.addEventListener("drop", handleDrop) : dropBox.addEventListener("drop", (e) => handleDrop(e, true));
 });
-
+// UI utils
 function defaultUI() {
-  if (numOfFiles >= 1) return;
+  if (nums.files) return;
   videoPlayerContainer.classList.remove("loading");
   video.classList.add("stall");
   document.body.classList.add("light");
@@ -271,7 +264,7 @@ function defaultUI() {
   updateUI();
 }
 function initUI() {
-  if (numOfFiles >= 1) return;
+  if (nums.files) return;
   videoPlayerContainer.classList.add("loading");
   video.classList.add("stall");
   document.body.classList.remove("light");
@@ -292,50 +285,40 @@ function errorUI(error) {
   fileList.innerHTML = `<p id="no-files-text">${error}!</p>`;
 }
 function updateUI() {
-  document.getElementById("total-num").textContent = numOfFiles;
-  document.getElementById("total-size").textContent = tmg.formatSize(numOfBytes, 2);
-  document.getElementById("total-time").textContent = tmg.formatMediaTime({ time: totalTime });
+  document.getElementById("total-num").textContent = nums.files;
+  document.getElementById("total-size").textContent = tmg.formatSize(nums.bytes, 2);
+  document.getElementById("total-time").textContent = tmg.formatMediaTime({ time: nums.time });
 }
-
+// Session utils
 async function restoreSession({ state, handles }) {
   const files = [],
     sureHandles = [];
-  Toast.info(sessionTId, { render: "Restoring your ongoing session now", icon: true, actions: false });
+  (sToast.info(sessionTId, { render: "Restoring your ongoing session now", icon: true, actions: false }), await breath()); // adding 100ms delays between toasts for better UX
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
     try {
-      Toast.loading(sessionTId, { render: `Restoring ${name}...`, actions: false });
       await new Promise(async (res, rej) => {
-        if ((await handle.queryPermission({ mode: "read" })) === "granted") return res("No permission needed from User");
+        if ((await handle.queryPermission({ mode: "read" })) === "granted") return res("No permission needed from User"); // it's practically instant so no loading toast
         (function request() {
-          Toast.info(sessionTId, {
-            render: `We need permission to restore ${name}`,
-            actions: {
-              OK: async () => ((await handle.requestPermission({ mode: "read" })) === "granted" ? res() : Toast.warn(sessionTId, { render: `Grant permissions to restore ${handle.name}`, actions: { Retry: request, Skip: () => rej("User denied permission") } })),
-              DENY: () => rej("User refused permission prompt"),
-            },
-            autoClose: false,
-            closeButton: false,
-            dragToClose: false,
-          });
+          sToast.info(sessionTId, { render: `We need permission to restore ${name}`, actions: { OK: async () => ((await handle.requestPermission({ mode: "read" })) === "granted" ? res() : sToast.warn(sessionTId, { render: `Grant permissions to restore ${handle.name}`, actions: { Retry: request, Skip: () => rej("User denied permission") } })), DENY: () => rej("User refused permission prompt") } });
         })();
       });
       const file = handle.kind === "file" ? await handle.getFile() : await getHandlesFiles([handle]);
       (tmg.isArr(file) ? files.push(...file.filter((file) => file.type.startsWith("video/"))) : files.push(file), sureHandles.push(handle));
-      Toast.success(sessionTId, { render: `Restored ${name} successfully`, actions: false });
-    } catch (e) {
-      console.error(`TVP Skipping zombie "${name}" handle`);
-      Toast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false });
+      (sToast.success(sessionTId, { render: `Restored ${name} successfully`, actions: false }), await breath());
+    } catch (err) {
+      console.error(`TVP Skipped zombie handle "${name}":`, err);
+      (sToast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false }), await breath());
     }
   }
-  if (sureHandles.length) Toast.success(sessionTId, { render: "Your ongoing session has been restored :)", actions: false });
-  else return Toast.error(sessionTId, { render: "Your ongoing session was not restored :(", actions: { Reload: () => location.reload(), Dismiss: () => Toast.dismiss(sessionTId) } });
+  if (sureHandles.length) (sToast.success(sessionTId, { render: "Your ongoing session has been restored :)", actions: false }), await breath());
+  else return sToast.error(sessionTId, { render: "Your ongoing session was not restored :(", actions: { Reload: () => location.reload(), Dismiss: () => sToast.dismiss(sessionTId) } });
   handleFiles(files, state, sureHandles);
 }
 function saveSession() {
-  mP && numOfFiles && Memory.save(mP.Controller.config.snapshot());
+  mP && nums.files && Memory.save(mP.Controller.config.snapshot());
 }
-
+// File utils
 async function clearFiles() {
   const ok = await Confirm("Are you sure you want to clear all files?", { title: "Clear Files", confirmText: "Clear" });
   if (!ok) return;
@@ -350,18 +333,17 @@ async function clearFiles() {
     if (playlistItem?.tracks?.[0]?.src?.startsWith("blob:")) URL.revokeObjectURL(playlistItem.tracks[0].src);
     queue.drop(vid.dataset.captionId);
   });
-  numOfFiles = numOfBytes = totalTime = 0;
+  nums.files = nums.bytes = nums.time = 0;
   (Memory.clear(), defaultUI());
-  const tId = Toast.success("Cleared your files and session data, Settings too?", { actions: { Clear: () => (Memory.clearSettings(), setColors(), Toast.success(tId, { render: "Settings cleared successfully", actions: false })) } });
+  const tId = Toast.success("Cleared your files and session data, Settings too?", { actions: { Clear: () => (Memory.clearSettings(), setColors(), Toast.success(tId, { render: "Settings cleared successfully", autoClose: 5000, actions: false })) } });
 }
 async function handleFiles(files, restored = null, handles = null) {
   try {
-    if (!files?.length && !numOfFiles) return defaultUI();
-    (Toast.dismiss(sessionTId), initUI());
+    if (!files?.length && !nums.files) return defaultUI();
+    (sToast.dismiss(sessionTId), initUI());
     if (handles?.length) sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))];
-    for (const file of (files = smartFlatSort(files))) (numOfFiles++, (numOfBytes += file.size)); // providing some available metrics to the user
-    updateUI();
-    await tmg.mockAsync(250); // browser breathe small first, UI; u still update nah
+    for (const file of (files = smartFlatSort(files))) (nums.files++, (nums.bytes += file.size)); // providing some available metrics to the user
+    (updateUI(), await breath()); // browser breathe small first, UI; u still update nah
     const stateMap = new Map(restored?.playlist?.map((v) => [v.media.title, v]) || []), // Pre-map for O(1) lookups
       list = fileList.appendChild(document.getElementById("media-list") || tmg.createEl("ul", { id: "media-list" })), // building the media list
       thumbnails = [];
@@ -369,7 +351,7 @@ async function handleFiles(files, restored = null, handles = null) {
       const ffName = tmg.noExtension(files[i].name), // file formatted name
         state = stateMap.get(ffName);
       if ((restored && !state) || !!Array.prototype.find.call(containers, (c) => c.lastElementChild.ffName === ffName)) {
-        (numOfFiles--, (numOfBytes -= files[i].size), thumbnails.push(null));
+        (nums.files--, (nums.bytes -= files[i].size), thumbnails.push(null));
         continue; // prevents duplicates & skips files incase user deleted file but not directory handle
       }
       const li = tmg.createEl("li", { className: "content-line" }, { fileName: files[i].name });
@@ -381,9 +363,9 @@ async function handleFiles(files, restored = null, handles = null) {
           muted: true,
           playsInline: true,
           onloadedmetadata: ({ target }) => {
-            totalTime += tmg.safeNum(target.duration);
+            nums.time += tmg.safeNum(target.duration);
             if (tmg.safeNum(target.duration) > 12) target.currentTime = 2;
-            document.getElementById("total-time").textContent = tmg.formatMediaTime({ time: totalTime });
+            document.getElementById("total-time").textContent = tmg.formatMediaTime({ time: nums.time });
             li.querySelector(".file-duration span:last-child").innerHTML = `${tmg.formatMediaTime({ time: target.duration })}`;
             restored && thumbnails[i]?.parentElement?.style.setProperty("--video-progress-position", tmg.safeNum(state.settings.time.start / target.duration));
           },
@@ -405,7 +387,7 @@ async function handleFiles(files, restored = null, handles = null) {
           const f = e.target.files[0];
           if (!f) return;
           const ext = tmg.getExtension(f.name);
-          if (!["srt", "vtt"].includes(ext)) return ((thumbnail.dataset.captionState = "empty"), Toast.warn("Only .srt and .vtt files are currently supported"));
+          if (!["srt", "vtt"].includes(ext)) return ((thumbnail.dataset.captionState = "empty"), Toast.warn("Only .srt and .vtt caption files are currently supported"));
           let txt = await f.text();
           if (ext === "srt") txt = tmg.srtToVtt(txt);
           DB.vault.subtitles.put(new TextEncoder().encode(txt), (thumbnail.dataset.captionId = f.name)); // storing these too for the magic tricks, no need for file pickers, it's light
@@ -449,9 +431,9 @@ async function handleFiles(files, restored = null, handles = null) {
           const hIdx = sessionHandles.findIndex((h) => h.name === files[i].name);
           if (hIdx !== -1) sessionHandles.splice(hIdx, 1);
           saveSession();
-          if (numOfFiles <= 1) return clearFiles();
+          if (nums.files <= 1) return clearFiles();
           else syncPlaylist();
-          (numOfFiles--, (numOfBytes -= files[i].size), (totalTime -= tmg.safeNum(thumbnail.duration)));
+          (nums.files--, (nums.bytes -= files[i].size), (nums.time -= tmg.safeNum(thumbnail.duration)));
           updateUI();
         },
       });
@@ -487,19 +469,20 @@ async function handleFiles(files, restored = null, handles = null) {
         { passive: false }
       );
       li.append(thumbnailContainer, tmg.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${files[i].name}</span></p><p class="file-size"><span>Size: </span><span>${tmg.formatSize(files[i].size)}</span></p><p class="file-duration"><span>Duration: </span><span>${restored ? "Rei" : "I"}nitializing...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
-      list.append(li); // avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
+      (list.append(li), await breath()); // scroll step feel, also avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
     }
     const playlist = [];
-    const deployVideos = (URLs) => {
-      URLs.forEach((url, i) => {
-        if (!thumbnails[i]) return URL.revokeObjectURL(url); // skip files incase user deleted file but not directory handle
-        const state = stateMap.get(thumbnails[i].ffName),
+    const deployVideos = (files) => {
+      for (let i = 0; i < files.length; i++) {
+        if (!thumbnails[i]) continue; // skip files incase user deleted file but not directory handle
+        const url = URL.createObjectURL(files[i]),
+          state = stateMap.get(thumbnails[i].ffName),
           item = state ?? { media: { id: tmg.uid(), title: thumbnails[i].ffName }, "settings.time.previews": true, "settings.time.start": 0 };
         playlist.push(((item.src = url), item));
         ((thumbnails[i].src = url), (thumbnails[i].mediaId = item.media.id));
         thumbnails[i].getPlItem = () => (thumbnails[i].playlistItem = mP?.Controller?.config?.playlist?.find((v) => v.media.id === item.media.id) ?? thumbnails[i].playlistItem ?? {});
         thumbnails[i].getPlIndex = () => mP?.Controller?.config?.playlist?.findIndex((v) => v.media.id === item.media.id);
-      });
+      }
       if (!mP) {
         video.addEventListener(
           "tmgattached",
@@ -514,19 +497,7 @@ async function handleFiles(files, restored = null, handles = null) {
           },
           { once: true }
         );
-        mP = new tmg.Player({
-          cloneOnDetach: true,
-          playlist,
-          "media.artist": "TMG Video Player",
-          "media.profile": "assets/icons/tmg-icon.jpeg",
-          "media.links.artist": "https://tmg-video-player.vercel.app",
-          "media.links.profile": "https://tobi007-del.github.io/TMG_MEDIA_PROTOTYPE",
-          "settings.captions.font.size.value": 200,
-          "settings.captions.font.weight.value": 700,
-          "settings.captions.background.opacity.value": 0,
-          "settings.captions.characterEdgeStyle.value": "drop-shadow",
-          "settings.overlay.behavior": "auto",
-        });
+        mP = new tmg.Player({ cloneOnDetach: true, playlist, "media.artist": "TMG Video Player", "media.profile": "assets/icons/tmg-icon.jpeg", "media.links.artist": "https://tmg-video-player.vercel.app", "media.links.profile": "https://tobi007-del.github.io/TMG_MEDIA_PROTOTYPE", "settings.captions.font.size.value": 200, "settings.captions.font.weight.value": 700, "settings.captions.background.opacity.value": 0, "settings.captions.characterEdgeStyle.value": "drop-shadow", "settings.overlay.behavior": "auto" });
         mP.configure({ settings: (restored ?? Memory.getState())?.settings ?? {}, lightState: restored?.lightState ?? {} }); // recursive mixing in
         mP.attach(video);
         window.addEventListener("pagehide", saveSession);
@@ -534,21 +505,20 @@ async function handleFiles(files, restored = null, handles = null) {
         video.addEventListener("loadedmetadata", () => setTimeout(dispatchPlayerReadyToast, 1000), { once: true });
         video.ontimeupdate = ({ target: { currentTime: ct, duration: d } }) => mP.Controller?.throttle("TVP_thumbnail_update", () => ct > 3 && containers[mP.Controller?.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.safeNum(ct / d)), 2000);
         video.onplay = () => {
-          fileList.querySelectorAll(".content-line").forEach((li, i) => li.classList.toggle("playing", i === mP.Controller?.currentPlaylistIndex));
+          for (let i = 0; i < contentLines.length; i++) contentLines[i].classList.toggle("playing", i === mP.Controller?.currentPlaylistIndex);
           containers[mP.Controller?.currentPlaylistIndex]?.classList.remove("paused");
         };
         video.onpause = () => containers[mP.Controller?.currentPlaylistIndex]?.classList.add("paused");
       } else mP.Controller.config.playlist = [...mP.Controller.config.playlist, ...playlist];
     };
-    await tmg.mockAsync(50); // catch ur breath again, you have the file list, but still render it
-    numOfFiles && deployVideos(files.map(URL.createObjectURL));
-    numOfFiles && (await Promise.all(files.map(async (_, i) => thumbnails[i] && (await deployCaption(files[i], thumbnails[i], undefined, stateMap.get(tmg.noExtension(files[i].name)))))));
-    if (!numOfFiles) return defaultUI();
+    nums.files && (deployVideos(files), await deepBreath());
+    nums.files && (await Promise.all(files.map(async (_, i) => thumbnails[i] && (await deployCaption(files[i], thumbnails[i], undefined, stateMap.get(tmg.noExtension(files[i].name)))))));
+    if (!nums.files) return defaultUI();
   } catch (error) {
-    (console.error(error), errorUI(error));
+    (console.error("TVP files handling failed:", error), errorUI(error));
   }
 }
-
+// Caption utils
 async function deployCaption(file, thumbnail, autocancel = tmg.queryMediaMobile(), item) {
   const id = item?.tracks?.[0]?.id ?? thumbnail.dataset.captionId ?? tmg.uid(); // checking captionId since we never clear it, incase in IDB; Magic! :)
   thumbnail.setAttribute("data-caption-id", id);
@@ -589,7 +559,7 @@ async function extractCaptions(file, id) {
     console.log("✅ First subtitle stream extracted successfully.");
     return { success: true, vttData, track: { id, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([vttData.buffer], { type: "text/vtt" })), default: true } };
   } catch (err) {
-    console.error("❌ VTT stream extraction failed:", err);
+    console.error("❌ TVP VTT stream extraction failed:", err);
     return { success: false, error: err.toString() };
   } finally {
     try {
@@ -600,7 +570,7 @@ async function extractCaptions(file, id) {
     } catch {}
   }
 }
-
+// File helpers
 async function getDroppedFiles(e, preTask) {
   e.preventDefault();
   const dtItems = e.dataTransfer.items || [];
@@ -653,23 +623,18 @@ async function getHandlesFiles(handles) {
   }
   return files;
 }
-
-function setColors(brand = "rgb(226, 110, 2)", theme = "white") {
-  brand && document.documentElement.style.setProperty("--T_M_G-brand-color", brand);
-  theme && document.documentElement.style.setProperty("--T_M_G-theme-color", theme);
-}
+// Misc helpers
 function syncPlaylist() {
   const map = Object.fromEntries(mP.Controller.config.playlist.map((v) => [v.media.id, v]));
-  mP.Controller.config.playlist = Array.from(fileList.querySelectorAll(".content-line"), (li) => map[li.querySelector("video")?.mediaId]).filter(Boolean);
+  mP.Controller.config.playlist = Array.from(contentLines, (li) => map[li.querySelector("video")?.mediaId]).filter(Boolean);
 }
 function dispatchPlayerReadyToast(hour = new Date().getHours()) {
-  if (!numOfFiles) return;
+  if (!nums.files) return;
   const timeLines = readyLines[hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : hour >= 17 && hour < 21 ? "evening" : "night"] || [],
     combined = [...timeLines, ...readyLines.default, ...timeLines],
     { body, icon } = combined[Math.floor(Math.random() * combined.length)];
   readyTId = Toast(body, { vibrate: true, icon });
 }
-
 function smartFlatSort(files) {
   // Extracts the main series title + optional season
   function getTitlePrefix(name) {
