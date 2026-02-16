@@ -183,11 +183,6 @@ const installButton = document.getElementById("install"),
     handleFiles(videoFiles, null, launchParams.files);
   });
 })();
-(async function requestRestore() {
-  const session = await Memory.getSession();
-  if (session) sessionTId = sToast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: () => (clearInterval(sessionTInt), sToast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, autoClose: 5000, closeButton: true, dragToClose: true, actions: { Reload: () => location.reload() } })) } });
-  if (session) sessionTInt = setInterval(() => sToast.update(sessionTId, { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
-})();
 (async function checkVaultUsage() {
   if (!navigator.storage || !navigator.storage.estimate) return;
   const { usage, quota } = await navigator.storage.estimate(),
@@ -200,7 +195,10 @@ const installButton = document.getElementById("install"),
 })();
 !tmg.queryMediaMobile() && setTimeout(() => ffmpeg.load()); // let the UI breathe, don't suffocate it yet :)
 // window listeners
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
+  const session = await Memory.getSession();
+  if (session) sessionTId = sToast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: () => (clearInterval(sessionTInt), sToast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, autoClose: 5000, closeButton: true, dragToClose: true, actions: { Reload: () => location.reload() } })) } });
+  if (session) sessionTInt = setInterval(() => sToast.update(sessionTId, { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
   (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && Toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
   document.body.classList.toggle("offline", !navigator.onLine);
   navigator.onLine &&
