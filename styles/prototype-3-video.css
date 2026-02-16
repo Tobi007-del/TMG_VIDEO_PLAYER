@@ -1864,30 +1864,30 @@ body:not(:has(.tmg-video-container.tmg-video-miniplayer)) .tmg-pseudo-video-cont
   padding: 2.5px;
   background: rgb(from var(--tmg-video-captions-background-color) r g b / var(--tmg-video-captions-background-opacity));
 }
-.tmg-video-captions-text-alignment-left {
+.tmg-video-captions-text-alignment-left .tmg-video-captions-container {
   text-align: left;
 }
-.tmg-video-captions-text-alignment-center {
+.tmg-video-captions-text-alignment-center .tmg-video-captions-container {
   text-align: center;
 }
-.tmg-video-captions-text-alignment-right {
+.tmg-video-captions-text-alignment-right .tmg-video-captions-container {
   text-align: right;
 }
-.tmg-video-captions-character-edge-style-drop-shadow {
+.tmg-video-captions-character-edge-style-drop-shadow .tmg-video-captions-container {
   text-shadow:
     calc(1px * var(--f-f)) calc(1px * var(--f-f)) calc(1.5px * var(--f-f)) rgb(34, 34, 34),
     calc(1px * var(--f-f)) calc(1px * var(--f-f)) calc(2px * var(--f-f)) rgb(34, 34, 34),
     calc(1px * var(--f-f)) calc(1px * var(--f-f)) calc(2.5px * var(--f-f)) rgb(34, 34, 34);
 }
-.tmg-video-captions-character-edge-style-raised {
+.tmg-video-captions-character-edge-style-raised .tmg-video-captions-container {
   text-shadow: calc(1px * var(--f-f)) calc(1px * var(--f-f)) rgb(34, 34, 34);
 }
-.tmg-video-captions-character-edge-style-depressed {
+.tmg-video-captions-character-edge-style-depressed .tmg-video-captions-container {
   text-shadow:
     calc(1px * var(--f-f)) calc(1px * var(--f-f)) rgb(204, 204, 204),
     calc(-1px * var(--f-f)) calc(-1px * var(--f-f)) rgb(34, 34, 34);
 }
-.tmg-video-captions-character-edge-style-outline {
+.tmg-video-captions-character-edge-style-outline .tmg-video-captions-container {
   --s-s: 0 0 calc(1px * var(--f-f)) rgb(34, 34, 34); /* shadow-step */
   text-shadow: var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s), var(--s-s); /* just had to, 21! :) */
 }

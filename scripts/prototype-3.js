@@ -581,25 +581,23 @@ class tmg_Video_Controller {
     this.config.on(
       "settings.css",
       ({ type, target: { key, value } }) => {
-        if (type !== "update") return;
-        const pre = `tmg-video-${tmg.uncamelize(key, "-")}`,
-          spec = () => (this.DOM.captionsContainer?.classList.forEach((cls) => cls.startsWith(pre) && this.DOM.captionsContainer.classList.remove(cls)), this.DOM.captionsContainer?.classList.add(`${pre}-${value}`), true);
-        ({ captionsCharacterEdgeStyle: spec, captionsTextAlignment: spec })[key]?.() ?? [this.videoContainer, this.pseudoVideoContainer].forEach((el) => el?.style.setProperty(`--${pre}`, value));
+        if (type !== "update" && type !== "init") return;
+        const apply = (key, value) => {
+          const pre = `tmg-video-${tmg.uncamelize(key, "-")}`,
+            spec = () => (this.videoContainer.classList.forEach((cls) => cls.startsWith(pre) && this.videoContainer.classList.remove(cls)), this.videoContainer.classList.add(`${pre}-${value}`), true);
+          ({ captionsCharacterEdgeStyle: spec, captionsTextAlignment: spec })[key]?.() ?? [this.videoContainer, this.pseudoVideoContainer].forEach((el) => el?.style.setProperty(`--${pre}`, value));
+        };
+        type !== "init" ? apply(key, value) : Object.keys(value).forEach((k) => k !== "syncWithMedia" && apply(k, value[k]));
       },
-      { depth: 1 }
+      { depth: 1, immediate: true }
     );
-    this.settings.css = this.settings.css;
     this.CSSCache ??= {};
     ["captionsCharacterEdgeStyle", "captionsTextAlignment"].forEach((key) =>
-      this.config.get(
-        `settings.css.${key}`,
-        () => {
-          const pre = `tmg-video-${tmg.uncamelize(key, "-")}`,
-            value = Array.prototype.find.call(this.DOM.captionsContainer?.classList ?? [], (cls) => cls.startsWith(pre))?.replace(`${pre}-`, "");
-          return tmg.parseUIObj(this.settings.captions)[tmg.camelize(key.slice(8))].values.includes(value) ? value : "none";
-        },
-        true
-      )
+      this.config.get(`settings.css.${key}`, () => {
+        const pre = `tmg-video-${tmg.uncamelize(key, "-")}`,
+          value = Array.prototype.find.call(this.videoContainer.classList ?? [], (cls) => cls.startsWith(pre))?.replace(`${pre}-`, "");
+        return tmg.parseUIObj(this.settings.captions)[tmg.camelize(key.slice(8))].values.includes(value) ? value : "none";
+      })
     );
     for (const sheet of document.styleSheets) {
       try {
@@ -609,7 +607,7 @@ class tmg_Video_Controller {
             if (!property.startsWith("--tmg-video-")) continue;
             const field = tmg.camelize(property.replace("--tmg-video-", ""));
             this.CSSCache[field] = cssRule.style.getPropertyValue(property);
-            this.config.get(`settings.css.${field}`, () => getComputedStyle(this.videoContainer).getPropertyValue(property), true);
+            this.config.get(`settings.css.${field}`, () => getComputedStyle(this.videoContainer).getPropertyValue(property));
           }
         }
       } catch {
@@ -630,7 +628,7 @@ class tmg_Video_Controller {
     this.queryDOM(".tmg-video-settings-bottom-panel").append(brandSelector, themeSelector);
     const id = { theme: "", brand: "" },
       sync = (req = true, type = "brand") => (this.settings.css.syncWithMedia[`${type}Color`] = req),
-      assert = (opts, type = "brand") => this.toast?.update(id[type], { render: `Still here incase you change your choice about the ${type}?`, ...opts });
+      assert = (opts, type = "brand") => this.toast?.update(id[type], { render: `Still here in case you change your choice about the ${type}`, ...opts });
     brandSelector.querySelector("select").addEventListener("input", async ({ target: i }) => {
       this.toast?.dismiss(id.brand);
       if (i.value !== "auto") this.settings.css.brandColor = i.value;

@@ -57,7 +57,8 @@ class T007_Toast {
     if (value) {
       this._setUpBodyHTML();
       this.toastElement.querySelector(".t007-toast-body").prepend(bodyText() || Object.assign(document.createElement("p"), { className: "t007-toast-body-text" }));
-      bodyText().innerHTML = typeof value === "function" ? value() : value;
+      const text = bodyText();
+      text.innerHTML = text.dataset.render = typeof value === "function" ? value() : value;
     } else bodyText()?.remove();
   }
   set actions(value) {
@@ -67,7 +68,7 @@ class T007_Toast {
       this._setUpBodyHTML();
       this.toastElement.querySelector(".t007-toast-body").insertAdjacentElement("afterend", actionsWrapper() || Object.assign(document.createElement("div"), { className: "t007-toast-actions-wrapper" }));
       const wrapper = actionsWrapper();
-      wrapper.innerHTML = values.map(([label]) => (label ? `<button class="t007-toast-action-button">${label}</button>` : "")).join("");
+      wrapper.innerHTML = values.map(([label]) => (label ? `<button class="t007-toast-action-button" data-action="${label}">${label}</button>` : "")).join("");
       wrapper.querySelectorAll(".t007-toast-action-button").forEach((btn, i) => (btn.onclick = (e) => values[i][1]?.(e, this)));
     } else actionsWrapper()?.remove();
   }
@@ -90,7 +91,8 @@ class T007_Toast {
     if (value) {
       this._setUpBodyHTML();
       this.toastElement.querySelector(".t007-toast-image-wrapper").appendChild(icon() || Object.assign(document.createElement("span"), { className: "t007-toast-icon" }));
-      icon().innerHTML = this.icon;
+      const icn = icon();
+      icn.innerHTML = icn.dataset.icon = this.icon;
     } else icon()?.remove();
   }
   set isLoading(value) {

@@ -75,19 +75,19 @@ var Memory = {
     const state = this.getState(),
       session = await DB.vault.handles.get("last_handles");
     if (!state?.playlist || !session) return null; // no session handles, no session
-    return (Date.now() - session.lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (this.clear(), console.log("TVP expired session cleaned up.")) : { state, handles: session.handles, lastUpdated: session.lastUpdated };
+    return (Date.now() - session.lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (await this.clear(), console.log("TVP expired session cleaned up.")) : { state, handles: session.handles, lastUpdated: session.lastUpdated };
   },
   async save(snapshot) {
-    localStorage.setItem(this._stateKey, JSON.stringify({ settings: snapshot.settings, playlist: snapshot.playlist, media: snapshot.media, lightState: snapshot.lightState, paused: video.paused }));
+    localStorage.setItem(this._stateKey, JSON.stringify({ settings: snapshot?.settings, playlist: snapshot?.playlist, media: snapshot?.media, lightState: snapshot?.lightState, paused: video.paused }));
     sessionHandles.length ? await DB.vault.handles.put({ handles: sessionHandles, lastUpdated: Date.now() }, "last_handles") : await this.clear();
   },
   async clear() {
     localStorage.setItem(this._stateKey, JSON.stringify({ settings: this.getState()?.settings || {} })); // might not wanna clear settings
-    if (await DB.clear()) sessionHandles = [];
+    ((sessionHandles = []), await DB.clear());
   },
   clearSettings() {
-    const { playlist, playlistIndex, paused } = this.getState();
-    localStorage.setItem(this._stateKey, JSON.stringify({ playlist, playlistIndex, paused }));
+    const { playlist, media, lightState, paused } = this.getState();
+    localStorage.setItem(this._stateKey, JSON.stringify({ playlist, media, lightState, paused }));
   },
 };
 // immediate runs
@@ -208,14 +208,12 @@ if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load()); // let the UI brea
 })();
 // window listeners
 window.addEventListener("load", () => {
-  if ("navigator" in window) {
-    document.body.classList.toggle("offline", !navigator.onLine);
-    navigator.onLine &&
-      fetch("https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", { method: "HEAD", cache: "no-cache" })
-        .then((response) => document.body.classList.toggle("offline", !response.ok))
-        .catch(() => document.body.classList.add("offline"));
-  }
-  (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && Toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
+  (vi.isNew || !/(second|minute|day)/.test(vi.lastVisited)) && Toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
+  document.body.classList.toggle("offline", !navigator.onLine);
+  navigator.onLine &&
+    fetch("https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", { method: "HEAD", cache: "no-cache" })
+      .then((res) => document.body.classList.toggle("offline", !res.ok))
+      .catch(() => document.body.classList.add("offline"));
 });
 window.addEventListener("online", () => document.body.classList.remove("offline"));
 window.addEventListener("offline", () => document.body.classList.add("offline"));
@@ -331,7 +329,8 @@ async function restoreSession({ state, handles }) {
       Toast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false });
     }
   }
-  if (!sureHandles.length) return Toast.error(sessionTId, { render: "Your ongoing session was not restored :(", actions: { Reload: () => location.reload(), Dismiss: () => Toast.dismiss(sessionTId) } });
+  if (sureHandles.length) Toast.success(sessionTId, { render: "Your ongoing session has been restored :)", actions: false });
+  else return Toast.error(sessionTId, { render: "Your ongoing session was not restored :(", actions: { Reload: () => location.reload(), Dismiss: () => Toast.dismiss(sessionTId) } });
   handleFiles(files, state, sureHandles);
 }
 function saveSession() {

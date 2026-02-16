@@ -373,8 +373,7 @@
   font-size: var(--t007-toast-icon-font-size);
   line-height: var(--t007-toast-icon-line-height);
 }
-
-.t007-toast-icon:not(.t007-toast-loader) {
+.t007-toast-icon:where(:not(.t007-toast-loader)) {
   animation: t007-item-expand 300ms ease;
 }
 
