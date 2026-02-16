@@ -1046,7 +1046,7 @@ class tmg_Video_Controller {
     !this.video.paused ? this.setReadyState(3) : this.video.addEventListener("play", () => this.setReadyState(3), { once: true });
   }
   setKeyEventListeners(act = "add", main = !this.isUIActive("settings"), area) {
-    if (this.disabled || this.settings.locked) return;
+    if ((act === "add" && this.readyState < 2) || this.disabled || this.settings.locked) return;
     main && [this.floatingWindow, area !== "floating" ? window : null].forEach((w) => w?.[`${act}EventListener`]("keydown", this._handleKeyDown));
     [this.floatingWindow, area !== "floating" ? window : null].forEach((w) => w?.[`${act}EventListener`]("keyup", main ? this._handleKeyUp : this._handleSettingsKeyUp));
   }
@@ -1664,8 +1664,7 @@ class tmg_Video_Controller {
           }
         } else if (this.settings.time.previews && !this.frameReadyPromise) this.pseudoVideo.currentTime = p * this.duration;
       },
-      30,
-      false
+      30
     );
   }
   _handleGestureTimelineInput({ percent, sign, multiplier }) {
@@ -1751,7 +1750,7 @@ class tmg_Video_Controller {
         if (!tmg.ON_MOBILE) this.previewContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.previewCanvas.width, this.DOM.previewCanvas.height);
         if (this.isScrubbing) this.thumbnailContext?.drawImage(this.pseudoVideo, 0, 0, this.DOM.thumbnailCanvas.width, this.DOM.thumbnailCanvas.height);
       },
-      33
+      30
     );
   }
   syncThumbnailSize() {

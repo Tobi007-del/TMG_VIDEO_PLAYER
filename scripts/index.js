@@ -236,7 +236,6 @@ document.getElementById("clear-files-button").addEventListener("click", clearFil
   !((!recurse ? "showOpenFilePicker" : "showDirectoryPicker") in window) ? input.addEventListener("change", handleInput) : input.addEventListener("click", (e) => handleInput(e, true));
 });
 [videosDropBox, foldersDropBox].forEach((dropBox, i) => {
-  // if (!dropBox.isConnected) return;
   dropBox.addEventListener("dragenter", (e) => (e.preventDefault(), e.currentTarget.classList.add("active")));
   dropBox.addEventListener("dragover", (e) => (e.preventDefault(), (e.dataTransfer.dropEffect = "copy")));
   dropBox.addEventListener("dragleave", (e) => (e.preventDefault(), e.currentTarget.classList.remove("active")));
@@ -291,7 +290,7 @@ function updateUI() {
 async function restoreSession({ state, handles }) {
   const files = [],
     sureHandles = [];
-  (sToast.info(sessionTId, { render: "Restoring your ongoing session now", icon: true, actions: false }), await breath()); // adding 100ms delays between toasts for better UX
+  (sToast.loading(sessionTId, { render: "Restoring your ongoing session now", actions: false }), await deepBreath()); // take a deep breath browser, it's comming in hot. adding delays between toasts for better UX
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
     try {
@@ -333,7 +332,7 @@ async function clearFiles() {
   });
   nums.files = nums.bytes = nums.time = 0;
   (Memory.clear(), defaultUI());
-  const tId = Toast.success("Cleared your files and session data, Settings too?", { actions: { Clear: () => (Memory.clearSettings(), setColors(), Toast.success(tId, { render: "Settings cleared successfully", autoClose: 5000, actions: false })) } });
+  const tId = Toast.success("Cleared your files and session data, Settings too?", { autoClose: 5000, actions: { Clear: () => (Memory.clearSettings(), setColors(), Toast.success(tId, { render: "Settings cleared successfully", actions: false })) } });
 }
 async function handleFiles(files, restored = null, handles = null) {
   try {
