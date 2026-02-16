@@ -138,10 +138,60 @@
     opacity: 0;
   }
 }
-@keyframes t007-item-expand {
+@keyframes t007-icon-expand {
   from {
     transform: scale(0);
     opacity: 0;
+  }
+}
+@keyframes t007-icon-handwave {
+  0% {
+    transform: rotate(0deg) scale(1) translateZ(0);
+  }
+  5% {
+    transform: rotate(15deg) scale(1.05) translate(1px, -1px) perspective(300px) rotateY(5deg);
+  }
+  10% {
+    transform: rotate(-10deg) scale(0.98) translate(-1px, 2px) perspective(300px) rotateX(2deg);
+  }
+  15% {
+    transform: rotate(12deg) scale(1.04) translate(2px, -1px) perspective(300px) rotateY(-3deg);
+  }
+  20% {
+    transform: rotate(-8deg) scale(0.97) translate(-2px, 1px) perspective(300px) rotateX(-2deg);
+  }
+  25% {
+    transform: rotate(10deg) scale(1.02) translate(1px, -1px);
+  }
+  30% {
+    transform: rotate(-6deg) scale(0.99);
+  }
+  35% {
+    transform: rotate(8deg);
+  }
+  40% {
+    transform: rotate(-4deg);
+  }
+  45% {
+    transform: rotate(4deg);
+  }
+  50% {
+    transform: rotate(-2deg);
+  }
+  55% {
+    transform: rotate(2deg);
+  }
+  60% {
+    transform: rotate(-1deg);
+  }
+  65% {
+    transform: rotate(1deg);
+  }
+  70% {
+    transform: rotate(0deg) scale(1);
+  }
+  100% {
+    transform: rotate(0deg) scale(1) translateZ(0);
   }
 }
 
@@ -357,6 +407,7 @@
   margin-left: calc(var(--t007-toast-unit) / 5);
   background: transparent;
   border-radius: 0;
+  overflow: visible;
 }
 
 .t007-toast-image-wrapper:not(:has(.t007-toast-image, .t007-toast-icon:not(:empty))) {
@@ -374,7 +425,12 @@
   line-height: var(--t007-toast-icon-line-height);
 }
 .t007-toast-icon:where(:not(.t007-toast-loader)) {
-  animation: t007-item-expand 300ms ease;
+  animation: t007-icon-expand 300ms ease;
+}
+.t007-toast-icon[data-icon="👋"] {
+  transform-origin: bottom center;
+  animation: t007-icon-handwave 1800ms ease-in-out 2 1000ms; /* just a progressive enhancement surprise */
+  will-change: transform;
 }
 
 .t007-toast .t007-toast-icon > svg {

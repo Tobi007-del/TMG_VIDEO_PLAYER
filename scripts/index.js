@@ -208,7 +208,7 @@ if (!tmg.queryMediaMobile()) setTimeout(() => ffmpeg.load()); // let the UI brea
 })();
 // window listeners
 window.addEventListener("load", () => {
-  (vi.isNew || !/(second|minute|day)/.test(vi.lastVisited)) && Toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
+  (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && Toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
   document.body.classList.toggle("offline", !navigator.onLine);
   navigator.onLine &&
     fetch("https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", { method: "HEAD", cache: "no-cache" })
@@ -221,9 +221,8 @@ window.addEventListener("beforeinstallprompt", (e) => ((installed = false), (ins
 window.addEventListener("appinstalled", () => ((installed = true), (installButton.style.display = "none"), Toast.success("TVP was installed successfully!")));
 // other listeners
 installButton.addEventListener("click", async () => {
-  const result = await installPrompt?.prompt?.();
-  if (result.outcome === "accepted") installButton.style.display = "none";
-  installPrompt = null;
+  const res = await installPrompt?.prompt?.();
+  if (res.outcome === "accepted") ((installButton.style.display = "none"), (installPrompt = null));
 });
 clearFilesBtn.addEventListener("click", clearFiles);
 [

@@ -481,7 +481,7 @@ class tmg_Video_Controller {
     );
     this.config.on("media.profile", ({ target: { value } }) => (value ? this.DOM.videoProfile.parentElement.setAttribute("href", value) : this.DOM.videoProfile.parentElement.removeAttribute("href")));
     this.config.on("media.artwork", ({ currentTarget: { value } }) => this.setPosterState(value?.[0]?.src));
-    this.config.on("media", (e) => !this.video.paused && this.syncMediaSession());
+    this.config.on("media", () => !this.video.paused && this.syncMediaSession());
     this.config.media = this.config.media;
   }
   get payload() {

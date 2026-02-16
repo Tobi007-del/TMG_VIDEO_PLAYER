@@ -205,7 +205,7 @@
     <script src="scripts/index.js"></script>
     <script>
       let index = 0,
-        interval = 1000;
+        interval = 5000;
       const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
       const animate = (star) => {
         star.style.setProperty("--star-left", `${rand(-20, 120)}%`);
