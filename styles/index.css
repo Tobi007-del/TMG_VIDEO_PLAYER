@@ -623,6 +623,7 @@ body:has(#video.stall) #clear-files-button {
 }
 
 .playing-icon rect {
+  fill: var(--T_M_G-theme-color);
   animation: pulse 1s infinite ease-in-out;
 }
 

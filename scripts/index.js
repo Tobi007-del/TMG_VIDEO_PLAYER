@@ -272,7 +272,7 @@ function initUI() {
 function readyUI() {
   video.classList.remove("stall");
   videoPlayerContainer.classList.remove("loading");
-  setTimeout(() => mP.Controller?.toast?.(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }), 1000);
+  setTimeout(() => mP.Controller?.toast?.(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }), 500);
   mP.Controller?.config.on("settings.css.brandColor", ({ target: { value } }) => setColors(value, false), { immediate: "auto" });
   mP.Controller?.config.on("settings.css.themeColor", ({ target: { value } }) => setColors(false, value), { immediate: "auto" });
 }
@@ -298,15 +298,15 @@ async function restoreSession({ state, handles }) {
       await new Promise(async (res, rej) => {
         if ((await handle.queryPermission({ mode: "read" })) === "granted") return res("No permission needed from User"); // it's practically instant so no loading toast
         (function request() {
-          sToast.info(sessionTId, { render: `We need permission to restore ${name}`, actions: { OK: async () => ((await handle.requestPermission({ mode: "read" })) === "granted" ? res() : sToast.warn(sessionTId, { render: `Grant permissions to restore ${handle.name}`, actions: { Retry: request, Skip: () => rej("User denied permission") } })), DENY: () => rej("User refused permission prompt") } });
+          sToast.info(sessionTId, { render: `We need permission to restore ${name}`, actions: { OK: async () => ((await handle.requestPermission({ mode: "read" })) === "granted" ? res() : sToast.warn(sessionTId, { render: `Grant permissions to restore ${handle.name}`, actions: { Retry: request, Skip: () => rej("User denied") } })), DENY: () => rej("User denied") } });
         })();
       });
       const file = handle.kind === "file" ? await handle.getFile() : await getHandlesFiles([handle]);
       (tmg.isArr(file) ? files.push(...file.filter((file) => file.type.startsWith("video/"))) : files.push(file), sureHandles.push(handle));
       (sToast.success(sessionTId, { render: `Restored ${name} successfully`, actions: false }), await breath());
     } catch (err) {
-      console.error(`TVP Skipped zombie handle "${name}":`, err);
-      (sToast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false }), await breath());
+      console.error(`TVP Skipped handle "${name}":`, err);
+      (sToast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false }), await (err === "User denied" ? breath() : tmg.mockAsync(800))); // enough time to user to perceive the failure without slowing down the flow
     }
   }
   if (sureHandles.length) (sToast.success(sessionTId, { render: "Your ongoing session has been restored :)", actions: false }), await breath());
@@ -490,7 +490,7 @@ async function handleFiles(files, restored = null, handles = null) {
             should && mP.Controller?.movePlaylistTo(i, !restored.paused);
             should && thumbnails[i]?.closest("li")?.classList.add("playing");
             should && thumbnails[i]?.parentElement?.classList.toggle("paused", video.paused);
-            mP.Controller.config.on("*", () => mP.Controller?.throttle("TVP_session_save", saveSession, 2000), { immediate: true });
+            mP.Controller.config.on("*", () => mP.Controller?.throttle("TVP_session_save", saveSession, 2500), { immediate: true });
             readyUI();
           },
           { once: true }
@@ -500,8 +500,8 @@ async function handleFiles(files, restored = null, handles = null) {
         mP.attach(video);
         window.addEventListener("pagehide", saveSession);
         document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && saveSession());
-        video.addEventListener("loadedmetadata", () => setTimeout(dispatchPlayerReadyToast, 1000), { once: true });
-        video.ontimeupdate = ({ target: { currentTime: ct, duration: d } }) => mP.Controller?.throttle("TVP_thumbnail_update", () => ct > 3 && containers[mP.Controller?.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.safeNum(ct / d)), 2000);
+        video.addEventListener("loadedmetadata", () => setTimeout(dispatchPlayerReadyToast, 500), { once: true });
+        video.ontimeupdate = ({ target: { currentTime: ct, duration: d } }) => mP.Controller?.throttle("TVP_thumbnail_update", () => ct > 3 && containers[mP.Controller?.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.safeNum(ct / d)), 2500);
         video.onplay = () => {
           for (let i = 0; i < contentLines.length; i++) contentLines[i].classList.toggle("playing", i === mP.Controller?.currentPlaylistIndex);
           containers[mP.Controller?.currentPlaylistIndex]?.classList.remove("paused");
