@@ -1256,6 +1256,8 @@ class tmg_Video_Controller {
       c?.setAttribute("data-spacer", false);
       if (c?.dataset.displayed === "true" && !spacer) spacer = c;
     } while ((c = c?.nextElementSibling));
+    this.settings.css.currentTopWrapperHeight = this.DOM.topControlsWrapper.offsetHeight + "px";
+    this.settings.css.currentBottomWrapperHeight = this.DOM.bottomControlsWrapper.offsetHeight + "px";
     if (w?.dataset.scroller !== "reverse") return;
     spacer?.setAttribute("data-spacer", true);
     if (w.dataset.resetScrolled === "true") w.dataset.hasScrolled = false;
