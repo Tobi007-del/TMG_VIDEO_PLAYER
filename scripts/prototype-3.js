@@ -473,13 +473,12 @@ class tmg_Video_Controller {
   plugMedia() {
     this.setImgLoadState({ target: this.DOM.videoProfile });
     ["media.title", "media.artist", "media.profile"].forEach((e) => this.config.watch(e, (value, { root }) => (root.settings.controlPanel[e.replace("media.", "")] = value)));
-    ["media.links.title", "media.links.artist"].forEach((p) =>
+    ["media.links.title", "media.links.artist", "media.links.profile"].forEach((p) =>
       this.config.on(p, ({ target: { key, value } }) => {
-        value ? this.DOM[`video${tmg.capitalize(key)}`].setAttribute("href", value) : this.DOM[`video${tmg.capitalize(key)}`].removeAttribute("href");
-        !value ? this.DOM[`video${tmg.capitalize(key)}`].setAttribute("tabindex", "-1") : this.DOM[`video${tmg.capitalize(key)}`].removeAttribute("tabindex");
+        const el = key !== "profile" ? this.DOM[`video${tmg.capitalize(key)}`] : this.DOM.videoProfile?.parentElement;
+        el && Object.entries({ href: value, "tab-index": value ? "0" : null, target: value ? "_blank" : null, rel: value ? "noopener noreferrer" : null }).forEach(([attr, val]) => (val ? el.setAttribute(attr, val) : el.removeAttribute(attr)));
       })
     );
-    this.config.on("media.profile", ({ target: { value } }) => (value ? this.DOM.videoProfile.parentElement.setAttribute("href", value) : this.DOM.videoProfile.parentElement.removeAttribute("href")));
     this.config.on("media.artwork", ({ currentTarget: { value } }) => this.setPosterState(value?.[0]?.src));
     this.config.on("media", () => !this.video.paused && this.syncMediaSession());
     this.config.media = this.config.media;

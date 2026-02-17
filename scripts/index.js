@@ -493,7 +493,7 @@ async function handleFiles(files, restored = null, handles = null) {
           },
           { once: true }
         );
-        mP = new tmg.Player({ cloneOnDetach: true, playlist, "media.artist": "TMG Video Player", "media.profile": "assets/icons/tmg-icon.jpeg", "media.links.artist": "https://tmg-video-player.vercel.app", "media.links.profile": "https://tobi007-del.github.io/TMG_MEDIA_PROTOTYPE", "settings.captions.font.size.value": 200, "settings.captions.font.weight.value": 700, "settings.captions.background.opacity.value": 0, "settings.captions.characterEdgeStyle.value": "drop-shadow", "settings.overlay.behavior": "auto" });
+        mP = new tmg.Player({ cloneOnDetach: true, playlist, "media.artist": "TMG Video Player", "media.profile": "assets/icons/tmg-icon.jpeg", "media.links.artist": "https://tmg-video-player.vercel.app", "media.links.profile": "https://github.com/Tobi007-del/TMG_MEDIA_PROTOTYPE", "settings.captions.font.size.value": 200, "settings.captions.font.weight.value": 700, "settings.captions.background.opacity.value": 0, "settings.captions.characterEdgeStyle.value": "drop-shadow", "settings.overlay.behavior": "auto" });
         mP.configure({ settings: (restored ?? Memory.getState())?.settings ?? {}, lightState: restored?.lightState ?? {} }); // recursive mixing in
         mP.attach(video);
         window.addEventListener("pagehide", saveSession);
