@@ -2515,7 +2515,7 @@ div.tmg-video-thumbnail {
       justify-content: center;
       margin-bottom: 0.25rem;
       padding: 0.33rem 0.25rem;
-      background-color: var(--tmg-video-theme-color);
+      background-color: rgb(from var(--tmg-video-theme-color) r g b/ 0.666);
       color: var(--tmg-video-theme-inverse-accent-color);
       border: 1px solid var(--tmg-video-settings-border-color);
       transition-property: opacity, scale;
@@ -2534,7 +2534,7 @@ div.tmg-video-thumbnail {
         border: 1px solid var(--tmg-video-theme-inverse-color);
       }
       &:hover {
-        background-color: var(--tmg-video-theme-accent-color);
+        background-color: rgb(from var(--tmg-video-theme-color) r g b/ 0.8);
       }
       &:checked:hover {
         background-color: rgb(from var(--tmg-video-brand-color) r g b/ 0.8);
