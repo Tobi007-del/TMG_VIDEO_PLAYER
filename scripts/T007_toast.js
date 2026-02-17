@@ -19,6 +19,7 @@ class T007_Toast {
   }
   init() {
     this.toastElement = Object.assign(document.createElement("div"), { className: "t007-toast", id: this.id, ariaAtomic: "true" });
+    this.toastElement.dataset.idPrefix = this.opts.idPrefix;
     requestAnimationFrame(() => this.toastElement.classList.add("t007-toast-show"));
     this.destroyed = false;
   }
@@ -193,6 +194,9 @@ class T007_Toast {
   set pauseOnFocusLoss(value) {
     value ? document.addEventListener("visibilitychange", this.#visiblityChange) : document.removeEventListener("visibilitychange", this.#visiblityChange);
   }
+  set tag(value) {
+    this.toastElement.dataset.tag = value;
+  }
   set renotify(value) {
     value && this.opts.tag && t007.toasts.entries().forEach(([id, toast]) => id !== this.id && (toast.opts.tag ?? 1) === (this.opts.tag ?? 0) && toast._remove("instant"));
   }
@@ -213,7 +217,7 @@ class T007_Toast {
     this.toastElement?.parentElement?.[value ? "prepend" : "append"](this.toastElement);
   }
   set dragToClose(value) {
-    this.toastElement.dataset.pointerType = this._ptrType = value;
+    this.toastElement.dataset.dragToClose = this._ptrType = value;
     this.toastElement.onpointerdown = value ? this._handleToastPointerStart : null;
     this.toastElement.onpointerup = value ? this._handleToastPointerUp : null;
   }

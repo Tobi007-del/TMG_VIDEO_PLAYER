@@ -296,10 +296,10 @@
   padding-right: max(var(--t007-toast-padding), var(--t007-toast-smart-padding-right));
 }
 
-.t007-toast:is([data-pointer-type="mouse"], [data-pointer-type="true"]) {
+.t007-toast:is([data-drag-to-close="mouse"], [data-drag-to-close="true"]) {
   cursor: grab;
 }
-.t007-toast:is([data-pointer-type="mouse"], [data-pointer-type="true"]):active {
+.t007-toast:is([data-drag-to-close="mouse"], [data-drag-to-close="true"]):active {
   cursor: grabbing;
 }
 

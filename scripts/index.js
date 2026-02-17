@@ -140,14 +140,13 @@ const installButton = document.getElementById("install"),
     ],
   },
   vi = JSON.parse(localStorage[_lsik] || `{ "visitorId": "${crypto?.randomUUID?.() || tmg.uid()}", "visitCount": 0 }`),
-  sToast = Toaster({ autoClose: false, closeButton: false, dragToClose: false }), // yeah, my lib supports toasters that store defaults in bulk, eg. for loading toast reset perks. restore toasts will sha stay put when needed
+  sToast = Toaster({ tag: "tvp-restore", autoClose: false, closeButton: false, dragToClose: false }), // yeah, my lib supports toasters that store defaults in bulk, eg. for loading toast reset perks. restore toasts will sha stay put when needed
   scroller = tmg.initVScrollerator({ lineHeight: 80, margin: 80 }),
   queue = new tmg.AsyncQueue(),
   nums = { bytes: 0, files: 0, time: 0 },
   { createFFmpeg, fetchFile } = FFmpeg,
   ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" }),
-  breath = () => new Promise(requestAnimationFrame), // The "Single Frame" breathe - syncs with GPU refresh
-  deepBreath = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))), // The "Double Frame" breathe - guaranteed layout completion
+  deepBreath = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))), // The "Double Frame" breathe - guaranteed layout completion, the loading animation is the build process itself. Sike!!
   formatVisit = (d, sx = "") => ((d = Math.floor((new Date().getTime() - new Date(d).getTime()) / 1000)), `${d < 60 ? `${d} second` : d < 3600 ? `${Math.floor(d / 60)} minute` : d < 86400 ? `${Math.floor(d / 3600)} hour` : `${Math.floor(d / 86400)} day`}`.replace(/(\d+)\s(\w+)/g, (_, n, u) => `${n} ${u}${n == 1 ? "" : "s"}`) + sx); // this one's just for terse practice :)
 // async IIFEs for better readability and to run fire-and-forget important logic on page load
 (async function logVisitor() {
@@ -290,25 +289,25 @@ function updateUI() {
 async function restoreSession({ state, handles }) {
   const files = [],
     sureHandles = [];
-  (sToast.loading(sessionTId, { render: "Restoring your ongoing session now", actions: false }), await deepBreath()); // take a deep breath browser, it's comming in hot. adding delays between toasts for better UX
+  (sToast.info(sessionTId, { render: "Restoring your ongoing session now", icon: true, actions: false }), await deepBreath()); // take a deep breath browser, it's comming in hot. adding delays between toasts for better UX
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
     try {
-      await new Promise(async (res, rej) => {
-        if ((await handle.queryPermission({ mode: "read" })) === "granted") return res("No permission needed from User"); // it's practically instant so no loading toast
+      const resp = await new Promise(async (res, rej) => {
+        if ((await handle.queryPermission({ mode: "read" })) === "granted") return res("User not needed"); // it's practically instant so no loading toast
         (function request() {
           sToast.info(sessionTId, { render: `We need permission to restore ${name}`, actions: { OK: async () => ((await handle.requestPermission({ mode: "read" })) === "granted" ? res() : sToast.warn(sessionTId, { render: `Grant permissions to restore ${handle.name}`, actions: { Retry: request, Skip: () => rej("User denied") } })), DENY: () => rej("User denied") } });
         })();
       });
       const file = handle.kind === "file" ? await handle.getFile() : await getHandlesFiles([handle]);
       (tmg.isArr(file) ? files.push(...file.filter((file) => file.type.startsWith("video/"))) : files.push(file), sureHandles.push(handle));
-      (sToast.success(sessionTId, { render: `Restored ${name} successfully`, actions: false }), await breath());
+      (sToast.success(sessionTId, { render: `Restored ${name} successfully`, actions: false }), await (resp === "User not needed" ? deepBreath() : tmg.mockAsync(200))); // perceive the success without slowing down the flow at all
     } catch (err) {
       console.error(`TVP Skipped handle "${name}":`, err);
-      (sToast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false }), await (err === "User denied" ? breath() : tmg.mockAsync(800))); // enough time to user to perceive the failure without slowing down the flow
+      (sToast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false }), await (err === "User denied" ? deepBreath() : tmg.mockAsync(800))); // perceive the failure without slowing down the flow
     }
   }
-  if (sureHandles.length) (sToast.success(sessionTId, { render: "Your ongoing session has been restored :)", actions: false }), await breath());
+  if (sureHandles.length) (sToast.success(sessionTId, { render: "Your ongoing session has been restored :)", actions: false }), await deepBreath());
   else return sToast.error(sessionTId, { render: "Your ongoing session was not restored :(", actions: { Reload: () => location.reload(), Dismiss: () => sToast.dismiss(sessionTId) } });
   handleFiles(files, state, sureHandles);
 }
@@ -340,7 +339,7 @@ async function handleFiles(files, restored = null, handles = null) {
     (sToast.dismiss(sessionTId), initUI());
     if (handles?.length) sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))];
     for (const file of (files = smartFlatSort(files))) (nums.files++, (nums.bytes += file.size)); // providing some available metrics to the user
-    (updateUI(), await breath()); // browser breathe small first, UI; u still update nah
+    (updateUI(), await deepBreath()); // browser breathe small first, UI; u still update nah
     const stateMap = new Map(restored?.playlist?.map((v) => [v.media.title, v]) || []), // Pre-map for O(1) lookups
       list = fileList.appendChild(document.getElementById("media-list") || tmg.createEl("ul", { id: "media-list" })), // building the media list
       thumbnails = [];
@@ -466,7 +465,7 @@ async function handleFiles(files, restored = null, handles = null) {
         { passive: false }
       );
       li.append(thumbnailContainer, tmg.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${files[i].name}</span></p><p class="file-size"><span>Size: </span><span>${tmg.formatSize(files[i].size)}</span></p><p class="file-duration"><span>Duration: </span><span>${restored ? "Rei" : "I"}nitializing...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
-      (list.append(li), await breath()); // scroll step feel, also avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
+      (list.append(li), await deepBreath()); // scroll step feel, also avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
     }
     const playlist = [];
     const deployVideos = (files) => {
@@ -508,7 +507,7 @@ async function handleFiles(files, restored = null, handles = null) {
         video.onpause = () => containers[mP.Controller?.currentPlaylistIndex]?.classList.add("paused");
       } else mP.Controller.config.playlist = [...mP.Controller.config.playlist, ...playlist];
     };
-    nums.files && (deployVideos(files), await deepBreath());
+    nums.files && (deployVideos(files), await deepBreath(), await deepBreath()); // video deployment is no small job, take 2 breaths; browser, captions can chill
     nums.files && (await Promise.all(files.map(async (_, i) => thumbnails[i] && (await deployCaption(files[i], thumbnails[i], undefined, stateMap.get(tmg.noExtension(files[i].name)))))));
     if (!nums.files) return defaultUI();
   } catch (error) {

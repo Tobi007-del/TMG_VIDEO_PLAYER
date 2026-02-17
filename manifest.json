@@ -17,7 +17,7 @@
   "screenshots": [
     {
       "src": "assets/images/hero_image.png",
-      "sizes": "2530x1260",
+      "sizes": "1200x630",
       "type": "image/png",
       "form_factor": "wide"
     },

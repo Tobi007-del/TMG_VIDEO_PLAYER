@@ -35,6 +35,9 @@
   --t007-toast-box-shadow: 1px 1px 2px rgb(from var(--T_M_G-brand-accent-color) r g b / 0.06), 2px 2px 4px rgb(from var(--T_M_G-brand-accent-color) r g b / 0.06);
   --t007-toast-progress-background: linear-gradient(to left, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-brand-light-color));
 }
+.t007-toast[data-tag="tvp-restore"] .t007-toast-icon:where(:not(.t007-toast-loader)) {
+  animation: none;
+}
 .t007-dialog {
   --t007-dialog-border: 0.05rem solid rgb(from var(--T_M_G-theme-color) r g b / 0.25);
   --t007-dialog-background: rgb(20, 20, 20);
