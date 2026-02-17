@@ -141,12 +141,13 @@ const installButton = document.getElementById("install"),
   },
   vi = JSON.parse(localStorage[_lsik] || `{ "visitorId": "${crypto?.randomUUID?.() || tmg.uid()}", "visitCount": 0 }`),
   sToast = Toaster({ tag: "tvp-restore", autoClose: false, closeButton: false, dragToClose: false }), // yeah, my lib supports toasters that store defaults in bulk, eg. for loading toast reset perks. restore toasts will sha stay put when needed
-  scroller = tmg.initVScrollerator({ lineHeight: 80, margin: 80 }),
+  scroller = tmg.initVScrollerator({ lineHeight: 80, margin: 80, car: document.body }),
   queue = new tmg.AsyncQueue(),
   nums = { bytes: 0, files: 0, time: 0 },
   { createFFmpeg, fetchFile } = FFmpeg,
   ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" }),
-  deepBreath = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))), // The "Double Frame" breathe - guaranteed layout completion, the loading animation is the build process itself. Sike!!
+  breath = () => new Promise((res) => requestAnimationFrame(res)), // The "Single Frame" breathe - GPU Readiness, the loading animation is the build process itself. Sike!!
+  deepBreath = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))), // The "Double Frame" breathe - guaranteed layout completion
   formatVisit = (d, sx = "") => ((d = Math.floor((new Date().getTime() - new Date(d).getTime()) / 1000)), `${d < 60 ? `${d} second` : d < 3600 ? `${Math.floor(d / 60)} minute` : d < 86400 ? `${Math.floor(d / 3600)} hour` : `${Math.floor(d / 86400)} day`}`.replace(/(\d+)\s(\w+)/g, (_, n, u) => `${n} ${u}${n == 1 ? "" : "s"}`) + sx); // this one's just for terse practice :)
 // async IIFEs for better readability and to run fire-and-forget important logic on page load
 (async function logVisitor() {
@@ -439,14 +440,14 @@ async function handleFiles(files, restored = null, handles = null) {
         () => {
           navigator.vibrate?.([50]);
           let initialOffsetY = list.getBoundingClientRect().top,
-            initialScrollY = window.scrollY;
+            initialScrollY = document.body.scrollTop;
           li.classList.add("dragging");
           li.parentElement.insertBefore((placeholderItem = tmg.createEl("div", { className: "drag-placeholder" }, {}, { cssText: `height:${li.offsetHeight}px;width:${li.offsetWidth}px;` })), li.nextElementSibling);
           ["pointermove", "pointerup", "pointercancel"].forEach((e, i) => document.addEventListener(e, !i ? onPointerMove : onPointerUp));
           function onPointerMove(e) {
             e.preventDefault();
             mP.Controller?.RAFLoop("listItemDragging", () => {
-              li.style.top = `${(li.top = tmg.clamp(0, window.scrollY - initialScrollY + e.clientY - initialOffsetY - li.offsetHeight / 2, list.offsetHeight - li.offsetHeight))}px`;
+              li.style.top = `${(li.top = tmg.clamp(0, document.body.scrollTop - initialScrollY + e.clientY - initialOffsetY - li.offsetHeight / 2, list.offsetHeight - li.offsetHeight))}px`;
               scroller.drive(e.clientY, !(li.top > 0 && li.top < list.offsetHeight - li.offsetHeight));
               const afterLine = tmg.getElSiblingAt(e.clientY, "y", list.querySelectorAll(".content-line:not(.dragging)"));
               afterLine ? list.insertBefore(placeholderItem, afterLine) : list.append(placeholderItem);
@@ -465,7 +466,7 @@ async function handleFiles(files, restored = null, handles = null) {
         { passive: false }
       );
       li.append(thumbnailContainer, tmg.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${files[i].name}</span></p><p class="file-size"><span>Size: </span><span>${tmg.formatSize(files[i].size)}</span></p><p class="file-duration"><span>Duration: </span><span>${restored ? "Rei" : "I"}nitializing...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
-      (list.append(li), await deepBreath()); // scroll step feel, also avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
+      (list.append(li), await breath()); // scroll step feel, also avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
     }
     const playlist = [];
     const deployVideos = (files) => {
