@@ -123,7 +123,7 @@
   --tmg-video-no-preview-background: var(--tmg-video-brand-complement-color);
   --tmg-video-no-preview-pointer-color: var(--tmg-video-brand-complement-color);
   --tmg-video-dbc-backdrop-color: var(--tmg-video-brand-complement-color);
-  --tmg-video-scroll-assist-color: rgb(from var(--tmg-video-curtain-color) r g b/1);
+  --tmg-video-scroll-assist-color: black;
 }
 :root,
 .tmg-media-container {
@@ -656,7 +656,8 @@
   width: 100%;
 }
 .tmg-video-container {
-  perspective: 1000px;
+  perspective: calc(var(--tmg-video-current-unit) * 38.5);
+  perspective-origin: center 60%;
   will-change: left, bottom;
 }
 .tmg-pseudo-video-container {
