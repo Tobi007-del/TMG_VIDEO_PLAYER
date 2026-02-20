@@ -395,7 +395,7 @@ class Reactor {
   }
 }
 const methods = ["tick", "stall", "nostall", "get", "gonce", "noget", "set", "sonce", "noset", "watch", "wonce", "nowatch", "on", "once", "off", "cascade", "snapshot", "reset", "destroy"];
-function reactified(target, options) {
+function reactive(target, options) {
   const descriptors = {},
     r = target instanceof Reactor ? target : new Reactor(target, options);
   for (const m of methods)
@@ -413,7 +413,7 @@ class tmg_Video_Controller {
     ((this.video = build.video), (this.buildCache = { ...build }));
     this.setReadyState(0); // had to be done before binding, for user info
     this.bindMethods(); // first thing, same this.cZoneWs throughout life cycle
-    this.config = reactified(build); // merging the video build into the Video Player Instance
+    this.config = reactive(build); // merging the video build into the Video Player Instance
     this.settings = this.config.settings; // alias for devx, for non reassignable common config
     (this.guardGenericPaths(), this.guardTimeValues(), this.plugSources(), this.plugTracks(), this.plugPlaylist());
     const { src, sources, tracks } = this.config;
@@ -622,8 +622,9 @@ class tmg_Video_Controller {
         { option: "Dark Turquoise", value: "darkturquoise" },
         { option: "Video Derived", value: "auto" },
       ],
-      brandSelector = createField?.({ type: "select", label: "Brand Color", helperText: { info: "You should just try changing your brand color for now" }, options: [{ option: "Tastey Orange", value: "rgb(226, 110, 2)" }, ...options], value: this.settings.css.syncWithMedia.brandColor ? "auto" : (this.settings.css.brandColor ?? "rgb(226, 110, 2)") }),
-      themeSelector = createField?.({ type: "select", label: "Theme Color", helperText: { info: "You should also try changing your theme color for now" }, options: [{ option: "Pure White", value: "white" }, ...options], value: this.settings.css.syncWithMedia.themeColor ? "auto" : (this.settings.css.themeColor ?? "white") });
+      defs = { brand: this.settings.css.brandColor ?? "rgb(226, 110, 2)", theme: this.settings.css.themeColor ?? "white", colors: ["rgb(226, 110, 2)", "white", ...options.map((opt) => opt.value)] },
+      brandSelector = createField?.({ type: "select", label: "Brand Color", helperText: { info: "You should just try changing your brand color for now" }, options: [{ option: "Tastey Orange", value: "rgb(226, 110, 2)" }, ...options], value: !defs.colors.includes(defs.brand) ? "auto" : defs.brand }),
+      themeSelector = createField?.({ type: "select", label: "Theme Color", helperText: { info: "You should also try changing your theme color for now" }, options: [{ option: "Pure White", value: "white" }, ...options], value: !defs.colors.includes(defs.theme) ? "auto" : defs.theme });
     this.queryDOM(".tmg-video-settings-bottom-panel").append(brandSelector, themeSelector);
     const id = { theme: "", brand: "" },
       sync = (req = true, type = "brand") => (this.settings.css.syncWithMedia[`${type}Color`] = req),

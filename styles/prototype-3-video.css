@@ -750,16 +750,16 @@ body:where(:has(.tmg-video-floating-player)) {
 .tmg-media-container[data-size-tier^="xxxx"] {
   --tmg-video-current-unit: var(--tmg-video-mobile-miniplayer-unit);
 }
-.tmg-video-container:is(.tmg-video-overlay, :has(:focus-visible)) {
+.tmg-video-container:is(.tmg-video-overlay, :has(:focus-visible)):has(.tmg-video-top-controls-wrapper [data-displayed="true"]) {
   --tmg-video-current-safe-inset-top: var(--tmg-video-current-top-wrapper-height);
 }
-.tmg-video-container:is(.tmg-video-overlay, :has(:focus-visible)) {
+.tmg-video-container:is(.tmg-video-overlay, :has(:focus-visible)):has(.tmg-video-bottom-controls-wrapper [data-displayed="true"]) {
   --tmg-video-current-safe-inset-bottom: var(--tmg-video-current-bottom-wrapper-height);
 }
-.tmg-video-container:not(.tmg-video-settings-view):is(.tmg-video-overlay, :has(:focus-visible)) {
+.tmg-video-container:not(.tmg-video-settings-view):is(.tmg-video-overlay, :has(:focus-visible)):has(.tmg-video-top-controls-wrapper [data-displayed="true"]) {
   --tmg-video-current-global-safe-inset-top: var(--tmg-video-current-top-wrapper-height);
 }
-.tmg-video-container:not(.tmg-video-settings-view):is(.tmg-video-overlay, :has(:focus-visible)) {
+.tmg-video-container:not(.tmg-video-settings-view):is(.tmg-video-overlay, :has(:focus-visible)):has(.tmg-video-bottom-controls-wrapper [data-displayed="true"]) {
   --tmg-video-current-global-safe-inset-bottom: var(--tmg-video-current-bottom-wrapper-height);
 }
 .tmg-video-container:is(.tmg-video-overlay, :has(:focus-visible)),
