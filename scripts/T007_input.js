@@ -229,7 +229,7 @@ var T007_Form_Manager = {
       `;
       labelEl.append(outline);
     }
-    const inputEl = document.createElement(isTextArea ? "textarea" : isSelect ? "select" : "input");
+    const inputEl = (field.inputEl = document.createElement(isTextArea ? "textarea" : isSelect ? "select" : "input")); // You're welcome :)
     // Insert options if select
     if (isSelect && Array.isArray(options)) inputEl.innerHTML = options.map((opt) => (typeof opt === "string" ? `<option value="${opt}">${opt}</option>` : `<option value="${opt.value}">${opt.option}</option>`)).join("");
     inputEl.className = `t007-input${className ? ` ${className}` : ""}`;
@@ -284,6 +284,7 @@ var T007_Form_Manager = {
       helperLine.className = "t007-input-helper-line";
       const helperWrapper = document.createElement("div");
       helperWrapper.className = "t007-input-helper-text-wrapper";
+      helperWrapper.tabIndex = "-1";
       // Info text
       if (helperText.info) {
         const info = document.createElement("p");

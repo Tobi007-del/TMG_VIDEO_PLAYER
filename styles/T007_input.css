@@ -25,30 +25,30 @@
 :where(:root, .t007-input-field) {
   --t007-input-color: black;
   /* borders */
-  --t007-input-base-color: rgb(from var(--t007-input-color) r g b/0.45);
-  --t007-input-hover-color: var(--t007-input-color);
-  --t007-input-focused-color: var(--t007-input-color);
+  --t007-input-base-color: rgb(from var(--t007-input-color) r g b / 0.45);
+  --t007-input-hover-color: rgb(from var(--t007-input-color) r g b / 1);
+  --t007-input-focused-color: rgb(from var(--t007-input-color) r g b / 1);
   --t007-input-filled-color: var(--t007-input-base-color);
   --t007-input-error-color: #d32f2f;
   --t007-input-disabled-color: gray;
   /* label */
-  --t007-input-base-label-color: rgb(from var(--t007-input-base-color) r g b/0.95);
+  --t007-input-base-label-color: rgb(from var(--t007-input-base-color) r g b / 0.95);
   --t007-input-hover-label-color: var(--t007-input-base-label-color);
   --t007-input-focused-label-color: var(--t007-input-focused-color);
   --t007-input-filled-label-color: var(--t007-input-base-label-color);
   --t007-input-error-label-color: var(--t007-input-error-color);
   --t007-input-disabled-label-color: var(--t007-input-disabled-color);
   /* value */
-  --t007-input-base-value-color: var(--t007-input-color);
+  --t007-input-base-value-color: rgb(from var(--t007-input-color) r g b / 1);
   --t007-input-hover-value-color: var(--t007-input-base-value-color);
   --t007-input-focused-value-color: var(--t007-input-base-value-color);
   --t007-input-filled-value-color: var(--t007-input-base-value-color);
   --t007-input-error-value-color: var(--t007-input-base-value-color);
   --t007-input-disabled-value-color: var(--t007-input-disabled-color);
   /* helper */
-  --t007-input-base-helper-color: rgb(from var(--t007-input-color) r g b/0.8);
+  --t007-input-base-helper-color: rgb(from var(--t007-input-color) r g b / 0.8);
   --t007-input-hover-helper-color: var(--t007-input-base-helper-color);
-  --t007-input-focused-helper-color: rgb(from var(--t007-input-color) r g b/0.9);
+  --t007-input-focused-helper-color: rgb(from var(--t007-input-color) r g b / 0.9);
   --t007-input-filled-helper-color: var(--t007-input-filled-color);
   --t007-input-error-helper-color: var(--t007-input-error-color);
   --t007-input-disabled-helper-color: var(--t007-input-disabled-color);
@@ -107,9 +107,16 @@
 .t007-input-field *[class^="t007-input"]::before {
   box-sizing: border-box;
   font-family: var(--t007-input-font-family);
-  transition-property: transform, filter, background-color, color, border, right, left, top, bottom, width, height, font-size, scale;
-  transition-duration: 150ms;
-  transition-timing-function: ease;
+  /* transition-property: transform, filter, background-color, color, border, right, left, top, bottom, width, height, font-size, scale; */
+  /* transition-duration: 150ms; */
+  /* transition-timing-function: ease; */
+}
+
+:where(.t007-input-field) *,
+:where(.t007-input-field) *::after,
+:where(.t007-input-field) *::before {
+  padding: 0;
+  margin: 0;
 }
 
 .t007-input-field {
@@ -185,7 +192,6 @@
 
 .t007-input-wrapper {
   position: relative;
-  min-width: 3rem;
   width: 100%;
   height: var(--t007-input-height);
   display: inline-flex;
@@ -239,7 +245,7 @@
 }
 
 .t007-input-outline-leading {
-  width: 0.75rem;
+  width: max(0.75rem, var(--t007-input-border-radius));
   border-top-left-radius: inherit;
   border-top-right-radius: 0;
   border-bottom-left-radius: inherit;
