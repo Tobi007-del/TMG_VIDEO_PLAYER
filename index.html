@@ -122,7 +122,7 @@
               <span class="magic-text">TVP</span>
             </span>
           </h1>
-          <p>Pick videos or folders to play directly in your browser with no hassle!</p>
+          <p class="browser-sub-header">Pick <span id="videos-header-text">videos</span> <span id="or-header-text">or</span> <span id="folders-header-text">folders</span> to play <span id="browser-header-tip">directly in your browser</span><span id="app-header-tip">instantly</span> with no hassle!</p>
         </div>
         <div id="video-player-container">
           <video id="video" class="stall"></video>
@@ -189,10 +189,8 @@
     <p class="offline-notice">You're offline</p>
     <script>
       // Conditional UI rendering before other scripts to avoid flashes for that magic feel :), using var so scripts don't have to duplicate logic btw
-      var foldersDropBox = document.getElementById("folders-drop-box");
-      if (!("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker" in window && /Mobi|Android|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent))) foldersDropBox.style.display = "none"; // dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data
-      var videosDropBox = document.getElementById("videos-drop-box");
-      if (!("files" in HTMLInputElement.prototype)) videosDropBox.style.display = "none";
+      document.body.classList.toggle("no-folders-pick", !("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker" in window && /Mobi|Android|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent))); // dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data
+      document.body.classList.toggle("no-videos-pick", !("files" in HTMLInputElement.prototype));
       var _lssk = "TVP_last_session_state"; // localStorage session key
       var setColors = (brand = "rgb(226, 110, 2)", theme = "white") => {
         brand && document.documentElement.style.setProperty("--T_M_G-brand-color", brand);

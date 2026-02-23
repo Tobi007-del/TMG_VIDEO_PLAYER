@@ -96,7 +96,7 @@ var Memory = {
 // app logic variables
 let sessionTId, // session toast id
   sessionTInt, // session toast interval for updating last updated time every minute
-  installed = true,
+  installed = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true,
   installPrompt = null, // beforeinstallprompt event object
   readyTId, // ready toast id
   mP = null, // media player
@@ -107,6 +107,8 @@ const installButton = document.getElementById("install"),
   fileList = document.getElementById("file-list"),
   contentLines = document.getElementsByClassName("content-line"),
   containers = document.getElementsByClassName("thumbnail-container"), // only playlist index is a guaranteed index
+  videosDropBox = document.getElementById("videos-drop-box"),
+  foldersDropBox = document.getElementById("folders-drop-box"),
   readyLines = {
     morning: [
       { icon: "🌅", body: "A new day, a new story begins." },

@@ -307,6 +307,18 @@ body:has(#video.stall) #clear-files-button {
   text-shadow: 0.5px 0.5px 2px var(--T_M_G-theme-shadow-color);
 }
 
+#app-header-tip {
+  display: none;
+}
+@media (display-mode: standalone) {
+  #browser-header-tip {
+    display: none;
+  }
+  #app-header-tip {
+    display: inline;
+  }
+}
+
 #content-helper-wrapper {
   display: flex;
   flex-direction: column;
@@ -406,6 +418,12 @@ body:has(#video.stall) #clear-files-button {
   vertical-align: -0.2125em;
   margin-left: 0.3em;
   fill: currentColor;
+}
+
+:is(.no-videos-pick, .no-folders-pick) #or-header-text,
+.no-videos-pick :is(#videos-drop-box, #videos-header-text),
+.no-folders-pick :is(#folders-drop-box, #folders-header-text) {
+  display: none;
 }
 
 #file-picker input[type="file"] {

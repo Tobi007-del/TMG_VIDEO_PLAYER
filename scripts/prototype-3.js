@@ -2988,7 +2988,7 @@ var tmg = {
   unmountMedia: () => delete HTMLVideoElement.prototype.tmgcontrols,
   init() {
     tmg.mountMedia();
-    ["pointerdown", "keydown"].forEach((e) => document.addEventListener(e, () => ((tmg._isDocTransient = true), tmg.startAudioManager()), true));
+    ["click", "pointerdown", "keydown"].forEach((e) => document.addEventListener(e, () => ((tmg._isDocTransient = true), tmg.startAudioManager()), true));
     for (const medium of document.querySelectorAll("video")) {
       tmg.VIDMutationObserver.observe(medium, { attributes: true });
       medium.tmgcontrols = medium.hasAttribute("tmgcontrols");

@@ -1846,8 +1846,8 @@ body:not(:has(.tmg-video-container.tmg-video-miniplayer)) .tmg-pseudo-video-cont
   bottom: clamp(var(--tmg-video-current-captions-offset-bottom) + calc(var(--tmg-video-current-captions-container-height) / 2), var(--tmg-video-current-captions-y), calc(100% - (var(--tmg-video-current-captions-offset-top) + (var(--tmg-video-current-captions-container-height) / 2))));
   left: clamp(calc(var(--tmg-video-current-captions-container-width) / 2), var(--tmg-video-current-captions-x), calc(100% - (var(--tmg-video-current-captions-container-width) / 2)));
   translate: -50% 50%;
-  max-height: calc(100% - (0.5em + var(--tmg-video-current-captions-offset-top) + var(--tmg-video-current-captions-offset-bottom)));
-  padding: 0.25rem 1em;
+  max-height: calc(100% - (var(--tmg-video-current-captions-offset-top) + var(--tmg-video-current-captions-offset-bottom)));
+  padding: 0.2em 1em;
   font-size: calc(var(--tmg-video-captions-font-size-base) * var(--f-f));
   overflow-y: auto;
   background: rgb(from var(--tmg-video-captions-window-color) r g b / var(--tmg-video-captions-window-opacity));
