@@ -488,7 +488,7 @@ body:has(#video.stall) #clear-files-button {
 }
 
 #no-files-text {
-  margin-block: 30px;
+  margin-block: max(30px, 8.5dvh);
   color: var(--T_M_G-theme-accent-color);
   text-align: center;
   text-shadow: 0.5px 0.5px 2px var(--T_M_G-theme-shadow-color);
