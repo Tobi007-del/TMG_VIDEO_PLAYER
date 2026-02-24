@@ -688,7 +688,6 @@ class tmg_Video_Controller {
     this.videoContainer.insertAdjacentHTML(
       "beforeend",
       `
-      <!-- Code injected by TMG -->
       <div class="tmg-video-container-content-wrapper">
         <div class="tmg-video-container-content">
           <div class="tmg-video-controls-container">
@@ -726,7 +725,6 @@ class tmg_Video_Controller {
         <p>Screen Locked</p>
         <p>Tap to Unlock</p>
       </div>
-      <!-- Code injected by TMG ends -->
       `
     );
     this.queryDOM(".tmg-video-container-content").prepend(this.video);

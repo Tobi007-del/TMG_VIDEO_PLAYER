@@ -99,7 +99,7 @@
   --tmg-video-theme-accent-color: hsl(from var(--tmg-video-theme-color) h s calc(l - 5));
   --tmg-video-theme-inverse-color: rgb(from var(--tmg-video-theme-color) calc(255 - r) calc(255 - g) calc(255 - b));
   --tmg-video-theme-inverse-accent-color: hsl(from var(--tmg-video-theme-inverse-color) h s calc(l + 45));
-  --tmg-video-focus-visible-color: var(--tmg-video-brand-accent-color);
+  --tmg-video-focus-visible-color: rgb(from var(--tmg-video-brand-accent-color) r g b / 1);
   --tmg-video-focus-visible-outline: 2px solid var(--tmg-video-focus-visible-color);
   --tmg-video-disabled-color: gray;
   --tmg-video-error-color: rgba(255, 0, 0, 0.75);
@@ -766,8 +766,8 @@ body:where(:has(.tmg-video-floating-player)) {
 .tmg-video-bottom-curtain {
   --tmg-video-current-curtain-color: var(--tmg-video-curtain-color);
 }
-.tmg-video-container:is(.tmg-video-miniplayer, .tmg-video-floating-player, .tmg-video-mobile):is(.tmg-video-previewing, .tmg-video-scrubbing),
-.tmg-video-container:is(.tmg-video-miniplayer, .tmg-video-floating-player, .tmg-video-mobile) :is(.tmg-video-top-curtain, .tmg-video-bottom-curtain),
+.tmg-video-container[data-curtain="cover"]:is(.tmg-video-previewing, .tmg-video-scrubbing),
+.tmg-video-container[data-curtain="cover"] :is(.tmg-video-top-curtain, .tmg-video-bottom-curtain),
 .tmg-video-container:has(:is(.tmg-video-playback-rate-notifier, .tmg-video-touch-vb-notifier).tmg-video-control-active) {
   --tmg-video-current-curtain-color: transparent;
 }
@@ -1465,12 +1465,12 @@ body:not(:has(.tmg-video-container.tmg-video-miniplayer)) .tmg-pseudo-video-cont
 }
 .tmg-video-top-curtain,
 .tmg-video-bottom-curtain {
-  min-height: calc(var(--tmg-video-current-unit) * 2.25);
   background: linear-gradient(var(--tmg-video-current-curtain-gradient-dir), var(--tmg-video-current-curtain-color), transparent);
 }
 .tmg-video-top-curtain {
   --tmg-video-current-curtain-gradient-dir: to bottom;
   top: 0;
+  min-height: max(calc(var(--tmg-video-current-unit) * 2.25), var(--tmg-video-current-top-wrapper-height));
   aspect-ratio: 10 / 1;
   border-top-left-radius: inherit;
   border-top-right-radius: inherit;
@@ -1478,6 +1478,7 @@ body:not(:has(.tmg-video-container.tmg-video-miniplayer)) .tmg-pseudo-video-cont
 .tmg-video-bottom-curtain {
   --tmg-video-current-curtain-gradient-dir: to top;
   bottom: 0;
+  min-height: max(calc(var(--tmg-video-current-unit) * 2.25), var(--tmg-video-current-bottom-wrapper-height));
   aspect-ratio: 6 / 1;
   border-bottom-left-radius: inherit;
   border-bottom-right-radius: inherit;
@@ -1491,7 +1492,7 @@ body:not(:has(.tmg-video-container.tmg-video-miniplayer)) .tmg-pseudo-video-cont
   height: 100%;
   border-radius: inherit;
 }
-.tmg-video-container:is(.tmg-video-miniplayer, .tmg-video-floating-player, .tmg-video-mobile) .tmg-video-cover-curtain {
+.tmg-video-container[data-curtain="cover"] .tmg-video-cover-curtain {
   background-color: var(--tmg-video-current-curtain-color);
   transition: background-color var(--tmg-video-fade-transition-time) ease-in-out;
 }
@@ -2426,7 +2427,7 @@ div.tmg-video-thumbnail {
 .tmg-video-container:has(.tmg-video-playback-rate-notifier.tmg-video-control-active) .tmg-video-bottom-curtain {
   opacity: 1;
 }
-.tmg-video-container:is(:is(.tmg-video-miniplayer, .tmg-video-mobile):is(.tmg-video-scrubbing, :has(.tmg-video-notifier.tmg-video-control-persist)), :has(:is(.tmg-video-playback-rate-notifier, .tmg-video-touch-vb-notifier).tmg-video-control-active)) :is(.tmg-video-top-curtain, .tmg-video-top-controls-wrapper, .tmg-video-big-controls-wrapper, .tmg-video-bottom-controls-wrapper *:not(:has(.tmg-video-timeline-container), .tmg-video-timeline-container, .tmg-video-timeline-container *)),
+.tmg-video-container:is(:is(.tmg-video-miniplayer, .tmg-video-mobile):is(.tmg-video-scrubbing, :has(.tmg-video-notifier.tmg-video-control-persist)), :has(:is(.tmg-video-playback-rate-notifier, .tmg-video-touch-vb-notifier).tmg-video-control-active)) :is(.tmg-video-top-curtain, .tmg-video-bottom-curtain, .tmg-video-top-controls-wrapper, .tmg-video-big-controls-wrapper, .tmg-video-bottom-controls-wrapper *:not(:has(.tmg-video-timeline-container), .tmg-video-timeline-container, .tmg-video-timeline-container *)),
 .tmg-video-container:has(.tmg-video-touch-vb-notifier.tmg-video-control-active) :is(.tmg-video-bottom-curtain, .tmg-video-timeline-container) {
   opacity: 0;
   pointer-events: none;
