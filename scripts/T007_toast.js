@@ -18,8 +18,7 @@ class T007_Toast {
     this.update(this.opts);
   }
   init() {
-    this.toastElement = Object.assign(document.createElement("div"), { className: "t007-toast", id: this.id, ariaAtomic: "true" });
-    this.toastElement.dataset.idPrefix = this.opts.idPrefix;
+    this.toastElement = createEl("div", { className: "t007-toast", id: this.id, ariaAtomic: "true" }, { idPrefix: this.opts.idPrefix });
     requestAnimationFrame(() => this.toastElement.classList.add("t007-toast-show"));
     this.destroyed = false;
   }
@@ -57,7 +56,7 @@ class T007_Toast {
     const bodyText = () => this.toastElement.querySelector(".t007-toast-body-text");
     if (value) {
       this._setUpBodyHTML();
-      this.toastElement.querySelector(".t007-toast-body").prepend(bodyText() || Object.assign(document.createElement("p"), { className: "t007-toast-body-text" }));
+      this.toastElement.querySelector(".t007-toast-body").prepend(bodyText() || createEl("p", { className: "t007-toast-body-text" }));
       const text = bodyText();
       text.innerHTML = text.dataset.render = typeof value === "function" ? value() : value;
     } else bodyText()?.remove();
@@ -67,7 +66,7 @@ class T007_Toast {
       values = value ? Object.entries(value) : [];
     if (values.length) {
       this._setUpBodyHTML();
-      this.toastElement.querySelector(".t007-toast-body").insertAdjacentElement("afterend", actionsWrapper() || Object.assign(document.createElement("div"), { className: "t007-toast-actions-wrapper" }));
+      this.toastElement.querySelector(".t007-toast-body").insertAdjacentElement("afterend", actionsWrapper() || createEl("div", { className: "t007-toast-actions-wrapper" }));
       const wrapper = actionsWrapper();
       wrapper.innerHTML = values.map(([label]) => (label ? `<button class="t007-toast-action-button" data-action="${label}">${label}</button>` : "")).join("");
       wrapper.querySelectorAll(".t007-toast-action-button").forEach((btn, i) => (btn.onclick = (e) => values[i][1]?.(e, this)));
@@ -77,7 +76,7 @@ class T007_Toast {
     const image = () => this.toastElement.querySelector(".t007-toast-image");
     if (value) {
       this._setUpBodyHTML();
-      this.toastElement.querySelector(".t007-toast-image-wrapper").prepend(image() || Object.assign(document.createElement("img"), { className: "t007-toast-image", alt: "toast-image" }));
+      this.toastElement.querySelector(".t007-toast-image-wrapper").prepend(image() || createEl("img", { className: "t007-toast-image", alt: "toast-image" }));
       const img = image();
       img.src = value;
       img.onload = img.onerror = () => (img.dataset.loaded = img.complete && img.naturalWidth > 0);
@@ -91,7 +90,7 @@ class T007_Toast {
     const icon = () => this.toastElement.querySelector(".t007-toast-icon:not(.t007-toast-loader)");
     if (value) {
       this._setUpBodyHTML();
-      this.toastElement.querySelector(".t007-toast-image-wrapper").appendChild(icon() || Object.assign(document.createElement("span"), { className: "t007-toast-icon" }));
+      this.toastElement.querySelector(".t007-toast-image-wrapper").appendChild(icon() || createEl("span", { className: "t007-toast-icon" }));
       const icn = icon();
       icn.innerHTML = icn.dataset.icon = this.icon;
     } else icon()?.remove();
@@ -101,7 +100,7 @@ class T007_Toast {
     if (value) {
       this._setUpBodyHTML();
       this.toastElement.querySelectorAll(".t007-toast-icon:not(.t007-toast-loader)").forEach((i) => i.remove());
-      this.toastElement.querySelector(".t007-toast-image-wrapper").appendChild(loader() || Object.assign(document.createElement("span"), { className: "t007-toast-icon t007-toast-loader" }));
+      this.toastElement.querySelector(".t007-toast-image-wrapper").appendChild(loader() || createEl("span", { className: "t007-toast-icon t007-toast-loader" }));
       loader().innerHTML = typeof value === "string" ? value : t007.TOAST_ICONS.loading;
     } else {
       loader()?.remove();
@@ -110,7 +109,7 @@ class T007_Toast {
   }
   set closeButton(value) {
     const btn = this.toastElement.querySelector(".t007-toast-cancel-button");
-    if (value) this.toastElement.appendChild(btn || Object.assign(document.createElement("button"), { title: "Close", ariaLabel: "Close notification", className: "t007-toast-cancel-button", innerHTML: "&times;", onclick: this._remove }));
+    if (value) this.toastElement.appendChild(btn || createEl("button", { title: "Close", ariaLabel: "Close notification", className: "t007-toast-cancel-button", innerHTML: "&times;", onclick: this._remove }));
     else btn?.remove();
   }
   get animation() {
@@ -284,8 +283,8 @@ class T007_Toast {
   _setUpBodyHTML() {
     this.toastElement.querySelectorAll(".t007-toast > *:not(.t007-toast-image-wrapper, .t007-toast-body, .t007-toast-actions-wrapper, .t007-toast-cancel-button)").forEach((el) => el.remove());
     const imageWrapper = () => this.toastElement.querySelector(".t007-toast-image-wrapper");
-    if (!imageWrapper()) this.toastElement.prepend(Object.assign(document.createElement("div"), { className: "t007-toast-image-wrapper" }));
-    if (!this.toastElement.querySelector(".t007-toast-body")) imageWrapper().insertAdjacentElement("afterend", Object.assign(document.createElement("div"), { className: "t007-toast-body" }));
+    if (!imageWrapper()) this.toastElement.prepend(createEl("div", { className: "t007-toast-image-wrapper" }));
+    if (!this.toastElement.querySelector(".t007-toast-body")) imageWrapper().insertAdjacentElement("afterend", createEl("div", { className: "t007-toast-body" }));
   }
   _cleanUpToast() {
     const container = this.toastElement.parentElement;
@@ -414,6 +413,7 @@ if (typeof window !== "undefined") {
   console.log("%cT007 Toasts attached to window!", "color: darkturquoise");
 }
 
+// UTILS
 function clamp(min, amount, max) {
   return Math.min(Math.max(amount, min), max);
 }
@@ -427,7 +427,13 @@ function bindMethods(owner, callback = (method, owner) => (owner[method] = owner
     proto = Object.getPrototypeOf(proto);
   }
 }
-// prettier-ignore
+function createEl(tag, props = {}, dataset = {}, styles = {}) {
+  const el = tag ? document.createElement(tag) : null;
+  for (const k of Object.keys(props)) if (el && props[k] !== undefined) el[k] = props[k];
+  for (const k of Object.keys(dataset)) if (el && dataset[k] !== undefined) el.dataset[k] = dataset[k];
+  for (const k of Object.keys(styles)) if (el && styles[k] !== undefined) el.style[k] = styles[k];
+  return el;
+}
 function isSameURL(src1, src2) {
   if (typeof src1 !== "string" || typeof src2 !== "string" || !src1 || !src2) return false;
   try {
@@ -438,21 +444,22 @@ function isSameURL(src1, src2) {
     return src1.replace(/\\/g, "/").split("?")[0].trim() === src2.replace(/\\/g, "/").split("?")[0].trim();
   }
 }
-// prettier-ignore
-function loadResource(src, type = "style", { module, media, crossOrigin, integrity } = {}) {
+function loadResource(src, type = "style", { module, media, crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, attempts = 3, retryKey = false } = {}) {
+  ((window.t007 ??= {}), (t007._resourceCache ??= {}));
   if (t007._resourceCache[src]) return t007._resourceCache[src];
   if (type === "script" ? Array.prototype.some.call(document.scripts, (s) => isSameURL(s.src, src)) : type === "style" ? Array.prototype.some.call(document.styleSheets, (s) => isSameURL(s.href, src)) : false) return Promise.resolve();
   t007._resourceCache[src] = new Promise((resolve, reject) => {
-    if (type === "script") {
-      const script = Object.assign(document.createElement("script"), { src, type: module ? "module" : "text/javascript", onload: () => resolve(script), onerror: () => reject(new Error(`Script load error: ${src}`)) });
-      if (crossOrigin) script.crossOrigin = crossOrigin;
-      if (integrity) script.integrity = integrity;
-      document.body.append(script);
-    } else if (type === "style") {
-      const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href: src, onload: () => resolve(link), onerror: () => reject(new Error(`Stylesheet load error: ${src}`)) });
-      if (media) link.media = media;
-      document.head.append(link);
-    } else reject(new Error(`Unsupported type: ${type}`));
+    (function tryLoad(remaining, el) {
+      const onerror = () => {
+        el?.remove(); // Remove failed element before retry
+        if (remaining > 1) (setTimeout(tryLoad, 1000, remaining - 1), console.warn(`Retrying ${type} load (${attempts - remaining + 1}): ${src}...`));
+        else (delete t007._resourceCache[src], reject(new Error(`${type} load failed after ${attempts} attempts: ${src}`))); // Final fail: clear cache so user can manually retry
+      };
+      const url = retryKey && remaining < attempts ? `${src}${src.includes("?") ? "&" : "?"}_${retryKey}=${Date.now()}` : src;
+      if (type === "script") document.body.append((el = createEl("script", { src: url, type: module ? "module" : "text/javascript", crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, onload: () => resolve(el), onerror })));
+      else if (type === "style") document.head.append((el = createEl("link", { rel: "stylesheet", href: url, media, crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, onload: () => resolve(el), onerror })));
+      else reject(new Error(`Unsupported resource type: ${type}`));
+    })(attempts);
   });
   return t007._resourceCache[src];
 }

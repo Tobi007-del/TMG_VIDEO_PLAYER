@@ -74,18 +74,11 @@ class Reactor {
   listenersRecord = new Map();
   batch = new Map();
   isBatching = false;
-  queue = null; // tasks to run after flush, `null` | pay the empty set 64 byte price for what u might never use
+  queue = null; // Tasks to run after flush, `null` | pay the empty set 64 byte price for what u might never use
   proxyCache = new WeakMap();
   lineage = new WeakMap(); // The Engine Room: Tracks Target -> Array of { parent, key }
-  core;
-  constructor(obj = {}, options = {}) {
+  constructor(obj = {}, options) {
     this.core = this.proxify(obj);
-  }
-  unlink(child, p, k) {
-    const target = (child && child[RAW]) || child;
-    if (!target || typeof target !== "object") return;
-    const es = this.lineage.get(target);
-    if (es) for (let i = 0; i < es.length; i++) if (es[i].p === p && es[i].k === k) return void es.splice(i, 1);
   }
   proxify(obj, rejectable = false, p, k) {
     if (!obj || typeof obj !== "object") return obj;
@@ -167,6 +160,12 @@ class Reactor {
     es = this.lineage.get(target) ?? (this.lineage.set(target, (es = [])), es);
     for (let i = 0; i < es.length; i++) if (es[i].p === p && es[i].k === k) return;
     es.push({ p, k });
+  }
+  unlink(child, p, k) {
+    const target = (child && child[RAW]) || child;
+    if (!target || typeof target !== "object") return;
+    const es = this.lineage.get(target);
+    if (es) for (let i = 0; i < es.length; i++) if (es[i].p === p && es[i].k === k) return void es.splice(i, 1);
   }
   mediate(path, payload, set) {
     let terminated = false,
@@ -409,10 +408,10 @@ function reactive(target, options) {
 }
 
 class tmg_Video_Controller {
-  constructor(build) {
-    ((this.video = build.video), (this.buildCache = { ...build }));
-    this.setReadyState(0); // had to be done before binding, for user info
+  constructor(medium, build) {
+    this.setReadyState(0, medium); // had to be done before binding, for user info
     this.bindMethods(); // first thing, same this.cZoneWs throughout life cycle
+    ((this.buildCache = { ...build }), (this.id = build.id), (this.video = medium));
     this.config = reactive(build); // merging the video build into the Video Player Instance
     this.settings = this.config.settings; // alias for devx, for non reassignable common config
     (this.guardGenericPaths(), this.guardTimeValues(), this.plugSources(), this.plugTracks(), this.plugPlaylist());
@@ -486,9 +485,9 @@ class tmg_Video_Controller {
   get payload() {
     return { readyState: this.readyState, initialized: this.readyState > 0, destroyed: this.readyState < 0, Controller: this };
   }
-  setReadyState(state = (this.readyState ?? -1) + 1) {
+  setReadyState(state = (this.readyState ?? -1) + 1, medium) {
     this.readyState = tmg.clamp(0, state, 3);
-    this.fire("tmgreadystatechange", this.payload);
+    this.fire("tmgreadystatechange", this.payload, medium);
   }
   log(mssg, type, action) {
     if (!this.config.debug) return;
@@ -651,7 +650,8 @@ class tmg_Video_Controller {
               Yes = () => (sync(cb, true), assert({ actions: { No } }));
             (sync(cb, val === "auto"), val === "auto" && (id.brand = this.toast?.("Should the brand color change anytime a video loads?", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Yes, No }, onDismis: () => (id.brand = "") })));
           },
-          30
+          30,
+          false
         );
       },
       onTColorChange = ({ target: { value: val } }) => {
@@ -768,6 +768,14 @@ class tmg_Video_Controller {
         tmg.createEl("div", {
           className: "tmg-video-notifier tmg-video-object-fit-contain-notifier",
           innerHTML: `<svg viewBox="0 0 16 16" style="scale: 0.78;"><rect width="16" height="16" rx="4" ry="4" fill="none" stroke-width="2.25" stroke="currentColor"/><g stroke-width="1" stroke="currentColor" transform="translate(3,3)"><path style="scale: 0.6;" d="M521.667563,212.999001 L523.509521,212.999001 C523.784943,212.999001 524,213.222859 524,213.499001 C524,213.767068 523.780405,213.999001 523.509521,213.999001 L520.490479,213.999001 C520.354351,213.999001 520.232969,213.944316 520.145011,213.855661 C520.056625,213.763694 520,213.642369 520,213.508523 L520,210.48948 C520,210.214059 520.223858,209.999001 520.5,209.999001 C520.768066,209.999001 521,210.218596 521,210.48948 L521,212.252351 L525.779724,207.472627 C525.975228,207.277123 526.284966,207.283968 526.480228,207.47923 C526.66978,207.668781 526.678447,207.988118 526.486831,208.179734 L521.667563,212.999001 Z" transform="translate(-520 -198)"/><path style="scale: 0.6;" d="M534.330152,212.999001 L532.488194,212.999001 C532.212773,212.999001 531.997715,213.222859 531.997715,213.499001 C531.997715,213.767068 532.21731,213.999001 532.488194,213.999001 L535.507237,213.999001 C535.643364,213.999001 535.764746,213.944316 535.852704,213.855661 C535.94109,213.763694 535.997715,213.642369 535.997715,213.508523 L535.997715,210.48948 C535.997715,210.214059 535.773858,209.999001 535.497715,209.999001 C535.229649,209.999001 534.997715,210.218596 534.997715,210.48948 L534.997715,212.252351 L530.217991,207.472627 C530.022487,207.277123 529.712749,207.283968 529.517487,207.47923 C529.327935,207.668781 529.319269,207.988118 529.510884,208.179734 L534.330152,212.999001 Z" transform="translate(-520 -198)"/><path style="scale: 0.6;" d="M521.667563,199 L523.509521,199 C523.784943,199 524,198.776142 524,198.5 C524,198.231934 523.780405,198 523.509521,198 L520.490479,198 C520.354351,198 520.232969,198.054685 520.145011,198.14334 C520.056625,198.235308 520,198.356632 520,198.490479 L520,201.509521 C520,201.784943 520.223858,202 520.5,202 C520.768066,202 521,201.780405 521,201.509521 L521,199.74665 L525.779724,204.526374 C525.975228,204.721878 526.284966,204.715034 526.480228,204.519772 C526.66978,204.33022 526.678447,204.010883 526.486831,203.819268 L521.667563,199 Z" transform="translate(-520 -198)"/><path style="scale: 0.6;" d="M534.251065,199 L532.488194,199 C532.212773,199 531.997715,198.776142 531.997715,198.5 C531.997715,198.231934 532.21731,198 532.488194,198 L535.507237,198 C535.643364,198 535.764746,198.054685 535.852704,198.14334 C535.94109,198.235308 535.997715,198.356632 535.997715,198.490479 L535.997715,201.509521 C535.997715,201.784943 535.773858,202 535.497715,202 C535.229649,202 534.997715,201.780405 534.997715,201.509521 L534.997715,199.667563 L530.178448,204.486831 C529.982944,204.682335 529.673206,204.67549 529.477943,204.480228 C529.288392,204.290677 529.279725,203.97134 529.471341,203.779724 L534.251065,199 Z" transform="translate(-520 -198)"/></g></svg><svg class="tmg-video-object-fit-fill-icon" data-control-title="Stretch${k["objectFit"]}" viewBox="0 0 16 16" style="scale: 0.75;"><rect x="4" y="4" width="8" height="8" rx="1" ry="1" fill="none" stroke-width="1.5" stroke="currentColor"/><g stroke-width="1" stroke="currentColor" transform="translate(3, 3)"><path style="scale: 0.65;" d="M521.667563,212.999001 L523.509521,212.999001 C523.784943,212.999001 524,213.222859 524,213.499001 C524,213.767068 523.780405,213.999001 523.509521,213.999001 L520.490479,213.999001 C520.354351,213.999001 520.232969,213.944316 520.145011,213.855661 C520.056625,213.763694 520,213.642369 520,213.508523 L520,210.48948 C520,210.214059 520.223858,209.999001 520.5,209.999001 C520.768066,209.999001 521,210.218596 521,210.48948 L521,212.252351 L525.779724,207.472627 C525.975228,207.277123 526.284966,207.283968 526.480228,207.47923 C526.66978,207.668781 526.678447,207.988118 526.486831,208.179734 L521.667563,212.999001 Z" transform="translate(-520, -198) translate(-3.25, 2.75)" /><path style="scale: 0.65;" d="M534.251065,199 L532.488194,199 C532.212773,199 531.997715,198.776142 531.997715,198.5 C531.997715,198.231934 532.21731,198 532.488194,198 L535.507237,198 C535.643364,198 535.764746,198.054685 535.852704,198.14334 C535.94109,198.235308 535.997715,198.356632 535.997715,198.490479 L535.997715,201.509521 C535.997715,201.784943 535.773858,202 535.497715,202 C535.229649,202 534.997715,201.780405 534.997715,201.509521 L534.997715,199.667563 L530.178448,204.486831 C529.982944,204.682335 529.673206,204.67549 529.477943,204.480228 C529.288392,204.290677 529.279725,203.97134 529.471341,203.779724 L534.251065,199 Z" transform="translate(-520, -198) translate(2.5, -3.25)" /></g></svg>`,
+        }),
+        tmg.createEl("div", {
+          className: "tmg-video-notifier tmg-video-object-fit-cover-notifier",
+          innerHTML: `<svg viewBox="0 0 16 16" style="scale: 0.78;"><rect width="16" height="16" rx="4" ry="4" fill="none" stroke-width="2.25" stroke="currentColor"/><g stroke-width="1" stroke="currentColor" transform="translate(3,3)"><path style="scale: 0.6;" d="M521.667563,212.999001 L523.509521,212.999001 C523.784943,212.999001 524,213.222859 524,213.499001 C524,213.767068 523.780405,213.999001 523.509521,213.999001 L520.490479,213.999001 C520.354351,213.999001 520.232969,213.944316 520.145011,213.855661 C520.056625,213.763694 520,213.642369 520,213.508523 L520,210.48948 C520,210.214059 520.223858,209.999001 520.5,209.999001 C520.768066,209.999001 521,210.218596 521,210.48948 L521,212.252351 L525.779724,207.472627 C525.975228,207.277123 526.284966,207.283968 526.480228,207.47923 C526.66978,207.668781 526.678447,207.988118 526.486831,208.179734 L521.667563,212.999001 Z" transform="translate(-520 -198)"/><path style="scale: 0.6;" d="M534.251065,199 L532.488194,199 C532.212773,199 531.997715,198.776142 531.997715,198.5 C531.997715,198.231934 532.21731,198 532.488194,198 L535.507237,198 C535.643364,198 535.764746,198.054685 535.852704,198.14334 C535.94109,198.235308 535.997715,198.356632 535.997715,198.490479 L535.997715,201.509521 C535.997715,201.784943 535.773858,202 535.497715,202 C535.229649,202 534.997715,201.780405 534.997715,201.509521 L534.997715,199.667563 L530.178448,204.486831 C529.982944,204.682335 529.673206,204.67549 529.477943,204.480228 C529.288392,204.290677 529.279725,203.97134 529.471341,203.779724 L534.251065,199 Z" transform="translate(-520 -198)"/></g></svg>`,
+        }),
+        tmg.createEl("div", {
+          className: "tmg-video-notifier tmg-video-object-fit-fill-notifier",
+          innerHTML: `<svg viewBox="0 0 16 16" style="scale: 0.78;"><rect x="4" y="4" width="8" height="8" rx="1" ry="1" fill="none" stroke-width="1.5" stroke="currentColor"/><g stroke-width="1" stroke="currentColor" transform="translate(3, 3)">  <path style="scale: 0.65;" d="M521.667563,212.999001 L523.509521,212.999001 C523.784943,212.999001 524,213.222859 524,213.499001 C524,213.767068 523.780405,213.999001 523.509521,213.999001 L520.490479,213.999001 C520.354351,213.999001 520.232969,213.944316 520.145011,213.855661 C520.056625,213.763694 520,213.642369 520,213.508523 L520,210.48948 C520,210.214059 520.223858,209.999001 520.5,209.999001 C520.768066,209.999001 521,210.218596 521,210.48948 L521,212.252351 L525.779724,207.472627 C525.975228,207.277123 526.284966,207.283968 526.480228,207.47923 C526.66978,207.668781 526.678447,207.988118 526.486831,208.179734 L521.667563,212.999001 Z" transform="translate(-520, -198) translate(-3.25, 2.75)" /><path style="scale: 0.65;" d="M534.251065,199 L532.488194,199 C532.212773,199 531.997715,198.776142 531.997715,198.5 C531.997715,198.231934 532.21731,198 532.488194,198 L535.507237,198 C535.643364,198 535.764746,198.054685 535.852704,198.14334 C535.94109,198.235308 535.997715,198.356632 535.997715,198.490479 L535.997715,201.509521 C535.997715,201.784943 535.773858,202 535.497715,202 C535.229649,202 534.997715,201.780405 534.997715,201.509521 L534.997715,199.667563 L530.178448,204.486831 C529.982944,204.682335 529.673206,204.67549 529.477943,204.480228 C529.288392,204.290677 529.279725,203.97134 529.471341,203.779724 L534.251065,199 Z" transform="translate(-520, -198) translate(2.5, -3.25)" /></g></svg>`,
         })
       ),
       fwdnotifier: tmg.createEl("div", { className: "tmg-video-notifier tmg-video-fwd-notifier", innerHTML: `<svg viewBox="0 0 25 25"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg viewBox="0 0 25 25"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg viewBox="0 0 25 25"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg>` }),
@@ -818,7 +826,7 @@ class tmg_Video_Controller {
         },
         { draggableControl: "", controlId: "brightness" }
       ),
-      timeandduration: tmg.createEl("button", { className: "tmg-video-time-and-duration-btn", title: `Switch (mode${k["timeMode"]} / DblClick→format${k["timeFormat"]})`, innerHTML: `<div class="tmg-video-current-time">0:00</div><span class="tmg-video-time-bridge">/</span><div class="tmg-video-total-time">-:--</div>` }, { draggableControl: "", controlId: "timeandduration" }),
+      timeandduration: tmg.createEl("button", { className: "tmg-video-time-and-duration-btn", title: `Switch (mode${k["timeMode"]} / DblClick→format${k["timeFormat"]})`, innerHTML: `<div class="tmg-video-current-time">${this.toTimeText(this.video.currentTime)}</div><span class="tmg-video-time-bridge">/</span><div class="tmg-video-total-time">${this.toTimeText(this.video.duration)}</div>` }, { draggableControl: "", controlId: "timeandduration" }),
       playbackrate: tmg.createEl("button", { className: "tmg-video-playback-rate-btn", title: `Playback rate${k["playbackRateUp"]} ↔ DblClick${k["playbackRateDown"]}`, innerText: `${this.settings.playbackRate.value}x` }, { draggableControl: "", controlId: "playbackrate" }),
       captions: tmg.createEl("button", { className: "tmg-video-captions-btn", innerHTML: `<svg viewBox="0 0 25 25" data-control-title="Subtitles${k["captions"]}" class="tmg-video-subtitles-icon"><path style="scale: 0.5;" d="M44,6H4A2,2,0,0,0,2,8V40a2,2,0,0,0,2,2H44a2,2,0,0,0,2-2V8A2,2,0,0,0,44,6ZM12,26h4a2,2,0,0,1,0,4H12a2,2,0,0,1,0-4ZM26,36H12a2,2,0,0,1,0-4H26a2,2,0,0,1,0,4Zm10,0H32a2,2,0,0,1,0-4h4a2,2,0,0,1,0,4Zm0-6H22a2,2,0,0,1,0-4H36a2,2,0,0,1,0,4Z" /></svg><svg viewBox="0 0 25 25" data-control-title="Closed captions${k["captions"]}" class="tmg-video-captions-icon" style="scale: 1.15;"><path d="M18,11H16.5V10.5H14.5V13.5H16.5V13H18V14A1,1 0 0,1 17,15H14A1,1 0 0,1 13,14V10A1,1 0 0,1 14,9H17A1,1 0 0,1 18,10M11,11H9.5V10.5H7.5V13.5H9.5V13H11V14A1,1 0 0,1 10,15H7A1,1 0 0,1 6,14V10A1,1 0 0,1 7,9H10A1,1 0 0,1 11,10M19,4H5C3.89,4 3,4.89 3,6V18A2,2 0 0,0 5,20H19A2,2 0 0,0 21,18V6C21,4.89 20.1,4 19,4Z"></path></svg>` }, { draggableControl: "", controlId: "captions" }),
       settings: tmg.createEl("button", { className: "tmg-video-settings-btn", innerHTML: `<svg class="tmg-video-settings-icon" viewBox="0 -960 960 960" data-control-title="Settings${k["settings"]}"><path d="m370-80-16-128q-13-5-24.5-12T307-235l-119 50L78-375l103-78q-1-7-1-13.5v-27q0-6.5 1-13.5L78-585l110-190 119 50q11-8 23-15t24-12l16-128h220l16 128q13 5 24.5 12t22.5 15l119-50 110 190-103 78q1 7 1 13.5v27q0 6.5-2 13.5l103 78-110 190-118-50q-11 8-23 15t-24 12L590-80H370Zm70-80h79l14-106q31-8 57.5-23.5T639-327l99 41 39-68-86-65q5-14 7-29.5t2-31.5q0-16-2-31.5t-7-29.5l86-65-39-68-99 42q-22-23-48.5-38.5T533-694l-13-106h-79l-14 106q-31 8-57.5 23.5T321-633l-99-41-39 68 86 64q-5 15-7 30t-2 32q0 16 2 31t7 30l-86 65 39 68 99-42q22 23 48.5 38.5T427-266l13 106Zm42-180q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Zm-2-140Z"/></svg>` }, { draggableControl: "", controlId: "settings" }),
@@ -1432,7 +1440,7 @@ class tmg_Video_Controller {
     keys?.forEach((k) => (this.settings.css[k] = (this.loaded ? color : null) ?? this.CSSCache[k]));
   }
   syncMediaSession() {
-    if (!navigator.mediaSession || (tmg._pictureInPictureActive && !this.isUIActive("pictureInPicture"))) return;
+    if (!navigator.mediaSession || (document.pictureInPictureElement && !this.isUIActive("pictureInPicture"))) return;
     if (this.config.media) navigator.mediaSession.metadata = new MediaMetadata(this.config.media);
     const set = (...args) => navigator.mediaSession.setActionHandler(...args);
     (set("play", () => this.togglePlay(true)), set("pause", () => this.togglePlay(false)));
@@ -1720,18 +1728,24 @@ class tmg_Video_Controller {
     }
   }
   _handleTimeUpdate() {
-    const t = { c: this.currentTime, vc: this.video.currentTime, d: this.duration, s: this.settings };
-    if (t.c < t.s.time.min || t.c > t.s.time.max) ((this.currentTime = t.s.time.loop ? t.s.time.min : t.c), !t.s.time.loop && this.togglePlay(false));
-    if (!this.isScrubbing) t.s.css.currentPlayedPosition = t.s.css.currentThumbPosition = tmg.safeNum(t.vc / tmg.safeNum(this.video.duration, 60)); // progress fallback, shouldn't take more than a min for duration to be available
-    this.DOM.currentTimeElement.textContent = this.toTimeText(t.vc, true);
-    if (this.speedCheck && !this.video.paused) this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.toTimeText(t.vc, true));
-    if (this.video.readyState && t.c && Math.floor((t.s.time.end ?? t.d) - t.c) <= t.s.auto.next) this.autonextVideo();
-    if (this.video.readyState && t.c) t.s.time.start = t.c > 3 && t.c < (t.s.time.end ?? t.d) - 3 ? t.c : this.actualTimeStart;
-    if (this.video.readyState && t.c && this.config.playlist) this.config.playlist[this.currentPlaylistIndex].settings.time.start = t.s.time.start;
-    this.DOM.timelineContainer?.setAttribute("aria-valuenow", Math.floor(t.c));
-    this.DOM.timelineContainer?.setAttribute("aria-valuetext", `${tmg.formatMediaTime({ time: t.c, format: "human-long" })} out of ${tmg.formatMediaTime({ time: t.d, format: "human-long" })}`);
-    this.videoContainer.classList.remove("tmg-video-replay");
-    if (!this.settings.captions.disabled) this._handleCaptionsKaraoke();
+    this.throttle(
+      "timeUpdating",
+      () => {
+        const t = { c: this.currentTime, vc: this.video.currentTime, d: this.duration, s: this.settings };
+        if (t.c < t.s.time.min || t.c > t.s.time.max) ((this.currentTime = t.s.time.loop ? t.s.time.min : t.c), !t.s.time.loop && this.togglePlay(false));
+        if (!this.isScrubbing) t.s.css.currentPlayedPosition = t.s.css.currentThumbPosition = tmg.safeNum(t.vc / tmg.safeNum(this.video.duration, 60)); // progress fallback, shouldn't take more than a min for duration to be available
+        this.DOM.currentTimeElement.textContent = this.toTimeText(t.vc, true);
+        if (this.speedCheck && !this.video.paused) this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.toTimeText(t.vc, true));
+        if (this.video.readyState && t.c && Math.floor((t.s.time.end ?? t.d) - t.c) <= t.s.auto.next) this.autonextVideo();
+        if (this.video.readyState && t.c) t.s.time.start = t.c > 3 && t.c < (t.s.time.end ?? t.d) - 3 ? t.c : this.actualTimeStart;
+        if (this.video.readyState && t.c && this.config.playlist) this.config.playlist[this.currentPlaylistIndex].settings.time.start = t.s.time.start;
+        this.DOM.timelineContainer?.setAttribute("aria-valuenow", Math.floor(t.c));
+        this.DOM.timelineContainer?.setAttribute("aria-valuetext", `${tmg.formatMediaTime({ time: t.c, format: "human-long" })} out of ${tmg.formatMediaTime({ time: t.d, format: "human-long" })}`);
+        this.videoContainer.classList.remove("tmg-video-replay");
+        if (!this.settings.captions.disabled) this._handleCaptionsKaraoke();
+      },
+      250
+    );
   }
   toggleTimeMode() {
     this.settings.time.mode = this.settings.time.mode !== "elapsed" ? "elapsed" : "remaining";
@@ -2055,7 +2069,7 @@ class tmg_Video_Controller {
     this.shouldMute = this.shouldSetLastVolume = this.video.muted;
     this.config.on("settings.volume.value", ({ target: { value } }) => {
       const v = tmg.clamp(this.shouldMute ? 0 : this.settings.volume.min, value, this.settings.volume.max);
-      if (this._tmgGainNode) this._tmgGainNode.gain.value = (v / 100) * 2;
+      if (this._tmgGainNode) this._tmgGainNode.gain.setTargetAtTime((v / 100) * 2, tmg.AUDIO_CONTEXT.currentTime, 0.02);
       this.video.muted = this.video.defaultMuted = this.settings.volume.muted = v === 0;
       this._handleVolumeChange(v);
     }); // S.I.A not fully implemented ready
@@ -2316,10 +2330,8 @@ class tmg_Video_Controller {
     this.showOverlay();
     this.toggleMiniplayerMode(false);
     this.syncMediaSession();
-    tmg._pictureInPictureActive = true;
   }
   async _handleLeavePictureInPicture() {
-    tmg._pictureInPictureActive = false;
     await tmg.mockAsync(180); // takes a while before video returns, timeout used to hide the default ui
     this.videoContainer.classList.remove("tmg-video-picture-in-picture");
     this.toggleMiniplayerMode();
@@ -2875,7 +2887,7 @@ class tmg_Media_Player {
   #build = structuredClone(tmg.DEFAULT_VIDEO_BUILD);
   constructor(customBuild = {}) {
     this.Controller = this.#medium = null;
-    this.configure({ ...customBuild, id: customBuild.id ?? tmg.uid() });
+    this.configure({ ...customBuild, id: customBuild.id ?? `${tmg.uid()}_Controller_${tmg.Controllers.length + 1}` });
   }
   get build() {
     return this.#build;
@@ -2919,7 +2931,7 @@ class tmg_Media_Player {
     }
     const customBuild = (await fetchedControls) ?? {},
       attributes = this.#medium.getAttributeNames().filter((attr) => attr.startsWith("tmg--"));
-    attributes?.forEach((attr) => tmg.assignHTMLConfig(customBuild, attr, this.#medium.getAttribute(attr)));
+    attributes?.forEach((attr) => tmg.setHTMLConfig(customBuild, attr, this.#medium.getAttribute(attr)));
     if (this.#medium.poster) this.configure({ "media.artwork[0].src": customBuild.media?.artwork?.[0]?.src ?? this.#medium.poster });
     this.configure(customBuild);
   }
@@ -2937,9 +2949,8 @@ class tmg_Media_Player {
     this.#medium.loop = s.time.loop ??= this.#medium.loop;
     this.#medium.volume = 1; // controller takes over, chill; browser :)
     Object.entries(s.modes).forEach(([k, v]) => (s.modes[k] = v && (tmg[`supports${tmg.capitalize(k)}`]?.() ?? true) ? v : false));
-    this.#build.video = this.#medium;
-    await Promise.all([await tmg.loadResource(TMG_VIDEO_CSS_SRC), await tmg.loadResource(T007_TOAST_JS_SRC, "script", { module: true }), await tmg.loadResource(T007_INPUT_JS_SRC, "script")]); // users should set crossorigin - document.styleSheets
-    tmg.Controllers.push((this.Controller = new tmg.Controller(this.#build)));
+    await Promise.all([tmg.loadResource(TMG_VIDEO_CSS_SRC), tmg.loadResource(T007_TOAST_JS_SRC, "script", { module: true }), tmg.loadResource(T007_INPUT_JS_SRC, "script")]);
+    tmg.Controllers.push((this.Controller = new tmg.Controller(this.#medium, this.#build)));
   }
 }
 
@@ -2948,18 +2959,15 @@ var tmg = {
   ALLOWED_CONTROLS: ["removeMiniplayer", "expandMiniplayer", "bigPrev", "bigPlayPause", "bigNext", "capture", "fullscreenOrientation", "fullscreenLock", "prev", "playPause", "next", "brightness", "volume", "timeAndDuration", "spacer", "playbackRate", "captions", "settings", "objectFit", "pictureInPicture", "theater", "fullscreen"],
   NOTIFIER_EVENTS: ["videoplay", "videopause", "videoprev", "videonext", "playbackrateup", "playbackratedown", "volumeup", "volumedown", "volumemuted", "brightnessup", "brightnessdown", "brightnessdark", "objectfitcontain", "objectfitcover", "objectfitfill", "captions", "capture", "theater", "fullscreen", "fwd", "bwd"],
   WHITE_LISTED_KEYS: [" ", "Enter", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].map((k) => k.toLowerCase()),
-  _resourceCache: {},
-  _isDocTransient: false,
-  _audioContext: null,
-  _internalMutationSet: new WeakSet(),
-  _internalMutationId: null,
-  _currentAudioGainNode: null,
+  IS_DOC_TRANSIENT: false,
+  AUDIO_CONTEXT: null,
+  _mutationSet: new WeakSet(),
+  _mutationId: null,
   _currentFullscreenController: null,
-  _pictureInPictureActive: false,
-  activateInternalMutation: (m, check = true) => !tmg._internalMutationSet.has(m) && check && tmg._internalMutationSet.add(m),
-  deactivateInternalMutation(m) {
-    clearTimeout(tmg._internalMutationId);
-    tmg._internalMutationId = setTimeout(() => !(tmg._internalMutationId = null) && tmg._internalMutationSet.delete(m));
+  flagMutation: (m, check = true) => !tmg._mutationSet.has(m) && check && tmg._mutationSet.add(m),
+  freeMutation(m) {
+    clearTimeout(tmg._mutationId);
+    tmg._mutationId = setTimeout(() => !(tmg._mutationId = null) && tmg._mutationSet.delete(m));
   },
   mountMedia() {
     Object.defineProperty(HTMLVideoElement.prototype, "tmgcontrols", {
@@ -2968,15 +2976,15 @@ var tmg = {
       },
       set: async function (value) {
         if (value) {
-          tmg.activateInternalMutation(this);
+          tmg.flagMutation(this);
           await (this.tmgPlayer || new tmg.Player()).attach(this);
           this.setAttribute("tmgcontrols", "");
-          tmg.deactivateInternalMutation(this);
+          tmg.freeMutation(this);
         } else {
-          tmg.activateInternalMutation(this, this.hasAttribute("tmgcontrols"));
+          tmg.flagMutation(this, this.hasAttribute("tmgcontrols"));
           this.removeAttribute("tmgcontrols");
           this.tmgPlayer?.detach();
-          tmg.deactivateInternalMutation(this);
+          tmg.freeMutation(this);
         }
       },
       enumerable: true,
@@ -2986,7 +2994,7 @@ var tmg = {
   unmountMedia: () => delete HTMLVideoElement.prototype.tmgcontrols,
   init() {
     tmg.mountMedia();
-    ["click", "pointerdown", "keydown"].forEach((e) => document.addEventListener(e, () => ((tmg._isDocTransient = true), tmg.startAudioManager()), true));
+    ["click", "pointerdown", "keydown"].forEach((e) => document.addEventListener(e, () => ((tmg.IS_DOC_TRANSIENT = true), tmg.startAudioManager()), true));
     for (const medium of document.querySelectorAll("video")) {
       tmg.VIDMutationObserver.observe(medium, { attributes: true });
       medium.tmgcontrols = medium.hasAttribute("tmgcontrols");
@@ -3015,7 +3023,7 @@ var tmg = {
     new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         if (mutation.type !== "attributes") continue;
-        if (mutation.attributeName === "tmgcontrols") !tmg._internalMutationSet.has(mutation.target) && (mutation.target.tmgcontrols = mutation.target.hasAttribute("tmgcontrols"));
+        if (mutation.attributeName === "tmgcontrols") !tmg._mutationSet.has(mutation.target) && (mutation.target.tmgcontrols = mutation.target.hasAttribute("tmgcontrols"));
         else if (mutation.attributeName?.startsWith("tmg")) mutation.target.hasAttribute(mutation.attributeName) && mutation.target.tmgPlayer?.fetchCustomOptions();
         else if (mutation.attributeName === "controls") mutation.target.hasAttribute("tmgcontrols") && mutation.target.removeAttribute("controls");
       }
@@ -3042,40 +3050,45 @@ var tmg = {
   _handleVisibilityChange: () => tmg.Controllers?.forEach((c) => c._handleVisibilityChange()),
   _handleFullscreenChange: () => tmg._currentFullscreenController?._handleFullscreenChange(),
   startAudioManager() {
-    if (!tmg._audioContext && tmg._isDocTransient) {
-      tmg._audioContext = new (AudioContext || webkitAudioContext)();
-      const L = (tmg._limiter = tmg._audioContext.createDynamicsCompressor());
+    if (!tmg.AUDIO_CONTEXT && tmg.IS_DOC_TRANSIENT) {
+      tmg.AUDIO_CONTEXT = new (AudioContext || webkitAudioContext)();
+      const L = (tmg._limiter = tmg.AUDIO_CONTEXT.createDynamicsCompressor());
       ((L.threshold.value = -1.0), (L.knee.value = 0.0), (L.ratio.value = 20), (L.attack.value = 0.001), (L.release.value = 0.05));
       tmg.Controllers?.forEach((c) => c.setUpAudio());
-    } else if (tmg._audioContext?.state === "suspended") tmg._audioContext.resume();
+    } else if (tmg.AUDIO_CONTEXT?.state === "suspended") tmg.AUDIO_CONTEXT.resume();
   },
   connectMediaToAudioManager(medium) {
-    if (!tmg._audioContext) return "unavailable";
-    medium.mediaElementSourceNode ??= tmg._audioContext.createMediaElementSource(medium);
-    medium._tmgGainNode ??= tmg._audioContext.createGain();
-    medium._tmgDynamicsCompressorNode ??= tmg._audioContext.createDynamicsCompressor();
+    if (!tmg.AUDIO_CONTEXT) return "unavailable";
+    medium.mediaElementSourceNode ??= tmg.AUDIO_CONTEXT.createMediaElementSource(medium);
+    medium._tmgGainNode ??= tmg.AUDIO_CONTEXT.createGain();
+    medium._tmgDynamicsCompressorNode ??= tmg.AUDIO_CONTEXT.createDynamicsCompressor();
     medium.mediaElementSourceNode.connect(medium._tmgDynamicsCompressorNode);
     medium._tmgDynamicsCompressorNode.connect(medium._tmgGainNode);
     medium._tmgGainNode.connect(tmg._limiter);
-    tmg._limiter.connect(tmg._audioContext.destination); // Routing chain: source → compressor → gain → limiter → destination
+    tmg._limiter.connect(tmg.AUDIO_CONTEXT.destination); // Routing chain: source → compressor → gain → limiter → destination
   },
   queryMediaMobile: (strict = true) => (strict ? /Mobi|Android|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent) : matchMedia("(max-width: 480px), (max-width: 940px) and (max-height: 480px) and (orientation: landscape)").matches),
   queryFullscreen: () => !!(document.fullscreenElement || document.fullscreen || document.webkitIsFullscreen || document.mozFullscreen || document.msFullscreenElement),
   supportsFullscreen: () => !!(document.fullscreenEnabled || document.mozFullscreenEnabled || document.msFullscreenEnabled || document.webkitFullscreenEnabled || document.webkitSupportsFullscreen || HTMLVideoElement.prototype.webkitEnterFullscreen),
   supportsPictureInPicture: () => !!(document.pictureInPictureEnabled || HTMLVideoElement.prototype.requestPictureInPicture || window.documentPictureInPicture),
-  loadResource(src, type = "style", { module, media, crossOrigin, integrity } = {}) {
-    if (tmg._resourceCache[src]) return tmg._resourceCache[src];
+  loadResource(src, type = "style", { module, media, crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, attempts = 3, retryKey = false } = {}) {
+    ((window.t007 ??= {}), (t007._resourceCache ??= {}));
+    if (t007._resourceCache[src]) return t007._resourceCache[src];
     if (type === "script" ? Array.prototype.some.call(document.scripts, (s) => tmg.isSameURL(s.src, src)) : type === "style" ? Array.prototype.some.call(document.styleSheets, (s) => tmg.isSameURL(s.href, src)) : false) return Promise.resolve();
-    tmg._resourceCache[src] = new Promise((resolve, reject) => {
-      if (type === "script") {
-        const script = tmg.createEl("script", { src, type: module ? "module" : "text/javascript", crossOrigin, integrity, onload: () => resolve(script), onerror: () => reject(new Error(`Script load error: ${src}`)) });
-        document.body.append(script);
-      } else if (type === "style") {
-        const link = tmg.createEl("link", { rel: "stylesheet", href: src, media, onload: () => resolve(link), onerror: () => reject(new Error(`Stylesheet load error: ${src}`)) });
-        document.head.append(link);
-      } else reject(new Error(`Unsupported resource type: ${type}`));
+    t007._resourceCache[src] = new Promise((resolve, reject) => {
+      (function tryLoad(remaining, el) {
+        const onerror = () => {
+          el?.remove(); // Remove failed element before retry
+          if (remaining > 1) (setTimeout(tryLoad, 1000, remaining - 1), console.warn(`Retrying ${type} load (${attempts - remaining + 1}): ${src}...`));
+          else (delete t007._resourceCache[src], reject(new Error(`${type} load failed after ${attempts} attempts: ${src}`))); // Final fail: clear cache so user can manually retry
+        };
+        const url = retryKey && remaining < attempts ? `${src}${src.includes("?") ? "&" : "?"}_${retryKey}=${Date.now()}` : src;
+        if (type === "script") document.body.append((el = tmg.createEl("script", { src: url, type: module ? "module" : "text/javascript", crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, onload: () => resolve(el), onerror })));
+        else if (type === "style") document.head.append((el = tmg.createEl("link", { rel: "stylesheet", href: url, media, crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, onload: () => resolve(el), onerror })));
+        else reject(new Error(`Unsupported resource type: ${type}`));
+      })(attempts);
     });
-    return tmg._resourceCache[src];
+    return t007._resourceCache[src];
   },
   isSameURL(src1, src2) {
     if ("string" !== typeof src1 || "string" !== typeof src2 || !src1 || !src2) return false;
@@ -3230,8 +3243,7 @@ var tmg = {
       inY = rect.bottom >= 0 && rect.top <= (window.innerHeight || document.documentElement.clientHeight);
     return axis === "x" ? inY : axis === "y" ? inX : inY && inX;
   },
-  assignDef: (target, key, value) => tmg.isDef(value) && target != null && tmg.setAny(target, key, value),
-  assignHTMLConfig(target, attr, value) {
+  setHTMLConfig(target, attr, value) {
     value = value.trim();
     const path = attr.replace("tmg--", "");
     const parsedValue = (() => {
@@ -3491,9 +3503,9 @@ var tmg = {
   },
   createEl(tag, props = {}, dataset = {}, styles = {}) {
     const el = tag ? document.createElement(tag) : null;
-    el && Object.entries(props).forEach(([k, v]) => tmg.assignDef(el, k, v));
-    el && Object.entries(dataset).forEach(([k, v]) => tmg.assignDef(el.dataset, k, v));
-    el && Object.entries(styles).forEach(([k, v]) => tmg.assignDef(el.style, k, v));
+    for (const k of Object.keys(props)) if (el && props[k] !== undefined) el[k] = props[k];
+    for (const k of Object.keys(dataset)) if (el && dataset[k] !== undefined) el.dataset[k] = dataset[k];
+    for (const k of Object.keys(styles)) if (el && styles[k] !== undefined) el.style[k] = styles[k];
     return el;
   },
   cloneVideo(v) {
@@ -3724,9 +3736,9 @@ var tmg = {
     return tmg.isArr(required) ? required.some((req) => match(req, actual)) : match(required, actual);
   },
   formatKeyForDisplay: (combo) => ` ${(tmg.isArr(combo) ? combo : [combo]).map((c) => `(${c})`).join(" or ")}`,
-  AsyncQueue: class T_M_G_Async_Queue {
+  AsyncQueue: class AsyncQueue {
     constructor() {
-      ((this.jobs = []), (this.running = false)); // add jobs, performs and reports sequentially; drop job, reports; cancel job, records, reports when about to perform
+      ((this.jobs = []), (this.running = false)); // add jobs, performs and reports sequentially; drop job: reports; cancel job: records, reports when about to perform
     }
     async _handle() {
       if (this.running) return;
@@ -3983,10 +3995,11 @@ if (typeof window !== "undefined") {
   }; // for a playlist
   window.TMG_VIDEO_ALT_IMG_SRC ??= "/TMG_MEDIA_PROTOTYPE/assets/icons/movie-tape.png";
   window.TMG_VIDEO_CSS_SRC ??= "/TMG_MEDIA_PROTOTYPE/prototype-3/prototype-3-video.css";
+  window.T007_TOAST_CSS_SRC ??= "/T007_TOOLS/T007_toast_library/T007_toast.css";
   window.T007_TOAST_JS_SRC ??= "/T007_TOOLS/T007_toast_library/T007_toast.js";
   window.T007_INPUT_CSS_SRC ??= "/T007_TOOLS/T007_input_library/T007_input.css";
   window.T007_INPUT_JS_SRC ??= "/T007_TOOLS/T007_input_library/T007_input.js";
-  (tmg.loadResource(TMG_VIDEO_CSS_SRC), tmg.loadResource(T007_TOAST_JS_SRC, "script", { module: true }));
+  (tmg.loadResource(TMG_VIDEO_CSS_SRC), tmg.loadResource(T007_TOAST_JS_SRC, "script", { module: true }), tmg.loadResource(T007_INPUT_JS_SRC, "script"));
   tmg.init();
   console.log("%cTMG Media Player Available", "color: darkturquoise");
 } else {

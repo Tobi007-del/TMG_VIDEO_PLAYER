@@ -31,15 +31,15 @@ var T007_Form_Manager = {
     const update = () => {
       const hasInteractive = !!parent.querySelector('button, a[href], input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])');
       if (horizontal) {
-        const w = assist.left?.offsetWidth || assistWidth;
-        const check = hasInteractive ? el.clientWidth < w * 2 : false;
+        const w = assist.left?.offsetWidth || assistWidth,
+          check = hasInteractive ? el.clientWidth < w * 2 : false;
         assist.left.style.display = check ? "none" : el.scrollLeft > 0 ? "block" : "none";
         assist.right.style.display = check ? "none" : el.scrollLeft + el.clientWidth < el.scrollWidth - 1 ? "block" : "none";
         assistWidth = w;
       }
       if (vertical) {
-        const h = assist.up?.offsetHeight || assistHeight;
-        const check = hasInteractive ? el.clientHeight < h * 2 : false;
+        const h = assist.up?.offsetHeight || assistHeight,
+          check = hasInteractive ? el.clientHeight < h * 2 : false;
         assist.up.style.display = check ? "none" : el.scrollTop > 0 ? "block" : "none";
         assist.down.style.display = check ? "none" : el.scrollTop + el.clientHeight < el.scrollHeight - 1 ? "block" : "none";
         assistHeight = h;
@@ -62,8 +62,7 @@ var T007_Form_Manager = {
     };
     const stop = () => (cancelAnimationFrame(scrollId), (scrollId = null));
     const addAssist = (dir) => {
-      const div = Object.assign(document.createElement("div"), { className: assistClassName, style: "display:none" });
-      div.dataset.scrollDirection = dir;
+      const div = createEl("div", { className: assistClassName }, { scrollDirection: dir }, { display: "none" });
       ["pointerenter", "dragenter"].forEach((e) => div.addEventListener(e, () => scroll(dir)));
       ["pointerleave", "pointerup", "pointercancel", "dragleave", "dragend"].forEach((e) => div.addEventListener(e, stop));
       (dir === "left" || dir === "up" ? parent.insertBefore : parent.append).call(parent, div, el);
@@ -141,10 +140,7 @@ var T007_Form_Manager = {
   setFallbackHelper(field) {
     const helperTextWrapper = field?.querySelector(".t007-input-helper-text-wrapper");
     if (!helperTextWrapper || helperTextWrapper.querySelector(".t007-input-helper-text[data-violation='auto']")) return;
-    const el = document.createElement("p");
-    el.className = "t007-input-helper-text";
-    el.setAttribute("data-violation", "auto");
-    helperTextWrapper.append(el);
+    helperTextWrapper.append(createEl("p", { className: "t007-input-helper-text" }, { violation: "auto" }));
   },
   setFieldListeners(field) {
     if (!field) return;
@@ -170,8 +166,8 @@ var T007_Form_Manager = {
         if (file?.type?.startsWith("image")) src = URL.createObjectURL(file);
         else if (file?.type?.startsWith("video")) {
           src = await new Promise((resolve) => {
-            let video = document.createElement("video"),
-              canvas = document.createElement("canvas"),
+            let video = createEl("video"),
+              canvas = createEl("canvas"),
               context = canvas.getContext("2d");
             video.ontimeupdate = () => {
               context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
@@ -202,13 +198,11 @@ var T007_Form_Manager = {
     field.dataset.setUp = "true";
   },
   createField({ isWrapper = false, label = "", type = "text", placeholder = "", custom = "", minSize, maxSize, minTotalSize, maxTotalSize, options = [], indeterminate = false, eyeToggler = true, passwordMeter = true, helperText = {}, className = "", fieldClassName = "", children, startIcon = "", endIcon = "", nativeIcon = "", passwordVisibleIcon = "", passwordHiddenIcon = "", ...otherProps }) {
-    const isSelect = type === "select";
-    const isTextArea = type === "textarea";
-    const isCheckboxOrRadio = type === "checkbox" || type === "radio";
-    const field = document.createElement("div");
-    field.className = `t007-input-field${isWrapper ? " t007-input-is-wrapper" : ""}${indeterminate ? " t007-input-indeterminate" : ""}${!!nativeIcon ? " t007-input-icon-override" : ""}${helperText === false ? " t007-input-no-helper" : ""}${fieldClassName ? ` ${fieldClassName}` : ""}`;
-    const labelEl = document.createElement("label");
-    labelEl.className = isCheckboxOrRadio ? `t007-input-${type}-wrapper` : "t007-input-wrapper";
+    const isSelect = type === "select",
+      isTextArea = type === "textarea",
+      isCheckboxOrRadio = type === "checkbox" || type === "radio",
+      field = createEl("div", { className: `t007-input-field${isWrapper ? " t007-input-is-wrapper" : ""}${indeterminate ? " t007-input-indeterminate" : ""}${!!nativeIcon ? " t007-input-icon-override" : ""}${helperText === false ? " t007-input-no-helper" : ""}${fieldClassName ? ` ${fieldClassName}` : ""}` }),
+      labelEl = createEl("label", { className: isCheckboxOrRadio ? `t007-input-${type}-wrapper` : "t007-input-wrapper" });
     field.append(labelEl);
     if (isCheckboxOrRadio) {
       labelEl.innerHTML = `
@@ -218,8 +212,7 @@ var T007_Form_Manager = {
         <span class="t007-input-${type}-label">${label}</span>
       `;
     } else {
-      const outline = document.createElement("span");
-      outline.className = "t007-input-outline";
+      const outline = createEl("span", { className: "t007-input-outline" });
       outline.innerHTML = `
         <span class="t007-input-outline-leading"></span>
         <span class="t007-input-outline-notch">
@@ -229,12 +222,10 @@ var T007_Form_Manager = {
       `;
       labelEl.append(outline);
     }
-    const inputEl = (field.inputEl = document.createElement(isTextArea ? "textarea" : isSelect ? "select" : "input")); // You're welcome :)
+    const inputEl = (field.inputEl = createEl(isTextArea ? "textarea" : isSelect ? "select" : "input", { className: `t007-input${className ? ` ${className}` : ""}`, placeholder })); // You're welcome :)
     // Insert options if select
     if (isSelect && Array.isArray(options)) inputEl.innerHTML = options.map((opt) => (typeof opt === "string" ? `<option value="${opt}">${opt}</option>` : `<option value="${opt.value}">${opt.option}</option>`)).join("");
-    inputEl.className = `t007-input${className ? ` ${className}` : ""}`;
     if (!isSelect && !isTextArea) inputEl.type = type;
-    inputEl.placeholder = placeholder;
     if (custom) inputEl.setAttribute("custom", custom);
     if (minSize) inputEl.setAttribute("minsize", minSize);
     if (maxSize) inputEl.setAttribute("maxsize", maxSize);
@@ -246,73 +237,27 @@ var T007_Form_Manager = {
     labelEl.append(!isWrapper ? inputEl : children);
     // Native or end icon for date/time/month/datetime-local
     const nativeTypes = ["date", "time", "month", "datetime-local"];
-    if (nativeTypes.includes(type) && nativeIcon) {
-      const icon = document.createElement("i");
-      icon.className = "t007-input-icon";
-      icon.innerHTML = nativeIcon;
-      labelEl.append(icon);
-    } else if (endIcon) {
-      const icon = document.createElement("i");
-      icon.className = "t007-input-icon";
-      icon.innerHTML = endIcon;
-      labelEl.append(icon);
-    }
+    if (nativeTypes.includes(type) && nativeIcon) labelEl.append(createEl("i", { className: "t007-input-icon t007-input-native-icon", innerHTML: nativeIcon }));
+    else if (endIcon) labelEl.append(createEl("i", { className: "t007-input-icon", innerHTML: endIcon }));
     // Password toggle eye icons
     if (type === "password" && eyeToggler) {
-      const visibleIcon = document.createElement("i");
-      visibleIcon.className = "t007-input-icon t007-input-password-visible-icon";
-      visibleIcon.setAttribute("aria-label", "Show password");
-      visibleIcon.setAttribute("role", "button");
-      visibleIcon.innerHTML =
-        passwordVisibleIcon ||
-        /* Default open eye SVG */
-        `<svg width="24" height="24"><path fill="rgba(0,0,0,.54)" d="M12 16q1.875 0 3.188-1.312Q16.5 13.375 16.5 11.5q0-1.875-1.312-3.188Q13.875 7 12 7q-1.875 0-3.188 1.312Q7.5 9.625 7.5 11.5q0 1.875 1.312 3.188Q10.125 16 12 16Zm0-1.8q-1.125 0-1.912-.788Q9.3 12.625 9.3 11.5t.788-1.913Q10.875 8.8 12 8.8t1.913.787q.787.788.787 1.913t-.787 1.912q-.788.788-1.913.788Zm0 4.8q-3.65 0-6.65-2.038-3-2.037-4.35-5.462 1.35-3.425 4.35-5.463Q8.35 4 12 4q3.65 0 6.65 2.037 3 2.038 4.35 5.463-1.35 3.425-4.35 5.462Q15.65 19 12 19Z"/></svg>`;
-      labelEl.append(visibleIcon);
-      const hiddenIcon = document.createElement("i");
-      hiddenIcon.className = "t007-input-icon t007-input-password-hidden-icon";
-      hiddenIcon.setAttribute("aria-label", "Hide password");
-      hiddenIcon.setAttribute("role", "button");
-      hiddenIcon.innerHTML =
-        passwordHiddenIcon ||
-        /* Default closed eye SVG */
-        `<svg width="24" height="24"><path fill="rgba(0,0,0,.54)" d="m19.8 22.6-4.2-4.15q-.875.275-1.762.413Q12.95 19 12 19q-3.775 0-6.725-2.087Q2.325 14.825 1 11.5q.525-1.325 1.325-2.463Q3.125 7.9 4.15 7L1.4 4.2l1.4-1.4 18.4 18.4ZM12 16q.275 0 .512-.025.238-.025.513-.1l-5.4-5.4q-.075.275-.1.513-.025.237-.025.512 0 1.875 1.312 3.188Q10.125 16 12 16Zm7.3.45-3.175-3.15q.175-.425.275-.862.1-.438.1-.938 0-1.875-1.312-3.188Q13.875 7 12 7q-.5 0-.938.1-.437.1-.862.3L7.65 4.85q1.025-.425 2.1-.638Q10.825 4 12 4q3.775 0 6.725 2.087Q21.675 8.175 23 11.5q-.575 1.475-1.512 2.738Q20.55 15.5 19.3 16.45Zm-4.625-4.6-3-3q.7-.125 1.288.112.587.238 1.012.688.425.45.613 1.038.187.587.087 1.162Z"/></svg>`;
-      labelEl.append(hiddenIcon);
+      labelEl.append(createEl("i", { role: "button", ariaLabel: "Show password", className: "t007-input-icon t007-input-password-visible-icon", innerHTML: passwordVisibleIcon || `<svg width="24" height="24"><path fill="rgba(0,0,0,.54)" d="M12 16q1.875 0 3.188-1.312Q16.5 13.375 16.5 11.5q0-1.875-1.312-3.188Q13.875 7 12 7q-1.875 0-3.188 1.312Q7.5 9.625 7.5 11.5q0 1.875 1.312 3.188Q10.125 16 12 16Zm0-1.8q-1.125 0-1.912-.788Q9.3 12.625 9.3 11.5t.788-1.913Q10.875 8.8 12 8.8t1.913.787q.787.788.787 1.913t-.787 1.912q-.788.788-1.913.788Zm0 4.8q-3.65 0-6.65-2.038-3-2.037-4.35-5.462 1.35-3.425 4.35-5.463Q8.35 4 12 4q3.65 0 6.65 2.037 3 2.038 4.35 5.463-1.35 3.425-4.35 5.462Q15.65 19 12 19Z"/></svg>` }));
+      labelEl.append(createEl("i", { role: "button", ariaLabel: "Hide password", className: "t007-input-icon t007-input-password-hidden-icon", innerHTML: passwordHiddenIcon || `<svg width="24" height="24"><path fill="rgba(0,0,0,.54)" d="m19.8 22.6-4.2-4.15q-.875.275-1.762.413Q12.95 19 12 19q-3.775 0-6.725-2.087Q2.325 14.825 1 11.5q.525-1.325 1.325-2.463Q3.125 7.9 4.15 7L1.4 4.2l1.4-1.4 18.4 18.4ZM12 16q.275 0 .512-.025.238-.025.513-.1l-5.4-5.4q-.075.275-.1.513-.025.237-.025.512 0 1.875 1.312 3.188Q10.125 16 12 16Zm7.3.45-3.175-3.15q.175-.425.275-.862.1-.438.1-.938 0-1.875-1.312-3.188Q13.875 7 12 7q-.5 0-.938.1-.437.1-.862.3L7.65 4.85q1.025-.425 2.1-.638Q10.825 4 12 4q3.775 0 6.725 2.087Q21.675 8.175 23 11.5q-.575 1.475-1.512 2.738Q20.55 15.5 19.3 16.45Zm-4.625-4.6-3-3q.7-.125 1.288.112.587.238 1.012.688.425.45.613 1.038.187.587.087 1.162Z"/></svg>` }));
     }
     // Helper line
     if (helperText !== false) {
-      const helperLine = document.createElement("div");
-      helperLine.className = "t007-input-helper-line";
-      const helperWrapper = document.createElement("div");
-      helperWrapper.className = "t007-input-helper-text-wrapper";
-      helperWrapper.tabIndex = "-1";
+      const helperLine = createEl("div", { className: "t007-input-helper-line" }),
+        helperWrapper = createEl("div", { className: "t007-input-helper-text-wrapper", tabIndex: "-1" });
       // Info text
-      if (helperText.info) {
-        const info = document.createElement("p");
-        info.className = "t007-input-helper-text";
-        info.setAttribute("data-violation", "none");
-        info.textContent = helperText.info;
-        helperWrapper.append(info);
-      }
+      if (helperText.info) helperWrapper.append(createEl("p", { className: "t007-input-helper-text", textContent: helperText.info }, { violation: "none" }));
       // Violation texts
-      if (typeof window !== "undefined" && t007.FM?.violationKeys) {
-        t007.FM.violationKeys.forEach((key) => {
-          if (!helperText[key]) return;
-          const el = document.createElement("p");
-          el.className = "t007-input-helper-text";
-          el.setAttribute("data-violation", "t007-input-error");
-          el.setAttribute("data-violation", key);
-          el.textContent = helperText[key];
-          helperWrapper.append(el);
-        });
-      }
+      t007.FM?.violationKeys?.forEach((key) => helperText[key] && helperWrapper.append(createEl("p", { className: "t007-input-helper-text", textContent: helperText[key] }, { violation: key })));
       helperLine.append(helperWrapper);
       field.append(helperLine);
     }
     // Password strength meter
     if (passwordMeter && type === "password") {
-      const meter = document.createElement("div");
-      meter.className = "t007-input-password-meter";
-      meter.dataset.strengthLevel = "1";
+      const meter = createEl("div", { className: "t007-input-password-meter" }, { strengthLevel: "1" });
       meter.innerHTML = `
         <div class="t007-input-password-strength-meter">
           <div class="t007-input-p-weak"></div>
@@ -478,7 +423,14 @@ if (typeof window !== "undefined") {
   t007.FM.init();
 }
 
-// prettier-ignore
+// UTILS
+function createEl(tag, props = {}, dataset = {}, styles = {}) {
+  const el = tag ? document.createElement(tag) : null;
+  for (const k of Object.keys(props)) if (el && props[k] !== undefined) el[k] = props[k];
+  for (const k of Object.keys(dataset)) if (el && dataset[k] !== undefined) el.dataset[k] = dataset[k];
+  for (const k of Object.keys(styles)) if (el && styles[k] !== undefined) el.style[k] = styles[k];
+  return el;
+}
 function isSameURL(src1, src2) {
   if (typeof src1 !== "string" || typeof src2 !== "string" || !src1 || !src2) return false;
   try {
@@ -489,21 +441,22 @@ function isSameURL(src1, src2) {
     return src1.replace(/\\/g, "/").split("?")[0].trim() === src2.replace(/\\/g, "/").split("?")[0].trim();
   }
 }
-// prettier-ignore
-function loadResource(src, type = "style", { module, media, crossOrigin, integrity } = {}) {
+function loadResource(src, type = "style", { module, media, crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, attempts = 3, retryKey = false } = {}) {
+  ((window.t007 ??= {}), (t007._resourceCache ??= {}));
   if (t007._resourceCache[src]) return t007._resourceCache[src];
-  if (type === "script" ? [...document.scripts].some((s) => isSameURL(s.src, src)) : type === "style" ? [...document.styleSheets].some((s) => isSameURL(s.href, src)) : false) return Promise.resolve();
+  if (type === "script" ? Array.prototype.some.call(document.scripts, (s) => isSameURL(s.src, src)) : type === "style" ? Array.prototype.some.call(document.styleSheets, (s) => isSameURL(s.href, src)) : false) return Promise.resolve();
   t007._resourceCache[src] = new Promise((resolve, reject) => {
-    if (type === "script") {
-      const script = Object.assign(document.createElement("script"), { src, type: module ? "module" : "text/javascript", onload: () => resolve(script), onerror: () => reject(new Error(`Script load error: ${src}`)) });
-      if (crossOrigin) script.crossOrigin = crossOrigin;
-      if (integrity) script.integrity = integrity;
-      document.body.append(script);
-    } else if (type === "style") {
-      const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href: src, onload: () => resolve(link), onerror: () => reject(new Error(`Stylesheet load error: ${src}`)) });
-      if (media) link.media = media;
-      document.head.append(link);
-    } else reject(new Error(`Unsupported type: ${type}`));
+    (function tryLoad(remaining, el) {
+      const onerror = () => {
+        el?.remove(); // Remove failed element before retry
+        if (remaining > 1) (setTimeout(tryLoad, 1000, remaining - 1), console.warn(`Retrying ${type} load (${attempts - remaining + 1}): ${src}...`));
+        else (delete t007._resourceCache[src], reject(new Error(`${type} load failed after ${attempts} attempts: ${src}`))); // Final fail: clear cache so user can manually retry
+      };
+      const url = retryKey && remaining < attempts ? `${src}${src.includes("?") ? "&" : "?"}_${retryKey}=${Date.now()}` : src;
+      if (type === "script") document.body.append((el = createEl("script", { src: url, type: module ? "module" : "text/javascript", crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, onload: () => resolve(el), onerror })));
+      else if (type === "style") document.head.append((el = createEl("link", { rel: "stylesheet", href: url, media, crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, onload: () => resolve(el), onerror })));
+      else reject(new Error(`Unsupported resource type: ${type}`));
+    })(attempts);
   });
   return t007._resourceCache[src];
 }
