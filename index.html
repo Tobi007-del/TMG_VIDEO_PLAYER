@@ -192,7 +192,7 @@
       document.body.classList.toggle("no-folders-pick", !("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker" in window && /Mobi|Android|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent))); // dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data
       document.body.classList.toggle("no-videos-pick", !("files" in HTMLInputElement.prototype));
       var _lssk = "TVP_last_session_state"; // localStorage session key
-      var setColors = (brand = "rgb(226, 110, 2)", theme = "white") => {
+      var setColors = (brand = "#e26e02", theme = "#ffffff") => {
         brand && document.documentElement.style.setProperty("--T_M_G-brand-color", brand);
         theme && document.documentElement.style.setProperty("--T_M_G-theme-color", theme);
       }; // now to stop stored settings colors from flashing

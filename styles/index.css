@@ -11,10 +11,10 @@
 }
 
 :root {
-  --T_M_G-brand-color: rgb(226, 110, 2);
+  --T_M_G-brand-color: #e26e02;
   --T_M_G-brand-light-color: hsl(from var(--T_M_G-brand-color) h s calc(l + 40));
   --T_M_G-brand-accent-color: rgb(from var(--T_M_G-brand-color) calc(r + 18) calc(g + 33) calc(b + 175));
-  --T_M_G-theme-color: white;
+  --T_M_G-theme-color: #ffffff;
   --T_M_G-theme-light-color: rgb(from var(--T_M_G-theme-color) calc(r - 40) calc(g - 40) calc(b - 40));
   --T_M_G-theme-accent-color: rgb(from var(--T_M_G-theme-color) calc(r - 130) calc(g - 130) calc(b - 130));
   --T_M_G-theme-accent-2-color: rgb(from var(--T_M_G-theme-color) calc(r - 100) calc(g - 100) calc(b - 100));
