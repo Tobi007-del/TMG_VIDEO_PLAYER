@@ -1,4 +1,4 @@
-@property --T_M_G-brand-color {
+@property --tmg-brand-color {
   syntax: "<color>";
   initial-value: rgb(226, 110, 2);
   inherits: true;
@@ -11,18 +11,18 @@
 }
 
 :root {
-  --T_M_G-brand-color: #e26e02;
-  --T_M_G-brand-light-color: hsl(from var(--T_M_G-brand-color) h s calc(l + 40));
-  --T_M_G-brand-accent-color: rgb(from var(--T_M_G-brand-color) calc(r + 18) calc(g + 33) calc(b + 175));
-  --T_M_G-theme-color: #ffffff;
-  --T_M_G-theme-light-color: rgb(from var(--T_M_G-theme-color) calc(r - 40) calc(g - 40) calc(b - 40));
-  --T_M_G-theme-accent-color: rgb(from var(--T_M_G-theme-color) calc(r - 130) calc(g - 130) calc(b - 130));
-  --T_M_G-theme-accent-2-color: rgb(from var(--T_M_G-theme-color) calc(r - 100) calc(g - 100) calc(b - 100));
-  --T_M_G-theme-inverse-color: black;
-  --T_M_G-theme-dark-color: rgb(from var(--T_M_G-theme-inverse-color) calc(r + 11) calc(g + 16) calc(b + 18));
-  --T_M_G-theme-shadow-color: rgb(from var(--T_M_G-theme-dark-color) r g b / 0.9);
-  --T_M_G-theme-shadow-2-color: rgb(from var(--T_M_G-theme-inverse-color) calc(r + 27) calc(g + 38) calc(b + 74) / 0.751);
-  --T_M_G-theme-shadow-3-color: rgb(from var(--T_M_G-theme-inverse-color) calc(r + 92) calc(g + 128) calc(b + 247) / 0.33);
+  --tmg-brand-color: #e26e02;
+  --tmg-brand-light-color: hsl(from var(--tmg-brand-color) h s calc(l + 40));
+  --tmg-brand-accent-color: rgb(from var(--tmg-brand-color) calc(r + 18) calc(g + 33) calc(b + 175));
+  --tmg-theme-color: #ffffff;
+  --tmg-theme-light-color: rgb(from var(--tmg-theme-color) calc(r - 40) calc(g - 40) calc(b - 40));
+  --tmg-theme-accent-color: rgb(from var(--tmg-theme-color) calc(r - 130) calc(g - 130) calc(b - 130));
+  --tmg-theme-accent-2-color: rgb(from var(--tmg-theme-color) calc(r - 100) calc(g - 100) calc(b - 100));
+  --tmg-theme-inverse-color: black;
+  --tmg-theme-dark-color: rgb(from var(--tmg-theme-inverse-color) calc(r + 11) calc(g + 16) calc(b + 18));
+  --tmg-theme-shadow-color: rgb(from var(--tmg-theme-dark-color) r g b / 0.9);
+  --tmg-theme-shadow-2-color: rgb(from var(--tmg-theme-inverse-color) calc(r + 27) calc(g + 38) calc(b + 74) / 0.751);
+  --tmg-theme-shadow-3-color: rgb(from var(--tmg-theme-inverse-color) calc(r + 92) calc(g + 128) calc(b + 247) / 0.33);
   --max-turn: 0.235turn;
   --loader-size: 75px;
   --loader-width: 4px;
@@ -31,22 +31,22 @@
 
 /* lib variables */
 :where(body > .t007-toast-container) > .t007-toast {
-  --t007-toast-type-color: var(--T_M_G-brand-color);
-  --t007-toast-box-shadow: 1px 1px 2px rgb(from var(--T_M_G-brand-accent-color) r g b / 0.06), 2px 2px 4px rgb(from var(--T_M_G-brand-accent-color) r g b / 0.06);
-  --t007-toast-progress-background: linear-gradient(to left, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-brand-light-color));
+  --t007-toast-type-color: var(--tmg-brand-color);
+  --t007-toast-box-shadow: 1px 1px 2px rgb(from var(--tmg-brand-accent-color) r g b / 0.06), 2px 2px 4px rgb(from var(--tmg-brand-accent-color) r g b / 0.06);
+  --t007-toast-progress-background: linear-gradient(to left, var(--tmg-brand-color), var(--tmg-brand-accent-color), var(--tmg-brand-light-color));
 }
 .t007-toast[data-tag="tvp-restore"] .t007-toast-icon:where(:not(.t007-toast-loader)) {
   animation: none;
 }
 .t007-dialog {
-  --t007-dialog-border: 0.05rem solid rgb(from var(--T_M_G-theme-color) r g b / 0.25);
+  --t007-dialog-border: 0.05rem solid rgb(from var(--tmg-theme-color) r g b / 0.25);
   --t007-dialog-background: rgb(20, 20, 20);
-  --t007-dialog-message-color: var(--T_M_G-theme-color);
-  --t007-confirm-button-color: var(--T_M_G-theme-accent-2-color);
-  --t007-cancel-button-color: var(--T_M_G-brand-color);
+  --t007-dialog-message-color: var(--tmg-theme-color);
+  --t007-confirm-button-color: var(--tmg-theme-accent-2-color);
+  --t007-cancel-button-color: var(--tmg-brand-color);
 }
 body .tmg-media-container {
-  --tmg-video-brand-color: var(--T_M_G-brand-color);
+  --tmg-video-brand-color: var(--tmg-brand-color);
   --tmg-video-current-miniplayer-x: calc((var(--tmg-video-current-container-width) / 2) + 7.5px);
   --tmg-video-current-miniplayer-y: calc((var(--tmg-video-current-container-height) / 2) + 7.5px);
 }
@@ -62,7 +62,7 @@ body .tmg-media-container {
 
 @keyframes switch {
   to {
-    --T_M_G-brand-color: var(--T_M_G-brand-accent-color);
+    --tmg-brand-color: var(--tmg-brand-accent-color);
   }
 }
 
@@ -97,11 +97,11 @@ body .tmg-media-container {
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
-  scrollbar-color: var(--T_M_G-brand-light-color) rgb(20, 20, 20);
+  scrollbar-color: var(--tmg-brand-light-color) rgb(20, 20, 20);
 }
 
 *:focus {
-  outline-color: var(--T_M_G-brand-color);
+  outline-color: var(--tmg-brand-color);
   outline-style: dashed;
   outline-offset: 0.1rem;
   outline-width: 0;
@@ -114,11 +114,11 @@ body .tmg-media-container {
 
 *::selection {
   color: currentColor;
-  background-color: var(--T_M_G-brand-color);
+  background-color: var(--tmg-brand-color);
 }
 
 html {
-  background-color: var(--T_M_G-theme-dark-color);
+  background-color: var(--tmg-theme-dark-color);
   overflow-x: hidden;
 }
 
@@ -147,17 +147,17 @@ body::before {
   height: 100lvh;
   z-index: -1;
   background:
-    conic-gradient(from var(--turn) at 50% -10%, var(--T_M_G-theme-shadow-color) 10deg, var(--T_M_G-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--T_M_G-theme-shadow-2-color), var(--T_M_G-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--T_M_G-theme-shadow-color) 350deg),
+    conic-gradient(from var(--turn) at 50% -10%, var(--tmg-theme-shadow-color) 10deg, var(--tmg-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--tmg-theme-shadow-2-color), var(--tmg-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--tmg-theme-shadow-color) 350deg),
     center/cover url("../assets/images/lone-tree.jpg"),
-    var(--T_M_G-theme-dark-color);
+    var(--tmg-theme-dark-color);
   animation: rotateLight 30s linear infinite;
 }
 
 body.light::before {
   background:
-    conic-gradient(from var(--turn) at 50% -10%, var(--T_M_G-theme-shadow-color) 10deg, var(--T_M_G-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--T_M_G-theme-shadow-3-color), var(--T_M_G-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--T_M_G-theme-shadow-color) 350deg),
+    conic-gradient(from var(--turn) at 50% -10%, var(--tmg-theme-shadow-color) 10deg, var(--tmg-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--tmg-theme-shadow-3-color), var(--tmg-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--tmg-theme-shadow-color) 350deg),
     center/cover url("../assets/images/lone-tree.jpg"),
-    var(--T_M_G-theme-dark-color);
+    var(--tmg-theme-dark-color);
 }
 
 body.offline .offline-notice {
@@ -167,11 +167,11 @@ body.offline .offline-notice {
   font-weight: bolder;
   font-size: 12px;
   text-align: center;
-  color: rgb(from var(--T_M_G-theme-inverse-color) r g b/ 0.85);
+  color: rgb(from var(--tmg-theme-inverse-color) r g b/ 0.85);
   width: 100%;
   max-height: fit-content;
   padding: 2px;
-  background: linear-gradient(to right, rgb(from var(--T_M_G-brand-color) r g b/.6), rgb(from var(--T_M_G-brand-accent-color) r g b/.6), rgb(from var(--T_M_G-brand-light-color) r g b/.6), rgb(from var(--T_M_G-brand-color) r g b/.6));
+  background: linear-gradient(to right, rgb(from var(--tmg-brand-color) r g b/.6), rgb(from var(--tmg-brand-accent-color) r g b/.6), rgb(from var(--tmg-brand-light-color) r g b/.6), rgb(from var(--tmg-brand-color) r g b/.6));
   backdrop-filter: blur(5px);
   z-index: 10000;
 }
@@ -190,16 +190,16 @@ body:has(.dragging) {
 
 .attribution summary {
   font-size: 11.5px;
-  color: var(--T_M_G-brand-accent-color);
+  color: var(--tmg-brand-accent-color);
 }
 
 .attribution a {
-  color: var(--T_M_G-brand-light-color);
+  color: var(--tmg-brand-light-color);
 }
 
 .attribution {
   font-size: 12.5px;
-  color: var(--T_M_G-theme-light-color);
+  color: var(--tmg-theme-light-color);
   padding-inline: 10vw;
 }
 
@@ -214,7 +214,7 @@ body:has(.dragging) {
   margin-bottom: 40px;
 }
 
-.T_M_G-media {
+.tmg-media {
   aspect-ratio: 16 / 9;
 }
 
@@ -253,7 +253,7 @@ body:has(#video.stall) #clear-files-button {
   border-radius: 50%;
   border-style: solid;
   border-width: var(--loader-width);
-  border-color: var(--T_M_G-brand-color) var(--T_M_G-theme-accent-2-color) var(--T_M_G-brand-color) var(--T_M_G-brand-color);
+  border-color: var(--tmg-brand-color) var(--tmg-theme-accent-2-color) var(--tmg-brand-color) var(--tmg-brand-color);
   rotate: 0;
   animation:
     spin 800ms linear infinite,
@@ -298,13 +298,13 @@ body:has(#video.stall) #clear-files-button {
 }
 
 #content-header > h1 {
-  color: var(--T_M_G-theme-color);
+  color: var(--tmg-theme-color);
 }
 
 #content-header > p {
-  color: var(--T_M_G-theme-accent-color);
+  color: var(--tmg-theme-accent-color);
   font-weight: bold;
-  text-shadow: 0.5px 0.5px 2px var(--T_M_G-theme-shadow-color);
+  text-shadow: 0.5px 0.5px 2px var(--tmg-theme-shadow-color);
 }
 
 #app-header-tip {
@@ -330,19 +330,19 @@ body:has(#video.stall) #clear-files-button {
 }
 
 #file-picker {
-  background: linear-gradient(to left, rgb(from var(--T_M_G-brand-color) r g b/.6), rgb(from var(--T_M_G-brand-accent-color) r g b/.6), rgb(from var(--T_M_G-brand-light-color) r g b/.6));
+  background: linear-gradient(to left, rgb(from var(--tmg-brand-color) r g b/.6), rgb(from var(--tmg-brand-accent-color) r g b/.6), rgb(from var(--tmg-brand-light-color) r g b/.6));
   backdrop-filter: blur(5px);
   border-radius: 16px;
   height: fit-content;
   width: 100%;
   padding: 10px;
-  border: 1.35px solid rgb(from var(--T_M_G-theme-accent-color) r g b/ 0.6);
-  box-shadow: 1px 1px 2px rgb(from var(--T_M_G-brand-accent-color) r g b / 0.4);
+  border: 1.35px solid rgb(from var(--tmg-theme-accent-color) r g b/ 0.6);
+  box-shadow: 1px 1px 2px rgb(from var(--tmg-brand-accent-color) r g b / 0.4);
   transition: all 250ms ease;
 }
 
 #file-picker:has(.drop-box.active) {
-  box-shadow: 0 4px 10px rgb(from var(--T_M_G-brand-accent-color) r g b / 0.4); /* 🧪 glow */
+  box-shadow: 0 4px 10px rgb(from var(--tmg-brand-accent-color) r g b / 0.4); /* 🧪 glow */
 }
 
 #file-picker > form > div {
@@ -362,7 +362,7 @@ body:has(#video.stall) #clear-files-button {
 }
 
 .drop-box {
-  background: linear-gradient(to right, rgb(from var(--T_M_G-brand-color) r g b/.6), rgb(from var(--T_M_G-brand-accent-color) r g b/.6), rgb(from var(--T_M_G-brand-light-color) r g b/.6));
+  background: linear-gradient(to right, rgb(from var(--tmg-brand-color) r g b/.6), rgb(from var(--tmg-brand-accent-color) r g b/.6), rgb(from var(--tmg-brand-light-color) r g b/.6));
   backdrop-filter: blur(5px);
   border-radius: 11px;
   flex: 1 1;
@@ -374,10 +374,10 @@ body:has(#video.stall) #clear-files-button {
   display: flex;
   justify-content: center;
   align-items: center;
-  color: rgb(from var(--T_M_G-theme-inverse-color) r g b/ 0.75);
+  color: rgb(from var(--tmg-theme-inverse-color) r g b/ 0.75);
   cursor: pointer;
   transition: 200ms ease;
-  border: 1.35px solid rgb(from var(--T_M_G-theme-accent-color) r g b/ 0.6);
+  border: 1.35px solid rgb(from var(--tmg-theme-accent-color) r g b/ 0.6);
   font-size: 16.5px;
   font-weight: bolder;
   padding: 10px;
@@ -385,7 +385,7 @@ body:has(#video.stall) #clear-files-button {
 
 .drop-box::after {
   content: attr(aria-label);
-  color: rgb(from var(--T_M_G-theme-inverse-color) r g b/ 0.45);
+  color: rgb(from var(--tmg-theme-inverse-color) r g b/ 0.45);
   position: absolute;
   width: 100%;
   bottom: 0;
@@ -402,7 +402,7 @@ body:has(#video.stall) #clear-files-button {
 .drop-box:hover,
 .drop-box.active,
 .drop-box:has(:focus-visible) {
-  background: linear-gradient(to right, var(--T_M_G-brand-color), var(--T_M_G-brand-accent-color), var(--T_M_G-brand-light-color), var(--T_M_G-brand-color));
+  background: linear-gradient(to right, var(--tmg-brand-color), var(--tmg-brand-accent-color), var(--tmg-brand-light-color), var(--tmg-brand-color));
   background-size: 200%;
   animation: background-pan 600ms ease;
 }
@@ -437,11 +437,11 @@ body:has(#video.stall) #clear-files-button {
 }
 
 #file-picker > form > div > span > label:not(.drop-box) {
-  color: rgb(from var(--T_M_G-theme-color) r g b/ 0.85);
+  color: rgb(from var(--tmg-theme-color) r g b/ 0.85);
 }
 
 #file-picker > form > div > span > output {
-  color: rgb(from var(--T_M_G-theme-color) r g b/ 0.85);
+  color: rgb(from var(--tmg-theme-color) r g b/ 0.85);
   text-align: end;
 }
 
@@ -450,7 +450,7 @@ body:has(#video.stall) #clear-files-button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: var(--T_M_G-brand-accent-color);
+  color: var(--tmg-brand-accent-color);
   padding: 10px 1px;
   gap: 20px;
 }
@@ -464,11 +464,11 @@ body:has(#video.stall) #clear-files-button {
   padding: 7px;
   border-radius: 5px;
   font-size: 13px;
-  background: var(--T_M_G-brand-light-color);
+  background: var(--tmg-brand-light-color);
   font-weight: 550;
-  color: var(--T_M_G-theme-accent-color);
-  box-shadow: 0 2px 5px rgb(from var(--T_M_G-theme-inverse-color) r g b/ 0.25); /* 🧪 subtle lift */
-  border: 1px solid var(--T_M_G-theme-accent-2-color);
+  color: var(--tmg-theme-accent-color);
+  box-shadow: 0 2px 5px rgb(from var(--tmg-theme-inverse-color) r g b/ 0.25); /* 🧪 subtle lift */
+  border: 1px solid var(--tmg-theme-accent-2-color);
   transition:
     transform 250ms ease,
     box-shadow 250ms ease;
@@ -483,15 +483,15 @@ body:has(#video.stall) #clear-files-button {
 #clear-files-button:hover {
   cursor: pointer;
   transform: scale(1.05);
-  color: var(--T_M_G-theme-accent-2-color);
-  box-shadow: 0 4px 10px rgb(from var(--T_M_G-brand-accent-color) r g b / 0.4); /* 🧪 glow */
+  color: var(--tmg-theme-accent-2-color);
+  box-shadow: 0 4px 10px rgb(from var(--tmg-brand-accent-color) r g b / 0.4); /* 🧪 glow */
 }
 
 #no-files-text {
   margin-block: max(30px, 8.5dvh);
-  color: var(--T_M_G-theme-accent-color);
+  color: var(--tmg-theme-accent-color);
   text-align: center;
-  text-shadow: 0.5px 0.5px 2px var(--T_M_G-theme-shadow-color);
+  text-shadow: 0.5px 0.5px 2px var(--tmg-theme-shadow-color);
 }
 
 #file-list-wrapper h2 {
@@ -509,19 +509,19 @@ body:has(#video.stall) #clear-files-button {
 }
 
 #file-list:has(.content-line.dragging.playing) .drag-placeholder {
-  background-color: rgb(from var(--T_M_G-brand-color) r g b/.05);
+  background-color: rgb(from var(--tmg-brand-color) r g b/.05);
 }
 
 .content-line.dragging {
   position: absolute !important;
   z-index: 999 !important;
-  border-top: 1px solid var(--T_M_G-theme-accent-color);
-  border-bottom: 1px solid var(--T_M_G-theme-accent-color);
+  border-top: 1px solid var(--tmg-theme-accent-color);
+  border-bottom: 1px solid var(--tmg-theme-accent-color);
   backdrop-filter: blur(1px);
 }
 
 .drag-placeholder {
-  background-color: rgb(from var(--T_M_G-theme-color) r g b/0.005);
+  background-color: rgb(from var(--tmg-theme-color) r g b/0.005);
 }
 
 .content-line {
@@ -535,17 +535,17 @@ body:has(#video.stall) #clear-files-button {
   padding-inline: 7.5px;
   font-size: 13px;
   gap: 10px;
-  background-color: rgb(from var(--T_M_G-theme-color) r g b/0.005);
+  background-color: rgb(from var(--tmg-theme-color) r g b/0.005);
 }
 
 .content-line:not(:last-child),
 .drag-placeholder:not(:last-child) {
-  border-bottom: 1px solid var(--T_M_G-theme-accent-color);
+  border-bottom: 1px solid var(--tmg-theme-accent-color);
 }
 
 .file-info-wrapper {
   flex: 1 1 75%;
-  color: var(--T_M_G-theme-light-color);
+  color: var(--tmg-theme-light-color);
   word-break: break-all;
 }
 
@@ -562,16 +562,16 @@ body:has(#video.stall) #clear-files-button {
 }
 
 .content-line p span:first-child {
-  color: var(--T_M_G-theme-accent-2-color);
+  color: var(--tmg-theme-accent-2-color);
 }
 
 .content-line.playing {
-  background-color: rgb(from var(--T_M_G-brand-color) r g b/.05);
-  border-left: 4px solid var(--T_M_G-brand-color);
+  background-color: rgb(from var(--tmg-brand-color) r g b/.05);
+  border-left: 4px solid var(--tmg-brand-color);
 }
 
 .content-line.playing p {
-  color: var(--T_M_G-brand-color);
+  color: var(--tmg-brand-color);
 }
 
 .content-line.playing p span:last-child {
@@ -589,10 +589,10 @@ body:has(#video.stall) #clear-files-button {
   display: flex;
   justify-content: center;
   align-items: center;
-  color: var(--T_M_G-theme-color);
+  color: var(--tmg-theme-color);
   border-radius: 5px;
   overflow: hidden;
-  background: var(--T_M_G-theme-inverse-color);
+  background: var(--tmg-theme-inverse-color);
 }
 
 .thumbnail-container:hover {
@@ -606,16 +606,16 @@ body:has(#video.stall) #clear-files-button {
   bottom: 0;
   height: 2.5px;
   width: calc(var(--video-progress-position, 0) * 100%);
-  background: var(--T_M_G-brand-color);
+  background: var(--tmg-brand-color);
 }
 
 .thumbnail-container button {
-  background-color: rgb(from var(--T_M_G-brand-color) r g b / 0.4);
+  background-color: rgb(from var(--tmg-brand-color) r g b / 0.4);
   border: none;
   border-radius: 50%;
   width: 25px;
   height: 25px;
-  color: var(--T_M_G-theme-color);
+  color: var(--tmg-theme-color);
   padding-inline: 5px;
   cursor: pointer;
   display: flex;
@@ -644,7 +644,7 @@ body:has(#video.stall) #clear-files-button {
 }
 
 .playing-icon rect {
-  fill: var(--T_M_G-theme-color);
+  fill: var(--tmg-theme-color);
   animation: pulse 1s infinite ease-in-out;
 }
 
@@ -739,7 +739,7 @@ body:has(#video.stall) #clear-files-button {
 }
 
 .content-line:has([data-caption-state="waiting"]) .captions-btn::before {
-  border-color: var(--T_M_G-theme-accent-2-color) var(--T_M_G-theme-color) var(--T_M_G-theme-accent-2-color) var(--T_M_G-theme-accent-2-color);
+  border-color: var(--tmg-theme-accent-2-color) var(--tmg-theme-color) var(--tmg-theme-accent-2-color) var(--tmg-theme-accent-2-color);
 }
 
 .content-line:has([data-caption-state="waiting"]) .captions-btn::after {
@@ -749,7 +749,7 @@ body:has(#video.stall) #clear-files-button {
   top: 3.5px;
   translate: -0.45px -0.3px;
   font-size: 12.5px;
-  color: var(--T_M_G-theme-accent-2-color);
+  color: var(--tmg-theme-accent-2-color);
 }
 
 .content-line:has([data-caption-state="empty"], [data-caption-state="filled"]) .captions-btn::after {
@@ -758,7 +758,7 @@ body:has(#video.stall) #clear-files-button {
   right: -3px;
   font-weight: bold;
   font-size: 20px;
-  text-shadow: 0px 0px 2px rgb(from var(--T_M_G-theme-inverse-color) r g b/ 0.85);
+  text-shadow: 0px 0px 2px rgb(from var(--tmg-theme-inverse-color) r g b/ 0.85);
 }
 
 .content-line:has([data-caption-state="filled"]) .captions-btn::after {
@@ -768,7 +768,7 @@ body:has(#video.stall) #clear-files-button {
 
 .content-line:has([data-caption-state="empty"]) .captions-btn::after {
   content: "+";
-  color: var(--T_M_G-theme-color);
+  color: var(--tmg-theme-color);
 }
 
 .captions-btn svg {
@@ -781,11 +781,11 @@ body:has(#video.stall) #clear-files-button {
 }
 
 .captions-btn svg path {
-  fill: var(--T_M_G-theme-color);
+  fill: var(--tmg-theme-color);
 }
 
 .content-line:has([data-caption-state="empty"]) .captions-btn svg path {
-  fill: var(--T_M_G-theme-accent-2-color);
+  fill: var(--tmg-theme-accent-2-color);
 }
 
 .delete-btn {
@@ -815,7 +815,7 @@ body:has(#video.stall) #clear-files-button {
 }
 
 .drag-handle svg {
-  fill: var(--T_M_G-theme-color);
+  fill: var(--tmg-theme-color);
   width: 19px;
   height: 19px;
 }

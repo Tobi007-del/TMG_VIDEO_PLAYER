@@ -32,9 +32,9 @@
     <link rel="stylesheet" href="styles/index.css" />
     <style>
       .magic {
-        --tmg-orange: rgb(from var(--T_M_G-brand-color) r g b/0.85);
+        --tmg-orange: rgb(from var(--tmg-brand-color) r g b/0.85);
         --tmg-white: rgba(255, 255, 255, 0.85);
-        --tmg-pink: rgb(from var(--T_M_G-brand-accent-color) r g b/0.85);
+        --tmg-pink: rgb(from var(--tmg-brand-accent-color) r g b/0.85);
         display: inline-block;
         position: relative;
       }
@@ -193,8 +193,8 @@
       document.body.classList.toggle("no-videos-pick", !("files" in HTMLInputElement.prototype));
       var _lssk = "TVP_last_session_state"; // localStorage session key
       var setColors = (brand = "#e26e02", theme = "#ffffff") => {
-        brand && document.documentElement.style.setProperty("--T_M_G-brand-color", brand);
-        theme && document.documentElement.style.setProperty("--T_M_G-theme-color", theme);
+        brand && document.documentElement.style.setProperty("--tmg-brand-color", brand);
+        theme && document.documentElement.style.setProperty("--tmg-theme-color", theme);
       }; // now to stop stored settings colors from flashing
       const settings = JSON.parse(localStorage[_lssk] || "{}").settings;
       settings && setColors(settings.css.brandColor, settings.css.themeColor);
