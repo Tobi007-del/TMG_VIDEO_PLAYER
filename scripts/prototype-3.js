@@ -2989,9 +2989,9 @@ class tmg_Media_Player {
     this.#medium.volume = 1; // controller takes over, chill; browser :)
     Object.entries(s.modes).forEach(([k, v]) => (s.modes[k] = v && (tmg[`supports${tmg.capitalize(k)}`]?.() ?? true) ? v : false));
     await Promise.all([tmg.loadResource(TMG_VIDEO_CSS_SRC), tmg.loadResource(T007_TOAST_JS_SRC, "script", { module: true }), tmg.loadResource(T007_INPUT_JS_SRC, "script")]);
-    console.time(`TMG Controller ${tmg.Controllers.indexOf(this.build.id)} INIT`);
+    console.time(`TMG Controller ${tmg.Controllers.indexOf(this.build.id) + 1} INIT`);
     tmg.Controllers[tmg.Controllers.indexOf(this.build.id)] = this.Controller = new tmg.Controller(this.#medium, this.#build);
-    console.timeEnd(`TMG Controller ${tmg.Controllers.indexOf(this.Controller)} INIT`);
+    console.timeEnd(`TMG Controller ${tmg.Controllers.indexOf(this.Controller) + 1} INIT`);
   }
 }
 
