@@ -364,7 +364,7 @@ const Toast = Toaster();
 export default Toast;
 
 if (typeof window !== "undefined") {
-  window.t007 ??= { _resourceCache: {} };
+  window.t007 ??= {};
   t007.toast = Toast;
   t007.toasting = Toasting;
   t007.toaster = Toaster;

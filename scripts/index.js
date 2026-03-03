@@ -148,8 +148,6 @@ const installButton = document.getElementById("install"),
   nums = { bytes: 0, files: 0, time: 0 },
   { createFFmpeg, fetchFile } = FFmpeg,
   ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" }),
-  breath = () => new Promise((res) => requestAnimationFrame(res)), // The "Single Frame" breathe - GPU Readiness, the loading animation is the build process itself. Sike!!
-  deepBreath = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))), // The "Double Frame" breathe - guaranteed layout completion
   formatVisit = (d, sx = "") => ((d = Math.floor((new Date().getTime() - new Date(d).getTime()) / 1000)), `${d < 60 ? `${d} second` : d < 3600 ? `${Math.floor(d / 60)} minute` : d < 86400 ? `${Math.floor(d / 3600)} hour` : `${Math.floor(d / 86400)} day`}`.replace(/(\d+)\s(\w+)/g, (_, n, u) => `${n} ${u}${n == 1 ? "" : "s"}`) + sx); // this one's just for terse practice :)
 // async IIFEs for better readability and to run fire-and-forget important logic on page load
 (async function logVisitor() {
@@ -274,8 +272,8 @@ function readyUI() {
   video.classList.remove("stall");
   videoPlayerContainer.classList.remove("loading");
   setTimeout(() => mP.Controller?.toast?.(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }), 500);
-  mP.Controller?.config.on("settings.css.brandColor", ({ target: { value } }) => setColors(value, false), { immediate: "auto" });
-  mP.Controller?.config.on("settings.css.themeColor", ({ target: { value } }) => setColors(false, value), { immediate: "auto" });
+  mP.Controller?.config.on("settings.css.brandColor", ({ value }) => setColors(value, false), { immediate: "auto" });
+  mP.Controller?.config.on("settings.css.themeColor", ({ value }) => setColors(false, value), { immediate: "auto" });
 }
 function errorUI(error) {
   videoPlayerContainer.classList.remove("loading");
@@ -292,7 +290,7 @@ function updateUI() {
 async function restoreSession({ state, handles }) {
   const files = [],
     sureHandles = [];
-  (sToast.info(sessionTId, { render: "Restoring your ongoing session now", icon: true, actions: false }), await deepBreath()); // take a deep breath browser, it's comming in hot. adding delays between toasts for better UX
+  (sToast.info(sessionTId, { render: "Restoring your ongoing session now", icon: true, actions: false }), await tmg.deepBreath()); // take a deep breath browser, it's comming in hot. adding delays between toasts for better UX
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
     try {
@@ -304,13 +302,13 @@ async function restoreSession({ state, handles }) {
       });
       const file = handle.kind === "file" ? await handle.getFile() : await getHandlesFiles([handle]);
       (tmg.isArr(file) ? files.push(...file.filter((file) => file.type.startsWith("video/"))) : files.push(file), sureHandles.push(handle));
-      (sToast.success(sessionTId, { render: `Restored ${name} successfully`, actions: false }), await (resp === "User not needed" ? deepBreath() : tmg.mockAsync(200))); // perceive the success without slowing down the flow at all
+      (sToast.success(sessionTId, { render: `Restored ${name} successfully`, actions: false }), await (resp === "User not needed" ? tmg.deepBreath() : tmg.mockAsync(200))); // perceive the success without slowing down the flow at all
     } catch (err) {
       console.error(`TVP Skipped handle "${name}":`, err);
-      (sToast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false }), await (err === "User denied" ? deepBreath() : tmg.mockAsync(800))); // perceive the failure without slowing down the flow
+      (sToast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false }), await (err === "User denied" ? tmg.deepBreath() : tmg.mockAsync(800))); // perceive the failure without slowing down the flow
     }
   }
-  if (sureHandles.length) (sToast.success(sessionTId, { render: "Your ongoing session has been restored :)", actions: false }), await deepBreath());
+  if (sureHandles.length) (sToast.success(sessionTId, { render: "Your ongoing session has been restored :)", actions: false }), await tmg.deepBreath());
   else return sToast.error(sessionTId, { render: "Your ongoing session was not restored :(", actions: { Reload: () => location.reload(), Dismiss: () => sToast.dismiss(sessionTId) } });
   handleFiles(files, state, sureHandles);
 }
@@ -342,7 +340,7 @@ async function handleFiles(files, restored = null, handles = null) {
     (sToast.dismiss(sessionTId), initUI());
     if (handles?.length) sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))];
     for (const file of (files = smartFlatSort(files))) (nums.files++, (nums.bytes += file.size)); // providing some available metrics to the user
-    (updateUI(), await deepBreath()); // browser breathe small first, UI; u still update nah
+    (updateUI(), await tmg.deepBreath()); // browser breathe small first, UI; u still update nah
     const stateMap = new Map(restored?.playlist?.map((v) => [v.media.title, v]) || []), // Pre-map for O(1) lookups
       list = fileList.appendChild(document.getElementById("media-list") || tmg.createEl("ul", { id: "media-list" })), // building the media list
       thumbnails = [];
@@ -468,7 +466,7 @@ async function handleFiles(files, restored = null, handles = null) {
         { passive: false }
       );
       li.append(thumbnailContainer, tmg.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${files[i].name}</span></p><p class="file-size"><span>Size: </span><span>${tmg.formatSize(files[i].size)}</span></p><p class="file-duration"><span>Duration: </span><span>${restored ? "Rei" : "I"}nitializing...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
-      (list.append(li), await breath()); // scroll step feel, also avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
+      (list.append(li), await tmg.breath()); // scroll step feel, also avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
     }
     const playlist = [];
     const deployVideos = (files) => {
@@ -510,7 +508,7 @@ async function handleFiles(files, restored = null, handles = null) {
         video.onpause = () => containers[mP.Controller?.currentPlaylistIndex]?.classList.add("paused");
       } else mP.Controller.config.playlist = [...mP.Controller.config.playlist, ...playlist];
     };
-    nums.files && (deployVideos(files), await deepBreath(), await deepBreath()); // video deployment is no small job, take 2 breaths; browser, captions can chill
+    nums.files && (deployVideos(files), await tmg.deepBreath(), await tmg.deepBreath()); // video deployment is no small job, take 2 breaths; browser, captions can chill
     nums.files && (await Promise.all(files.map(async (_, i) => thumbnails[i] && (await deployCaption(files[i], thumbnails[i], undefined, stateMap.get(tmg.noExtension(files[i].name)))))));
     if (!nums.files) return defaultUI();
   } catch (error) {

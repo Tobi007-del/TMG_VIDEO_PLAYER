@@ -188,7 +188,7 @@ var T007_Form_Manager = {
       });
     if (floatingLabel) floatingLabel.ontransitionend = () => floatingLabel.classList.remove("t007-input-shake");
     if (eyeOpen && eyeClosed) eyeOpen.onclick = eyeClosed.onclick = () => t007.FM.togglePasswordType(input);
-    t007.FM.initScrollAssist(field.querySelector(".t007-input-helper-text-wrapper"));
+    t007.FM.initScrollAssist(field.querySelector(".t007-input-helper-text-wrapper"), { vertical: false });
   },
   setUpField(field) {
     if (field.dataset.setUp) return;
@@ -413,7 +413,7 @@ var T007_Form_Manager = {
 };
 
 if (typeof window !== "undefined") {
-  window.t007 ??= { _resourceCache: {} };
+  window.t007 ??= {};
   t007.FM = T007_Form_Manager;
   window.T007_INPUT_CSS_SRC ??= `/T007_TOOLS/T007_input_library/T007_input.css`;
   window.createField ??= t007.FM.createField;

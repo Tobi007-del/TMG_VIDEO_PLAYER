@@ -127,7 +127,7 @@ export function Prompt(question, defaultValue, options) {
 }
 
 if (typeof window !== "undefined") {
-  window.t007 ??= { _resourceCache: {} };
+  window.t007 ??= {};
   window.T007_DIALOG_CSS_SRC ??= `/T007_TOOLS/T007_dialog_library/T007_dialog.css`;
   window.T007_INPUT_JS_SRC ??= `/T007_TOOLS/T007_input_library/T007_input.js`;
   t007.alert = Alert;
