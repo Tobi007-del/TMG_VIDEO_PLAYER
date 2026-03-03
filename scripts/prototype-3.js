@@ -94,7 +94,7 @@ class Reactor {
     const proxy = new Proxy(obj, {
       get: (object, key, receiver) => {
         if (key === RAW) return object;
-        let value = Reflect.get(object, key, receiver);
+        let value = object[key];
         const safeKey = String(key),
           paths = [];
         (this.trace(object, safeKey, paths), this.log?.(`👀 [GET Trap] Initiated for "${safeKey}" on "${paths}"`));
@@ -110,7 +110,7 @@ class Reactor {
       set: (object, key, value, receiver) => {
         const safeKey = String(key),
           paths = [],
-          oldValue = Reflect.get(object, key, receiver);
+          oldValue = object[key];
         (this.trace(object, safeKey, paths), this.log?.(`✏️ [SET Trap] Initiated for "${safeKey}" on "${paths}"`));
         this.options?.set && (value = this.options.set(object, key, value, oldValue, receiver, paths));
         for (let i = 0; i < paths.length; i++) {
@@ -121,7 +121,7 @@ class Reactor {
           if (result !== TERMINATOR) value = result;
         }
         if (value === TERMINATOR) return (this.log?.(`🛡️ [SET Mediator] Terminated on "${paths}"`), true);
-        if (!Reflect.set(object, key, value, receiver)) return false;
+        object[key] = value;
         if (!Object.is(value?.[RAW] || value, oldValue?.[RAW] || oldValue)) (this.unlink(oldValue, object, safeKey), this.link(value, object, safeKey));
         for (let i = 0; i < paths.length; i++) {
           const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver };
@@ -134,7 +134,7 @@ class Reactor {
           receiver = this.proxyCache.get(object);
         const safeKey = String(key),
           paths = [],
-          oldValue = Reflect.get(object, key, receiver);
+          oldValue = object[key];
         (this.trace(object, safeKey, paths), this.log?.(`🗑️ [DELETE Trap] Initiated for "${safeKey}" on "${paths}"`));
         this.options?.delete && (value = this.options.delete(object, key, oldValue, receiver, paths));
         for (let i = 0; i < paths.length; i++) {
@@ -145,7 +145,7 @@ class Reactor {
           if (result !== TERMINATOR) value = result;
         }
         if (value === TERMINATOR) return (this.log?.(`🛡️ [DELETE Mediator] Terminated on "${paths}"`), true);
-        if (!Reflect.deleteProperty(object, key)) return false;
+        delete object[key];
         this.unlink(oldValue, object, safeKey);
         for (let i = 0; i < paths.length; i++) {
           const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver };
