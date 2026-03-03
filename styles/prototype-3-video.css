@@ -653,7 +653,7 @@
   font-family: var(--tmg-video-font-family);
   border-radius: var(--tmg-video-border-radius);
   isolation: isolate;
-  contain: layout, style;
+  contain: layout style;
 }
 .tmg-media-container:where(.tmg-video-mobile) {
   width: 100%;

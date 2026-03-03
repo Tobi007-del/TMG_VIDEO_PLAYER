@@ -1,6 +1,6 @@
 @property --tmg-brand-color {
   syntax: "<color>";
-  initial-value: rgb(226, 110, 2);
+  initial-value: #e26e02;
   inherits: true;
 }
 
@@ -46,7 +46,6 @@
   --t007-cancel-button-color: var(--tmg-brand-color);
 }
 body .tmg-media-container {
-  --tmg-video-brand-color: var(--tmg-brand-color);
   --tmg-video-current-miniplayer-x: calc((var(--tmg-video-current-container-width) / 2) + 7.5px);
   --tmg-video-current-miniplayer-y: calc((var(--tmg-video-current-container-height) / 2) + 7.5px);
 }

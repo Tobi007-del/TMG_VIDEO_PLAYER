@@ -637,7 +637,7 @@ class tmg_Video_Controller {
       prevGet && (val = prevGet(obj, key, val, proxy, paths));
       if (!paths[0]?.startsWith("settings.css.")) return val;
       const safeKey = String(key);
-      if (safeKey === "syncWithMedia") return val;
+      if (paths[0]?.includes("syncWithMedia")) return val;
       const newVal = this[this.classKeys.includes(safeKey) ? "getClassValue" : "getCSSValue"](safeKey);
       this.CSSCache[safeKey] ||= newVal;
       return newVal;
@@ -3126,8 +3126,8 @@ var tmg = {
           else (delete w.t007._resourceCache[src], reject(new Error(`${type} load failed after ${attempts} attempts: ${src}`))); // Final fail: clear cache so user can manually retry
         };
         const url = retryKey && remaining < attempts ? `${src}${src.includes("?") ? "&" : "?"}_${retryKey}=${Date.now()}` : src;
-        if (type === "script") w.document.body.append((el = tmg.createEl("script", { src: url, type: module ? "module" : "text/javascript", crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, onload: () => resolve(el), onerror })));
-        else if (type === "style") w.document.head.append((el = tmg.createEl("link", { rel: "stylesheet", href: url, media, crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, onload: () => resolve(el), onerror })));
+        if (type === "script") w.document.body.append((el = tmg.createEl("script", { src: url, type: module ? "module" : "text/javascript", crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, onload: () => resolve(el), onerror }) || ""));
+        else if (type === "style") w.document.head.append((el = tmg.createEl("link", { rel: "stylesheet", href: url, media, crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, onload: () => resolve(el), onerror }) || ""));
         else reject(new Error(`Unsupported resource type: ${type}`));
       })(attempts);
     });
