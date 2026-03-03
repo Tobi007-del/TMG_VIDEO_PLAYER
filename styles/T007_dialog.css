@@ -31,6 +31,10 @@
   --t007-dialog-button-gap: 0.65rem;
   --t007-button-outline-width: 0.15rem;
   --t007-button-outline-style: solid;
+  /* animation styles */
+  --t007-dialog-start-duration: 150ms;
+  --t007-dialog-start-transform: translateY(-100%);
+  --t007-dialog-start-opacity: 0;
 }
 
 :where(:root, .t007-dialog) {
@@ -88,21 +92,48 @@
   filter: brightness(1.15);
 }
 
-:is(html, body):has(.t007-dialog[open]) {
+html:has(.t007-dialog[open]) {
   overflow: hidden;
+}
+body:has(.t007-dialog[open]) {
+  overflow: visible; /* incase anyone has sticky content */
+}
+
+.t007-dialog,
+.t007-dialog::backdrop {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  display: none;
+  transition-property: display, transform, opacity, backdrop-filter;
+  transition-duration: var(--t007-dialog-start-duration);
+  transition-behavior: allow-discrete;
 }
 
 .t007-dialog {
+  padding: 0;
   margin: auto;
   background: var(--t007-dialog-background);
   width: var(--t007-dialog-width);
   height: var(--t007-dialog-height);
   max-width: var(--t007-dialog-max-width);
   max-height: var(--t007-dialog-max-height);
-  padding: 0;
-  box-shadow: var(--t007-dialog-box-shadow);
   border: var(--t007-dialog-border);
   border-radius: var(--t007-dialog-border-radius);
+  box-shadow: var(--t007-dialog-box-shadow);
+  opacity: var(--t007-dialog-start-opacity);
+  transform: var(--t007-dialog-start-transform);
+}
+
+.t007-dialog[open] {
+  opacity: 1;
+  transform: none;
+}
+@starting-style {
+  .t007-dialog[open] {
+    opacity: var(--t007-dialog-start-opacity);
+    transform: var(--t007-dialog-start-transform);
+  }
 }
 
 .t007-dialog,
@@ -110,20 +141,25 @@
   flex-direction: column;
   gap: var(--t007-dialog-gap);
 }
-
 .t007-dialog[open],
 .t007-dialog form {
   display: flex;
 }
 
 .t007-dialog::backdrop {
-  background-color: var(--t007-dialog-backdrop-background);
-  -webkit-backdrop-filter: var(--t007-dialog-backdrop-blur);
-  backdrop-filter: var(--t007-dialog-backdrop-blur);
+  background-color: transparent;
 }
 
 .t007-dialog[open]::backdrop {
   display: block;
+  background-color: var(--t007-dialog-backdrop-background);
+  -webkit-backdrop-filter: var(--t007-dialog-backdrop-blur);
+  backdrop-filter: var(--t007-dialog-backdrop-blur);
+}
+@starting-style {
+  .t007-dialog[open]::backdrop {
+    background-color: transparent;
+  }
 }
 
 .t007-dialog > * {
