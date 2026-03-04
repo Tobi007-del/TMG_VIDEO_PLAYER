@@ -5,24 +5,27 @@ TODO:
   editable settings
   video resolution
 */
-
-const RAW = Symbol.for("S.I.A_RAW"); // "Get Original Obj" Marker
-const REJECTABLE = Symbol.for("S.I.A_REJECTABLE"); // "State Vs. Intent" Marker
-const INERTIA = Symbol.for("S.I.A_INERTIA"); // "No Proxy" Marker
-const TERMINATOR = Symbol.for("S.I.A_TERMINATOR"); // "Obj Operation Terminator" Marker
-const REOPTS = { LISTENER: ["capture", "once", "signal", "immediate"], MEDIATOR: ["lazy", "signal", "immediate"] };
 const arrRx = /^([^\[\]]+)\[(\d+)\]$/;
+const RAW = Symbol.for("S.I.A_RAW");
+const REJECTABLE = Symbol.for("S.I.A_REJECTABLE");
+const INERTIA = Symbol.for("S.I.A_INERTIA");
+const TERMINATOR = Symbol.for("S.I.A_TERMINATOR");
+const NOOP = () => {};
+const R_LOG = console.log.bind(console, "[S.I.A Reactor]");
+const EV_WARN = console.warn.bind(console, "[S.I.A Event]");
+const EV_OPTS = { LISTENER: ["capture", "depth", "once", "signal", "immediate"], MEDIATOR: ["lazy", "signal", "immediate"] };
 class ReactorEvent {
   static NONE = 0;
   static CAPTURING_PHASE = 1;
   static AT_TARGET = 2;
   static BUBBLING_PHASE = 3;
-  constructor(payload, bubbles = true, canWarn = true) {
+  constructor(payload, bubbles = false, canWarn = true) {
     this.eventPhase = ReactorEvent.NONE;
     this._propagationStopped = false;
     this._immediatePropagationStopped = false;
     this._resolved = "";
     this._rejected = "";
+    this._warn = NOOP;
     this.type = this.staticType = payload.type;
     this.target = payload.target;
     this.currentTarget = payload.currentTarget;
@@ -32,10 +35,7 @@ class ReactorEvent {
     this.path = payload.target.path;
     this.rejectable = payload.rejectable;
     this.bubbles = bubbles;
-    this.canWarn = canWarn;
-  }
-  get warn() {
-    return this.canWarn ? console.warn.bind(console, `[S.I.A ReactorEvent]`) : void 0;
+    if (canWarn) this._warn = EV_WARN;
   }
   get propagationStopped() {
     return this._propagationStopped;
@@ -54,169 +54,186 @@ class ReactorEvent {
     return this._resolved;
   }
   resolve(message) {
-    if (!this.rejectable) return this.warn?.(`Ignored resolve() call on a non-rejectable ${this.staticType} at "${this.path}"`);
-    if (this.eventPhase !== ReactorEvent.CAPTURING_PHASE) this.warn?.(`Resolving an intent on ${this.staticType} at "${this.path}" outside of the capture phase is unadvised.`);
+    if (!this.rejectable) return this._warn(`Ignored resolve() call on a non-rejectable ${this.staticType} at "${this.path}"`);
+    if (this.eventPhase !== ReactorEvent.CAPTURING_PHASE) this._warn(`Resolving an intent on ${this.staticType} at "${this.path}" outside of the capture phase is unadvised.`);
     if (this.rejectable) this._resolved = message || `Could ${this.staticType} intended value at "${this.path}"`;
   }
   get rejected() {
     return this._rejected;
   }
   reject(reason) {
-    if (!this.rejectable) return this.warn?.(`Ignored reject() call on a non-rejectable ${this.staticType} at "${this.path}"`);
-    if (this.eventPhase !== ReactorEvent.CAPTURING_PHASE) this.warn?.(`Rejecting an intent on ${this.staticType} at "${this.path}" outside of the capture phase is unadvised.`);
+    if (!this.rejectable) return this._warn(`Ignored reject() call on a non-rejectable ${this.staticType} at "${this.path}"`);
+    if (this.eventPhase !== ReactorEvent.CAPTURING_PHASE) this._warn(`Rejecting an intent on ${this.staticType} at "${this.path}" outside of the capture phase is unadvised.`);
     if (this.rejectable) this._rejected = reason || `Couldn't ${this.staticType} intended value at "${this.path}"`;
   }
   composedPath() {
     return tmg.getTrailPaths(this.path);
   }
+  get canWarn() {
+    return this._warn === EV_WARN;
+  }
 }
 class Reactor {
   constructor(obj = {}, options) {
-    this.batch = new Map();
     this.isBatching = false;
+    this.isTracking = false;
     this.proxyCache = new WeakMap();
-    this.lineage = new WeakMap();
+    this.log = NOOP;
+    this._canLog = false;
+    this.config = { eventBubbling: true, crossRealms: false };
     tmg.inert(this);
     this.core = this.proxied(obj);
-    this.options = options;
+    if (!options) return;
+    if ((this.isTracking = !!options.referenceTracking)) this.lineage = new WeakMap();
+    if (options.debug) this.canLog = true;
+    const { get = this.config.get, set = this.config.set, delete: del = this.config.delete, eventBubbling = this.config.eventBubbling, crossRealms = this.config.crossRealms } = options;
+    Object.assign(this.config, { get, set, delete: del, eventBubbling, crossRealms });
   }
-  get log() {
-    return this.options?.debug ? console.log.bind(console, "[S.I.A Reactor]") : void 0;
-  }
-  proxied(obj, rejectable = false, p, k) {
+  proxied(obj, rejectable = false, parent, key, path) {
     if (!obj || typeof obj !== "object") return obj;
-    const tag = Object.prototype.toString.call(obj);
-    if ((tag !== "[object Object]" && tag !== "[object Array]") || obj[INERTIA]) return obj;
+    if (!(tmg.isStrictObj(obj, this.config.crossRealms, false) || Array.isArray(obj)) || obj[INERTIA]) return obj;
     obj = obj[RAW] || obj;
-    if (p && k) this.link(obj, p, k);
+    if (this.isTracking && parent && key) this.link(obj, parent, key, false);
     if (this.proxyCache.has(obj)) return this.proxyCache.get(obj);
-    rejectable || (rejectable = obj[REJECTABLE]);
+    rejectable ||= obj[REJECTABLE];
     const proxy = new Proxy(obj, {
       get: (object, key, receiver) => {
         if (key === RAW) return object;
         let value = object[key];
         const safeKey = String(key),
-          paths = [];
-        (this.trace(object, safeKey, paths), this.log?.(`👀 [GET Trap] Initiated for "${safeKey}" on "${paths}"`));
-        this.options?.get && (value = this.options.get(object, key, value, receiver, paths));
-        for (let i = 0; i < paths.length; i++) {
-          const getters = this.getters?.get(paths[i]);
-          if (!getters) continue;
-          const target = { path: paths[i], value, key: safeKey, object: receiver };
-          value = this.mediate(paths[i], { type: "get", target, currentTarget: target, root: this.core, rejectable }, "get", getters);
-        }
-        return this.proxied(value, rejectable, object, safeKey);
+          fullPath = this.isTracking ? undefined : path ? path + "." + safeKey : safeKey,
+          paths = this.isTracking ? this.trace(object, safeKey, []) : [fullPath];
+        this.log(`👀 [GET Trap] Initiated for "${safeKey}" on "${paths}"`);
+        if (this.config.get) value = this.config.get(object, key, value, receiver, paths);
+        if (this.getters)
+          for (let i = 0, len = paths.length; i < len; i++) {
+            const getters = this.getters.get(paths[i]);
+            if (!getters) continue;
+            const target = { path: paths[i], value, key: safeKey, object: receiver };
+            value = this.mediate(paths[i], { type: "get", target, currentTarget: target, root: this.core, rejectable }, "get", getters);
+          }
+        return this.proxied(value, rejectable, object, safeKey, fullPath);
       },
       set: (object, key, value, receiver) => {
         const safeKey = String(key),
-          paths = [],
+          fullPath = this.isTracking ? undefined : path ? path + "." + safeKey : safeKey,
+          paths = this.isTracking ? this.trace(object, safeKey, []) : [fullPath],
           oldValue = object[key];
-        (this.trace(object, safeKey, paths), this.log?.(`✏️ [SET Trap] Initiated for "${safeKey}" on "${paths}"`));
-        this.options?.set && (value = this.options.set(object, key, value, oldValue, receiver, paths));
-        for (let i = 0; i < paths.length; i++) {
-          const setters = this.setters?.get(paths[i]);
-          if (!setters) continue;
-          const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver },
-            result = this.mediate(paths[i], { type: "set", target, currentTarget: target, root: this.core, rejectable }, "set", setters);
-          if (result !== TERMINATOR) value = result;
-        }
-        if (value === TERMINATOR) return (this.log?.(`🛡️ [SET Mediator] Terminated on "${paths}"`), true);
+        this.log(`✏️ [SET Trap] Initiated for "${safeKey}" on "${paths}"`);
+        if (this.config.set) value = this.config.set(object, key, value, oldValue, receiver, paths);
+        if (this.setters)
+          for (let i = 0, len = paths.length; i < len; i++) {
+            const setters = this.setters.get(paths[i]);
+            if (!setters) continue;
+            const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver },
+              result = this.mediate(paths[i], { type: "set", target, currentTarget: target, root: this.core, rejectable }, "set", setters);
+            if (result !== TERMINATOR) value = result;
+          }
+        if (value === TERMINATOR) return (this.log(`🛡️ [SET Mediator] Terminated on "${paths}"`), true);
         object[key] = value;
-        if (!Object.is(value?.[RAW] || value, oldValue?.[RAW] || oldValue)) (this.unlink(oldValue, object, safeKey), this.link(value, object, safeKey));
-        for (let i = 0; i < paths.length; i++) {
-          const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver };
-          this.notify(paths[i], { type: "set", target, currentTarget: target, root: this.core, rejectable });
+        if (this.isTracking) {
+          const oldV = oldValue?.[RAW] || oldValue,
+            newV = value?.[RAW] || value;
+          !Object.is(newV, oldV) && (this.unlink(oldV, object, safeKey), this.link(newV, object, safeKey));
         }
+        if (this.watchers || this.listeners)
+          for (let i = 0; i < paths.length; i++) {
+            const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver };
+            this.notify(paths[i], { type: "set", target, currentTarget: target, root: this.core, rejectable });
+          }
         return true;
       },
       deleteProperty: (object, key) => {
         let value,
           receiver = this.proxyCache.get(object);
         const safeKey = String(key),
-          paths = [],
+          fullPath = this.isTracking ? undefined : path ? path + "." + safeKey : safeKey,
+          paths = this.isTracking ? this.trace(object, safeKey, []) : [fullPath],
           oldValue = object[key];
-        (this.trace(object, safeKey, paths), this.log?.(`🗑️ [DELETE Trap] Initiated for "${safeKey}" on "${paths}"`));
-        this.options?.delete && (value = this.options.delete(object, key, oldValue, receiver, paths));
-        for (let i = 0; i < paths.length; i++) {
-          const deleters = this.deleters?.get(paths[i]);
-          if (!deleters) continue;
-          const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver },
-            result = this.mediate(paths[i], { type: "delete", target, currentTarget: target, root: this.core, rejectable }, "delete", deleters);
-          if (result !== TERMINATOR) value = result;
-        }
-        if (value === TERMINATOR) return (this.log?.(`🛡️ [DELETE Mediator] Terminated on "${paths}"`), true);
+        this.log(`🗑️ [DELETE Trap] Initiated for "${safeKey}" on "${paths}"`);
+        if (this.config.delete) value = this.config.delete(object, key, oldValue, receiver, paths);
+        if (this.deleters)
+          for (let i = 0, len = paths.length; i < len; i++) {
+            const deleters = this.deleters.get(paths[i]);
+            if (!deleters) continue;
+            const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver },
+              result = this.mediate(paths[i], { type: "delete", target, currentTarget: target, root: this.core, rejectable }, "delete", deleters);
+            if (result !== TERMINATOR) value = result;
+          }
+        if (value === TERMINATOR) return (this.log(`🛡️ [DELETE Mediator] Terminated on "${paths}"`), true);
         delete object[key];
-        this.unlink(oldValue, object, safeKey);
-        for (let i = 0; i < paths.length; i++) {
-          const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver };
-          this.notify(paths[i], { type: "delete", target, currentTarget: target, root: this.core, rejectable });
-        }
+        this.isTracking && this.unlink(oldValue?.[RAW] || oldValue, object, safeKey);
+        if (this.watchers || this.listeners)
+          for (let i = 0, len = paths.length; i < len; i++) {
+            const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver };
+            this.notify(paths[i], { type: "delete", target, currentTarget: target, root: this.core, rejectable });
+          }
         return true;
       },
     });
     return (this.proxyCache.set(obj, proxy), proxy);
   }
-  trace(target, key, paths, visited = new WeakSet()) {
-    if (Object.is(target, this.core?.[RAW] || this.core)) return void paths.push(key);
-    if (visited.has(target)) return;
+  trace(target, path, paths, visited = new WeakSet()) {
+    if (Object.is(target, this.core[RAW] || this.core)) return (paths.push(path), paths);
+    if (visited.has(target)) return paths;
     visited.add(target);
     const parents = this.lineage.get(target);
-    if (!parents) return;
-    for (let i = 0; i < parents.length; i++) {
-      const { p, k } = parents[i];
-      this.trace(p, k ? k + "." + key : key, paths, visited);
+    if (!parents) return paths;
+    for (let i = 0, len = parents.length; i < len; i++) {
+      const { parent, key } = parents[i];
+      this.trace(parent, key ? key + "." + path : path, paths, visited);
     }
+    return paths;
   }
-  link(child, p, k, es) {
-    const target = child?.[RAW] || child;
-    if (!tmg.isObj(target) && !tmg.isArr(target)) return;
+  link(target, parent, key, typecheck = true, es) {
+    if (typecheck && !(tmg.isStrictObj(target, this.config.crossRealms) || Array.isArray(target))) return;
     es = this.lineage.get(target) ?? (this.lineage.set(target, (es = [])), es);
-    for (let i = 0; i < es.length; i++) if (Object.is(es[i].p, p) && es[i].k === k) return;
-    es.push({ p, k });
+    for (let i = 0, len = es.length; i < len; i++) if (Object.is(es[i].parent, parent) && es[i].key === key) return;
+    es.push({ parent, key });
   }
-  unlink(child, p, k) {
-    const target = child?.[RAW] || child;
-    if (!target || typeof target !== "object") return;
+  unlink(target, parent, key) {
+    if (!(tmg.isStrictObj(target, this.config.crossRealms) || Array.isArray(target))) return;
     const es = this.lineage.get(target);
-    if (es) {
-      for (let i = 0; i < es.length; i++) if (Object.is(es[i].p, p) && es[i].k === k) return void es.splice(i, 1);
-    }
+    if (es) for (let i = 0, len = es.length; i < len; i++) if (Object.is(es[i].parent, parent) && es[i].key === key) return void es.splice(i, 1);
   }
   mediate(path, payload, type, cords) {
     let terminated = false,
       value = payload.target.value;
-    const mediators = type === "get" ? this.getters : type === "set" ? this.setters : this.deleters;
-    for (let i = type !== "get" ? 0 : cords.length - 1; i !== (type !== "get" ? cords.length : -1); i += type !== "get" ? 1 : -1) {
-      if (type !== "get") terminated || (terminated = value === TERMINATOR);
+    const getting = type === "get",
+      setting = type === "set",
+      mediators = getting ? this.getters : setting ? this.setters : this.deleters;
+    for (let i = !getting ? 0 : cords.length - 1, len = !getting ? cords.length : -1; i !== len; i += !getting ? 1 : -1) {
+      if (!getting) terminated ||= value === TERMINATOR;
       if (cords[i].once) (cords.splice(i--, 1), !cords.length && mediators.delete(path));
-      const response = type === "get" ? cords[i].cb(value, payload) : type === "set" ? cords[i].cb(value, terminated, payload) : cords[i].cb(terminated, payload);
+      const response = getting ? cords[i].cb(value, payload) : setting ? cords[i].cb(value, terminated, payload) : cords[i].cb(terminated, payload);
       if (!terminated) value = response;
     }
     return value;
   }
   notify(path, payload) {
-    const cords = this.watchers?.get(path);
-    for (let i = 0; i < (cords?.length ?? 0); i++) {
-      if (cords[i].once) (cords.splice(i--, 1), !cords.length && this.watchers.delete(path));
-      cords[i].cb(payload.target.value, payload);
+    if (this.watchers) {
+      const cords = this.watchers.get(path);
+      if (cords)
+        for (let i = 0, len = cords.length; i < len; i++) {
+          if (cords[i].once) (cords.splice(i--, 1), !cords.length && this.watchers.delete(path));
+          cords[i].cb(payload.target.value, payload);
+        }
     }
-    this.schedule(path, payload);
+    this.listeners && this.schedule(path, payload);
   }
   schedule(path, payload) {
-    (this.batch.set(path, payload), this.initBatching());
+    this.batch ??= new Map();
+    (this.batch.set(path, payload), !this.isBatching && this.initBatching());
   }
   initBatching() {
-    if (this.isBatching) return;
-    this.isBatching = true;
-    queueMicrotask(() => this.flush());
+    (queueMicrotask(() => this.flush()), (this.isBatching = true));
   }
   flush() {
-    (this.tick(this.batch.keys()), this.batch.clear(), (this.isBatching = false));
-    if (this.queue?.size) for (const task of this.queue) task();
-    this.queue?.clear();
+    (this.batch && this.tick(this.batch.keys()), (this.isBatching = false));
+    if (this.queue?.size) for (const task of this.queue) (task(), this.queue.delete(task));
   }
   wave(path, payload) {
-    const e = new ReactorEvent(payload),
+    const e = new ReactorEvent(payload, this.config.eventBubbling, this._canLog),
       chain = tmg.getTrailRecords(this.core, path);
     e.eventPhase = ReactorEvent.CAPTURING_PHASE;
     for (let i = 0; i <= chain.length - 2; i++) {
@@ -234,16 +251,16 @@ class Reactor {
       this.fire(chain[i], e, false);
     }
   }
-  fire([path, object, value], e, isCapture, cords = this.listeners?.get(path)) {
-    if (!cords?.length) return;
+  fire([path, object, value], e, isCapture, cords = this.listeners.get(path)) {
+    if (!cords) return;
     e.type = path !== e.target.path ? "update" : e.staticType;
-    e.currentTarget = { path, value, oldValue: e.type !== "update" ? e.target.oldValue : void 0, key: e.type !== "update" ? path : path.slice(path.lastIndexOf(".") + 1) || "", object };
+    e.currentTarget = { path, value, oldValue: e.type !== "update" ? e.target.oldValue : undefined, key: e.type !== "update" ? path : path.slice(path.lastIndexOf(".") + 1) || "", object };
     let tDepth, lDepth;
     for (let i = 0; i < cords.length; i++) {
       if (e.immediatePropagationStopped) break;
       if (cords[i].capture !== isCapture) continue;
-      if (cords[i].depth != void 0) {
-        (tDepth ?? (tDepth = this.getDepth(e.target.path)), lDepth ?? (lDepth = this.getDepth(path)));
+      if (cords[i].depth != undefined) {
+        ((tDepth ??= this.getDepth(e.target.path)), (lDepth ??= this.getDepth(path)));
         if (tDepth > lDepth + cords[i].depth) continue;
       }
       if (cords[i].once) (cords.splice(i--, 1), !cords.length && this.listeners.delete(path));
@@ -251,8 +268,8 @@ class Reactor {
     }
   }
   bind(cord, signal) {
-    signal?.aborted ? cord.clup() : signal?.addEventListener?.("abort", cord.clup, { once: true });
-    if (signal && !signal.aborted) cord.sclup = () => signal.removeEventListener?.("abort", cord.clup);
+    signal?.aborted ? cord.clup() : signal?.addEventListener("abort", cord.clup, { once: true });
+    if (signal && !signal.aborted) cord.sclup = () => signal.removeEventListener("abort", cord.clup);
     return cord.clup;
   }
   getContext(path) {
@@ -262,13 +279,13 @@ class Reactor {
     return { path, value, key: path.slice(lastDot + 1) || "", object };
   }
   getDepth(p, d = !p ? 0 : 1) {
-    for (let i = 0; i < p.length; i++) if (p.charCodeAt(i) === 46) d++;
+    for (let i = 0, len = p.length; i < len; i++) if (p.charCodeAt(i) === 46) d++;
     return d;
   }
   tick(paths) {
     if (!paths) return this.flush();
     if ("string" === typeof paths) {
-      const task = this.batch.get(paths);
+      const task = this.batch?.get(paths);
       task && (this.wave(paths, task), this.batch.delete(paths));
     } else
       for (const path of paths) {
@@ -277,22 +294,23 @@ class Reactor {
       }
   }
   stall(task) {
-    this.queue ?? (this.queue = new Set());
-    (this.queue.add(task), this.initBatching());
+    this.queue ??= new Set();
+    (this.queue.add(task), !this.isBatching && this.initBatching());
   }
   nostall(task) {
     return this.queue?.delete(task);
   }
   get(path, cb, opts) {
-    this.getters ?? (this.getters = new Map());
-    const { lazy = false, once = false, signal, immediate = false } = tmg.parseEvOpts(opts, REOPTS.MEDIATOR);
+    this.getters ??= new Map();
+    const { lazy = false, once = false, signal, immediate = false } = tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR);
     let cords = this.getters.get(path),
       cord;
-    for (let i = 0; i < (cords?.length ?? 0); i++)
-      if (Object.is(cords[i].cb, cb)) {
-        cord = cords[i];
-        break;
-      }
+    if (cords)
+      for (let i = 0, len = cords.length; i < len; i++)
+        if (Object.is(cords[i].cb, cb)) {
+          cord = cords[i];
+          break;
+        }
     if (cord) return cord.clup;
     cord = { cb, once, clup: () => (lazy && this.nostall(task), this.noget(path, cb)) };
     if (immediate) (immediate !== "auto" || tmg.inAny(this.core, path)) && tmg.getAny(this.core, path);
@@ -301,24 +319,25 @@ class Reactor {
     return this.bind(cord, signal);
   }
   gonce(path, cb, opts) {
-    return this.get(path, cb, { ...tmg.parseEvOpts(opts, REOPTS.MEDIATOR), once: true });
+    return this.get(path, cb, { ...tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR), once: true });
   }
   noget(path, cb) {
     const cords = this.getters?.get(path);
-    if (!cords) return void 0;
-    for (let i = 0; i < cords.length; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.getters.delete(path), true);
+    if (!cords) return undefined;
+    for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.getters.delete(path), true);
     return false;
   }
   set(path, cb, opts) {
-    this.setters ?? (this.setters = new Map());
-    const { lazy = false, once = false, signal, immediate = false } = tmg.parseEvOpts(opts, REOPTS.MEDIATOR);
+    this.setters ??= new Map();
+    const { lazy = false, once = false, signal, immediate = false } = tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR);
     let cords = this.setters.get(path),
       cord;
-    for (let i = 0; i < (cords?.length ?? 0); i++)
-      if (Object.is(cords[i].cb, cb)) {
-        cord = cords[i];
-        break;
-      }
+    if (cords)
+      for (let i = 0, len = cords.length; i < len; i++)
+        if (Object.is(cords[i].cb, cb)) {
+          cord = cords[i];
+          break;
+        }
     if (cord) return cord.clup;
     cord = { cb, once, clup: () => (lazy && this.nostall(task), this.noset(path, cb)) };
     if (immediate) (immediate !== "auto" || tmg.inAny(this.core, path)) && tmg.setAny(this.core, path, this.getContext(path).value);
@@ -327,50 +346,52 @@ class Reactor {
     return this.bind(cord, signal);
   }
   sonce(path, cb, opts) {
-    return this.set(path, cb, Object.assign(tmg.parseEvOpts(opts, REOPTS.MEDIATOR), { once: true }));
+    return this.set(path, cb, Object.assign(tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
   }
   noset(path, cb) {
     const cords = this.setters?.get(path);
-    if (!cords) return void 0;
-    for (let i = 0; i < cords.length; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.setters.delete(path), true);
+    if (!cords) return undefined;
+    for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.setters.delete(path), true);
     return false;
   }
   delete(path, cb, opts) {
-    this.deleters ?? (this.deleters = new Map());
-    const { lazy = false, once = false, signal, immediate = false } = tmg.parseEvOpts(opts, REOPTS.MEDIATOR);
+    this.deleters ??= new Map();
+    const { lazy = false, once = false, signal, immediate = false } = tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR);
     let cords = this.deleters.get(path),
       cord;
-    for (let i = 0; i < (cords?.length ?? 0); i++)
-      if (Object.is(cords[i].cb, cb)) {
-        cord = cords[i];
-        break;
-      }
+    if (cords)
+      for (let i = 0, len = cords.length; i < len; i++)
+        if (Object.is(cords[i].cb, cb)) {
+          cord = cords[i];
+          break;
+        }
     if (cord) return cord.clup;
     cord = { cb, once, clup: () => (lazy && this.nostall(task), this.nodelete(path, cb)) };
-    if (immediate) (immediate !== "auto" || tmg.inAny(this.core, path)) && tmg.deleteAny(this.core, path, void 0);
+    if (immediate) (immediate !== "auto" || tmg.inAny(this.core, path)) && tmg.deleteAny(this.core, path, undefined);
     const task = () => (cords ?? (this.deleters.set(path, (cords = [])), cords)).push(cord);
     lazy ? this.stall(task) : task();
     return this.bind(cord, signal);
   }
   donce(path, cb, opts) {
-    return this.delete(path, cb, Object.assign(tmg.parseEvOpts(opts, REOPTS.MEDIATOR), { once: true }));
+    return this.delete(path, cb, Object.assign(tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
   }
   nodelete(path, cb) {
     const cords = this.deleters?.get(path);
-    if (!cords) return void 0;
-    for (let i = 0; i < cords.length; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.deleters.delete(path), true);
+    if (!cords) return undefined;
+    for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.deleters.delete(path), true);
     return false;
   }
   watch(path, cb, opts) {
-    this.watchers ?? (this.watchers = new Map());
-    const { lazy = false, once = false, signal, immediate = false } = tmg.parseEvOpts(opts, REOPTS.MEDIATOR);
+    this.watchers ??= new Map();
+    const { lazy = false, once = false, signal, immediate = false } = tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR);
     let cords = this.watchers.get(path),
       cord;
-    for (let i = 0; i < (cords?.length ?? 0); i++)
-      if (Object.is(cords[i].cb, cb)) {
-        cord = cords[i];
-        break;
-      }
+    if (cords)
+      for (let i = 0, len = cords.length; i < len; i++)
+        if (Object.is(cords[i].cb, cb)) {
+          cord = cords[i];
+          break;
+        }
     if (cord) return cord.clup;
     cord = { cb, once, clup: () => (lazy && this.nostall(task), this.nowatch(path, cb)) };
     if (immediate && immediate !== "auto" && tmg.inAny(this.core, path)) {
@@ -382,55 +403,65 @@ class Reactor {
     return this.bind(cord, signal);
   }
   wonce(path, cb, opts) {
-    return this.watch(path, cb, Object.assign(tmg.parseEvOpts(opts, REOPTS.MEDIATOR), { once: true }));
+    return this.watch(path, cb, Object.assign(tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
   }
   nowatch(path, cb) {
     const cords = this.watchers?.get(path);
-    if (!cords) return void 0;
-    for (let i = 0; i < cords.length; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.watchers.delete(path), true);
+    if (!cords) return undefined;
+    for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.watchers.delete(path), true);
     return false;
   }
   on(path, cb, options) {
-    this.listeners ?? (this.listeners = new Map());
-    const { capture = false, once = false, signal, immediate = false, depth } = tmg.parseEvOpts(options, REOPTS.LISTENER);
+    this.listeners ??= new Map();
+    const { capture = false, once = false, signal, immediate = false, depth } = tmg.parseEvOpts(options, EV_OPTS.LISTENER);
     let cords = this.listeners.get(path),
       cord;
-    for (let i = 0; i < (cords?.length ?? 0); i++)
-      if (Object.is(cords[i].cb, cb) && capture === cords[i].capture) {
-        cord = cords[i];
-        break;
-      }
+    if (cords)
+      for (let i = 0, len = cords.length; i < len; i++)
+        if (Object.is(cords[i].cb, cb) && capture === cords[i].capture) {
+          cord = cords[i];
+          break;
+        }
     if (cord) return cord.clup;
     cord = { cb, capture, depth, once, clup: () => this.off(path, cb, options) };
     if (immediate && (immediate !== "auto" || tmg.inAny(this.core, path))) {
       const target = this.getContext(path);
-      cb(new ReactorEvent({ type: "init", target, currentTarget: target, root: this.core, rejectable: false }, false, this.options?.debug));
+      cb(new ReactorEvent({ type: "init", target, currentTarget: target, root: this.core, rejectable: false }, this.config.eventBubbling, this._canLog));
     }
     (cords ?? (this.listeners.set(path, (cords = [])), cords)).push(cord);
     return this.bind(cord, signal);
   }
   once(path, cb, options) {
-    return this.on(path, cb, Object.assign(tmg.parseEvOpts(options, REOPTS.LISTENER), { once: true }));
+    return this.on(path, cb, Object.assign(tmg.parseEvOpts(options, EV_OPTS.LISTENER), { once: true }));
   }
   off(path, cb, options) {
     const cords = this.listeners?.get(path);
-    if (!cords) return void 0;
-    const { capture } = tmg.parseEvOpts(options, REOPTS.LISTENER);
-    for (let i = 0; i < cords.length; i++) if (Object.is(cords[i].cb, cb) && cords[i].capture === capture) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.listeners.delete(path), true);
+    if (!cords) return undefined;
+    const { capture } = tmg.parseEvOpts(options, EV_OPTS.LISTENER);
+    for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb) && cords[i].capture === capture) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.listeners.delete(path), true);
     return false;
   }
-  cascade({ type, currentTarget: { path, value: news, oldValue: olds } }, objSafe = true) {
-    if (!tmg.isObj(news) || !tmg.isObj(olds) || (type !== "set" && type !== "delete")) return;
-    const obj = objSafe ? tmg.mergeObjs(olds, news) : news,
-      keys = Object.keys(obj);
-    for (let i = 0; i < keys.length; i++) tmg.setAny(this.core, path + "." + keys[i], obj[keys[i]]);
+  get canLog() {
+    return this.log === R_LOG;
+  }
+  set canLog(value) {
+    this.log = (this._canLog = value) ? R_LOG : NOOP;
+  }
+  get canTrackReferences() {
+    return this.isTracking;
   }
   snapshot() {
     return tmg.deepClone(this.core);
   }
+  cascade({ type, currentTarget: { path, value: news, oldValue: olds } }, objSafe = true) {
+    if ((type !== "set" && type !== "delete") || !(tmg.isStrictObj(news, this.config.crossRealms, true) || Array.isArray(news)) || !(tmg.isStrictObj(olds, this.config.crossRealms, true) || Array.isArray(olds))) return;
+    const obj = objSafe ? tmg.mergeObjs(olds, news) : news,
+      keys = Object.keys(obj);
+    for (let i = 0, len = keys.length; i < len; i++) tmg.setAny(this.core, path + "." + keys[i], obj[keys[i]]);
+  }
   reset() {
     (this.getters?.clear(), this.setters?.clear(), this.deleters?.clear(), this.watchers?.clear(), this.listeners?.clear());
-    (this.queue?.clear(), this.batch.clear(), (this.isBatching = false));
+    (this.queue?.clear(), this.batch?.clear(), (this.isBatching = false));
     this.proxyCache = new WeakMap();
   }
   destroy() {
@@ -452,7 +483,7 @@ class tmg_Video_Controller {
     this.setReadyState(0, medium); // had to be done before binding, for user info
     this.bindMethods(); // first thing, same this.cZoneWs throughout life cycle
     ((this.buildCache = { ...build }), (this.id = build.id), (this.video = medium));
-    this.config = reactive(build); // merging the video build into the Video Player Instance
+    this.config = reactive(build, { referenceTracking: true }); // merging the video build into the Video Player Instance
     this.settings = this.config.settings; // alias for devx, for non reassignable common config
     (this.guardGenericPaths(), this.guardTimeValues(), this.plugSources(), this.plugTracks(), this.plugPlaylist());
     const { src, sources, tracks } = this.config;
@@ -631,9 +662,8 @@ class tmg_Video_Controller {
     );
     this.classKeys = ["captionsCharacterEdgeStyle", "captionsTextAlignment"];
     this.CSSCache ??= {};
-    this.config.__Reactor__.options ??= {};
-    const prevGet = this.config.__Reactor__.options.get;
-    this.config.__Reactor__.options.get = (obj, key, val, proxy, paths) => {
+    const prevGet = this.config.__Reactor__.config.get;
+    this.config.__Reactor__.config.get = (obj, key, val, proxy, paths) => {
       prevGet && (val = prevGet(obj, key, val, proxy, paths));
       if (!paths[0]?.startsWith("settings.css.")) return val;
       const safeKey = String(key);
@@ -1705,7 +1735,7 @@ class tmg_Video_Controller {
   _handleTimelineInput({ clientX }) {
     this.overTimeline = true;
     if (!tmg.ON_MOBILE) this.videoContainer.classList.add("tmg-video-previewing");
-    this.RAFLoop(
+    this.throttle(
       "timelineInput",
       () => {
         const rect = this.DOM.timelineContainer?.getBoundingClientRect(),
@@ -3276,7 +3306,8 @@ var tmg = {
   remToPx: (val) => parseFloat(getComputedStyle(document.documentElement).fontSize * val),
   isDef: (val) => val !== undefined,
   isIter: (obj) => obj != null && "function" === typeof obj[Symbol.iterator],
-  isObj: (obj) => "object" === typeof obj && obj != null && !tmg.isArr(obj) && "function" !== typeof obj,
+  isObj: (obj, checkArr = true) => "object" === typeof obj && obj !== null && (checkArr ? !Array.isArray(obj) : true),
+  isStrictObj: (obj, crossRealms = true, typecheck = true) => (typecheck ? tmg.isObj(obj, false) : true) && (crossRealms ? Object.prototype.toString.call(obj) === "[object Object]" : obj.constructor === Object),
   isArr: (arr) => Array.isArray(arr),
   isValidNum: (number) => !isNaN(number ?? NaN) && number !== Infinity,
   inBoolArrOpt: (opt, str) => opt?.includes?.(str) ?? opt,
@@ -3406,7 +3437,6 @@ var tmg = {
     return (Object.entries(obj).forEach(([k, v]) => (k.includes(separator) ? tmg.setAny(result, k, tmg.parseAnyObj(v, separator, keyFunc), separator, keyFunc, visited) : (result[k] = v))), result);
   },
   parseEvOpts(options, opts, boolOpt = opts[0], result = {}) {
-    for (let i = 0; i < opts.length; i++) result[opts[i]] = false;
     return (Object.assign(result, "boolean" === typeof options ? { [boolOpt]: options } : options), result);
   },
   parsePanelBottomObj(obj = [], arr = false) {

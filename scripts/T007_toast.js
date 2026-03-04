@@ -26,7 +26,7 @@ class T007_Toast {
     if (!options || typeof options !== "object") return this.opts.id;
     try {
       this.opts = { ...this.opts, ...options };
-      const run = () => Object.entries(options).forEach(([key, value]) => (this[key] = value));
+      const run = () => Object.keys(options).forEach((key) => (this[key] = options[key]));
       "number" !== typeof this.opts.delay ? run() : this.queue.push(setTimeout(run, this.opts.delay));
       this.opts.delay = null;
     } catch (err) {

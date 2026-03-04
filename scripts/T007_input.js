@@ -232,7 +232,7 @@ var T007_Form_Manager = {
     if (minTotalSize) inputEl.setAttribute("mintotalsize", minTotalSize);
     if (maxTotalSize) inputEl.setAttribute("maxtotalsize", maxTotalSize);
     // Drill other props into input, quite reckless though but necessary
-    Object.entries(otherProps).forEach(([key, val]) => (inputEl[key] = val));
+    Object.keys(otherProps).forEach((key) => (inputEl[key] = otherProps[key]));
     // Append main input/textarea/select
     labelEl.append(!isWrapper ? inputEl : children);
     // Native or end icon for date/time/month/datetime-local

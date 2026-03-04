@@ -84,18 +84,17 @@ class T007_Prompt_Dialog extends T007_Dialog {
         <div class="t007-dialog-top-section">
           <p class="t007-dialog-question">${question}</p>
         </div>
-          ${createField?.(options)?.outerHTML}
         <div class="t007-dialog-bottom-section">
           <button class="t007-dialog-confirm-button" type="submit">${options.confirmText || "OK"}</button>
           <button class="t007-dialog-cancel-button" type="button">${options.cancelText || "Cancel"}</button>
         </div>
       </form>
     `;
+    (this.form = this.dialog.querySelector("form")).lastElementChild.insertAdjacentElement("beforebegin", t007.FM?.createField(options) || createEl("input", options));
+    this.form.onSubmit = this.confirm;
     this.confirmBtn = this.dialog.querySelector(".t007-dialog-confirm-button");
     this.cancelBtn = this.dialog.querySelector(".t007-dialog-cancel-button");
     this.cancelBtn.addEventListener("click", this.cancel);
-    this.form = this.dialog.querySelector("form");
-    this.form.onSubmit = this.confirm;
     t007.FM?.handleFormValidation?.(this.form);
     this.show();
   }
