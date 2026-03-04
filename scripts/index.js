@@ -1,10 +1,10 @@
 import Toast, { Toaster } from "./T007_toast.js";
 import { Confirm } from "./T007_dialog.js";
 // global variables
-var _lsik = "TVP_visitor_info"; // localStorage info key
-var canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype;
-var sessionHandles = []; // global handle access of current session handles
-var DB = {
+window._lsik = "TVP_visitor_info"; // localStorage info key
+window.canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype;
+window.sessionHandles = []; // global handle access of current session handles
+window.DB = {
   _db: null,
   onErr: (act, comment = "(likely a Support issue or Private Mode)") => (console.warn(`TVP_DB: ${act} failed ${comment}`), null),
   async idb() {
@@ -69,7 +69,7 @@ var DB = {
     for (const store of Array.isArray(stores) ? stores : [stores]) await this.vault[store].clear();
   },
 };
-var Memory = {
+window.Memory = {
   _expiryDays: 30, // 30 days of no sessions
   getState() {
     return JSON.parse(localStorage[_lssk] || "null");
