@@ -229,6 +229,7 @@ class T007_Toast {
     this._ptrStartX = e.clientX ?? e.targetTouches[0]?.clientX;
     this._ptrStartY = e.clientY ?? e.targetTouches[0]?.clientY;
     this.toastElement.addEventListener("pointermove", this._handleToastPointerMove, { passive: false });
+    this.toastElement.style.setProperty("transition", "none", "important");
   }
   _handleToastPointerMove(e) {
     e.preventDefault();
@@ -240,7 +241,6 @@ class T007_Toast {
       this._ptrDir ||= Math.abs(x - this._ptrStartX) >= Math.abs(y - this._ptrStartY) ? "x" : "y";
       this._ptrDeltaX = (has("|") ? this._ptrDir == "x" : has("x")) && !has(x - this._ptrStartX > 0 ? "-" : "+") ? x - this._ptrStartX : 0;
       this._ptrDeltaY = (has("|") ? this._ptrDir == "y" : has("y")) && !has(y - this._ptrStartY > 0 ? "+" : "-") ? y - this._ptrStartY : 0;
-      this.toastElement.style.setProperty("transition", "none", "important");
       this.toastElement.style.setProperty("transform", `translate(${this._ptrDeltaX}px, ${this._ptrDeltaY}px)`, "important");
       const xR = Math.abs(this._ptrDeltaX) / this.toastElement.offsetWidth,
         yR = Math.abs(this._ptrDeltaY) / this.toastElement.offsetHeight;

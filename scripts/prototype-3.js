@@ -455,7 +455,7 @@ class Reactor {
     return tmg.deepClone(this.core);
   }
   cascade({ type, currentTarget: { path, value: news, oldValue: olds } }, objSafe = true) {
-    if ((type !== "set" && type !== "delete") || !(tmg.isStrictObj(news, this.config.crossRealms, true) || Array.isArray(news)) || !(tmg.isStrictObj(olds, this.config.crossRealms, true) || Array.isArray(olds))) return;
+    if ((type !== "set" && type !== "delete") || !(tmg.isStrictObj(news, this.config.crossRealms) || Array.isArray(news)) || (objSafe ? !(tmg.isStrictObj(olds, this.config.crossRealms) || Array.isArray(olds)) : false)) return;
     const obj = objSafe ? tmg.mergeObjs(olds, news) : news,
       keys = Object.keys(obj);
     for (let i = 0, len = keys.length; i < len; i++) tmg.setAny(this.core, path + "." + keys[i], obj[keys[i]]);
@@ -1217,7 +1217,7 @@ class tmg_Video_Controller {
     this.DOM.timeline?.addEventListener("mousemove", this._handleTimelineInput);
     ["mouseleave", "touchend", "touchcancel"].forEach((e) => this.DOM.timeline?.addEventListener(e, this.stopTimePreviewing));
     // captions container listeners
-    this.DOM.captionsContainer?.addEventListener("pointerdown", this._handleCaptionsDragStart);
+    this.DOM.captionsContainer.addEventListener("pointerdown", this._handleCaptionsDragStart);
     // volume event listeners
     this.DOM.volumeSlider?.addEventListener("input", this._handleVolumeSliderInput);
     this.DOM.volumeContainer?.addEventListener("mousemove", this._handleVolumeContainerMouseMove);
@@ -1334,7 +1334,7 @@ class tmg_Video_Controller {
     if (!this.isUIActive("fullscreen")) this.toggleMiniplayerMode();
   }
   _handleOrientationChange() {
-    if (!this.isIntersecting || !tmg.ON_MOBILE || this.readyState < 3 || this.settings.modes.fullscreen.onRotate === false || this.isUIActive("fullscreen")) return;
+    if (!this.isIntersecting || !tmg.ON_MOBILE || this.readyState < 3 || this.settings.modes.fullscreen.onRotate === false || this.isUIActive("fullscreen") || this.isUIActive("miniplayer")) return;
     const deg = "boolean" === typeof this.settings.modes.fullscreen.onRotate ? 90 : parseInt(this.settings.modes.fullscreen.onRotate);
     if (screen.orientation?.angle === deg || screen.orientation?.angle === 360 - deg) this.toggleFullscreenMode();
   }
@@ -2095,28 +2095,28 @@ class tmg_Video_Controller {
   rotateCaptionsCharacterEdgeStyle = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).characterEdgeStyle.values, "captions.characterEdgeStyle.value", false);
   rotateCaptionsTextAlignment = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).textAlignment.values, "captions.textAlignment.value", false);
   _handleCaptionsDragStart({ pointerId, clientX, clientY }) {
-    this.DOM.captionsContainer?.setPointerCapture(pointerId);
+    this.DOM.captionsContainer.setPointerCapture(pointerId);
     const { left, bottom } = getComputedStyle(this.DOM.captionsContainer);
-    ((this.lastCaptionsXPos = parseFloat(left)), (this.lastCaptionsYPos = parseFloat(bottom)));
-    ((this.lastCaptionsPointerX = clientX), (this.lastCaptionsPointerY = clientY));
-    this.DOM.captionsContainer?.addEventListener("pointermove", this._handleCaptionsDragging);
-    this.DOM.captionsContainer?.addEventListener("pointerup", this._handleCaptionsDragEnd);
+    ((this.lastCaptionsPosX = parseFloat(left)), (this.lastCaptionsPosY = parseFloat(bottom)));
+    ((this.lastCaptionsPtrX = clientX), (this.lastCaptionsPtrY = clientY));
+    this.DOM.captionsContainer.addEventListener("pointermove", this._handleCaptionsDragging);
+    this.DOM.captionsContainer.addEventListener("pointerup", this._handleCaptionsDragEnd);
   }
   _handleCaptionsDragging({ clientX, clientY }) {
     this.videoContainer.classList.add("tmg-video-captions-dragging");
     this.RAFLoop("captionsDragging", () => {
       const { offsetWidth: ww, offsetHeight: hh } = this.videoContainer,
         { offsetWidth: w, offsetHeight: h } = this.DOM.captionsContainer,
-        posX = tmg.clamp(w / 2, this.lastCaptionsXPos + (clientX - this.lastCaptionsPointerX), ww - w / 2),
-        posY = tmg.clamp(h / 2, this.lastCaptionsYPos - (clientY - this.lastCaptionsPointerY), hh - h / 2);
-      ((this.settings.css.currentCaptionsX = `${(posX / ww) * 100}%`), (this.settings.css.currentCaptionsY = `${(posY / hh) * 100}%`));
+        posX = tmg.clamp(w / 2, this.lastCaptionsPosX + (clientX - this.lastCaptionsPtrX), ww - w / 2),
+        posY = tmg.clamp(h / 2, this.lastCaptionsPosY - (clientY - this.lastCaptionsPtrY), hh - h / 2);
+    ((this.settings.css.currentCaptionsX = `${(posX / ww) * 100}%`), (this.settings.css.currentCaptionsY = `${(posY / hh) * 100}%`));
     });
   }
   _handleCaptionsDragEnd() {
     this.cancelRAFLoop("captionsDragging");
     this.videoContainer.classList.remove("tmg-video-captions-dragging");
-    this.DOM.captionsContainer?.removeEventListener("pointermove", this._handleCaptionsDragging);
-    this.DOM.captionsContainer?.removeEventListener("pointerup", this._handleCaptionsDragEnd);
+    this.DOM.captionsContainer.removeEventListener("pointermove", this._handleCaptionsDragging);
+    this.DOM.captionsContainer.removeEventListener("pointerup", this._handleCaptionsDragEnd);
   }
   setUpAudio() {
     if (this.audioSetup) return;
@@ -2466,11 +2466,13 @@ class tmg_Video_Controller {
   _handleMiniplayerDragStart({ target, clientX, clientY, targetTouches }) {
     if (!this.isUIActive("miniplayer") || target.scrollWidth > target.clientWidth || [this.DOM.topControlsWrapper, tmg.inBoolArrOpt(this.settings.controlPanel.draggable, "big") ? this.DOM.bigControlsWrapper : null, this.DOM.bottomControlsWrapper, this.DOM.captionsContainer].some((w) => w?.contains?.(target)) || target.closest("[class$='toast-container']")) return;
     const { left, bottom } = getComputedStyle(this.videoContainer);
-    ((this.lastMiniplayerXPos = parseFloat(left)), (this.lastMiniplayerYPos = parseFloat(bottom)));
-    ((this.lastMiniplayerDragX = clientX ?? targetTouches[0].clientX), (this.lastMiniplayerDragY = clientY ?? targetTouches[0].clientY));
+    ((this.lastMiniplayerPosX = parseFloat(left)), (this.lastMiniplayerPosY = parseFloat(bottom)));
+    ((this.lastMiniplayerPtrX = clientX ?? targetTouches[0].clientX), (this.lastMiniplayerPtrY = clientY ?? targetTouches[0].clientY));
+    ((this.nextMiniplayerX = this.settings.css.currentMiniplayerX), (this.nextMiniplayerY = this.settings.css.currentMiniplayerY));
     document.addEventListener("mousemove", this._handleMiniplayerDragging);
     document.addEventListener("touchmove", this._handleMiniplayerDragging, { passive: false });
     ["mouseup", "mouseleave", "touchend", "touchcancel"].forEach((e) => document.addEventListener(e, this._handleMiniplayerDragEnd));
+    this.videoContainer.style.setProperty("transition", "none", "important");
   }
   _handleMiniplayerDragging(e) {
     if (e.touches?.length > 1) return;
@@ -2482,14 +2484,18 @@ class tmg_Video_Controller {
         { offsetWidth: w, offsetHeight: h } = this.videoContainer;
       const x = e.clientX ?? e.changedTouches[0].clientX,
         y = e.clientY ?? e.changedTouches[0].clientY,
-        posX = tmg.clamp(w / 2, this.lastMiniplayerXPos + (x - this.lastMiniplayerDragX), ww - w / 2),
-        posY = tmg.clamp(h / 2, this.lastMiniplayerYPos - (y - this.lastMiniplayerDragY), wh - h / 2);
-      ((this.settings.css.currentMiniplayerX = `${(posX / ww) * 100}%`), (this.settings.css.currentMiniplayerY = `${(posY / wh) * 100}%`));
+        posX = tmg.clamp(w / 2, this.lastMiniplayerPosX + (x - this.lastMiniplayerPtrX), ww - w / 2),
+        posY = tmg.clamp(h / 2, this.lastMiniplayerPosY - (y - this.lastMiniplayerPtrY), wh - h / 2);
+      this.videoContainer.style.setProperty("transform", `translate(${x - this.lastMiniplayerPtrX}px, ${y - this.lastMiniplayerPtrY}px)`, "important");
+      ((this.nextMiniplayerX = `${(posX / ww) * 100}%`), (this.nextMiniplayerY = `${(posY / wh) * 100}%`));
     });
   }
   _handleMiniplayerDragEnd() {
     this.cancelRAFLoop("miniplayerDragging");
     this.videoContainer.classList.remove("tmg-video-player-dragging");
+    ((this.settings.css.currentMiniplayerX = this.nextMiniplayerX), (this.settings.css.currentMiniplayerY = this.nextMiniplayerY));
+    this.videoContainer.style.removeProperty("transform");
+    requestAnimationFrame(() => this.videoContainer.style.removeProperty("transition"));
     document.removeEventListener("mousemove", this._handleMiniplayerDragging);
     document.removeEventListener("touchmove", this._handleMiniplayerDragging, { passive: false });
     ["mouseup", "mouseleave", "touchend", "touchcancel"].forEach((e) => document.removeEventListener(e, this._handleMiniplayerDragEnd));
