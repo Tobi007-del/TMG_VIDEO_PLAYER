@@ -222,6 +222,7 @@
   flex-direction: column;
   gap: var(--t007-toast-container-gap);
   z-index: 2147483647;
+  contain: layout style;
 }
 
 .t007-toast-container *:disabled {

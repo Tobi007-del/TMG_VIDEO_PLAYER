@@ -2109,7 +2109,7 @@ class tmg_Video_Controller {
         { offsetWidth: w, offsetHeight: h } = this.DOM.captionsContainer,
         posX = tmg.clamp(w / 2, this.lastCaptionsPosX + (clientX - this.lastCaptionsPtrX), ww - w / 2),
         posY = tmg.clamp(h / 2, this.lastCaptionsPosY - (clientY - this.lastCaptionsPtrY), hh - h / 2);
-    ((this.settings.css.currentCaptionsX = `${(posX / ww) * 100}%`), (this.settings.css.currentCaptionsY = `${(posY / hh) * 100}%`));
+      ((this.settings.css.currentCaptionsX = `${(posX / ww) * 100}%`), (this.settings.css.currentCaptionsY = `${(posY / hh) * 100}%`));
     });
   }
   _handleCaptionsDragEnd() {
@@ -2469,6 +2469,7 @@ class tmg_Video_Controller {
     ((this.lastMiniplayerPosX = parseFloat(left)), (this.lastMiniplayerPosY = parseFloat(bottom)));
     ((this.lastMiniplayerPtrX = clientX ?? targetTouches[0].clientX), (this.lastMiniplayerPtrY = clientY ?? targetTouches[0].clientY));
     ((this.nextMiniplayerX = this.settings.css.currentMiniplayerX), (this.nextMiniplayerY = this.settings.css.currentMiniplayerY));
+    ((this.wildMiniplayerX = this.nextMiniplayerX), (this.wildMiniplayerY = this.nextMiniplayerY));
     document.addEventListener("mousemove", this._handleMiniplayerDragging);
     document.addEventListener("touchmove", this._handleMiniplayerDragging, { passive: false });
     ["mouseup", "mouseleave", "touchend", "touchcancel"].forEach((e) => document.addEventListener(e, this._handleMiniplayerDragEnd));
@@ -2484,18 +2485,25 @@ class tmg_Video_Controller {
         { offsetWidth: w, offsetHeight: h } = this.videoContainer;
       const x = e.clientX ?? e.changedTouches[0].clientX,
         y = e.clientY ?? e.changedTouches[0].clientY,
-        posX = tmg.clamp(w / 2, this.lastMiniplayerPosX + (x - this.lastMiniplayerPtrX), ww - w / 2),
-        posY = tmg.clamp(h / 2, this.lastMiniplayerPosY - (y - this.lastMiniplayerPtrY), wh - h / 2);
+        newX = this.lastMiniplayerPosX + (x - this.lastMiniplayerPtrX),
+        newY = this.lastMiniplayerPosY - (y - this.lastMiniplayerPtrY),
+        posX = tmg.clamp(w / 2, newX, ww - w / 2),
+        posY = tmg.clamp(h / 2, newY, wh - h / 2);
       this.videoContainer.style.setProperty("transform", `translate(${x - this.lastMiniplayerPtrX}px, ${y - this.lastMiniplayerPtrY}px)`, "important");
       ((this.nextMiniplayerX = `${(posX / ww) * 100}%`), (this.nextMiniplayerY = `${(posY / wh) * 100}%`));
+      ((this.wildMiniplayerX = `${(newX / ww) * 100}%`), (this.wildMiniplayerY = `${(newY / wh) * 100}%`));
     });
   }
   _handleMiniplayerDragEnd() {
     this.cancelRAFLoop("miniplayerDragging");
     this.videoContainer.classList.remove("tmg-video-player-dragging");
-    ((this.settings.css.currentMiniplayerX = this.nextMiniplayerX), (this.settings.css.currentMiniplayerY = this.nextMiniplayerY));
+    this.videoContainer.style.setProperty("left", this.wildMiniplayerX, "important");
+    this.videoContainer.style.setProperty("bottom", this.wildMiniplayerY, "important");
     this.videoContainer.style.removeProperty("transform");
-    requestAnimationFrame(() => this.videoContainer.style.removeProperty("transition"));
+    requestAnimationFrame(() => {
+      ((this.settings.css.currentMiniplayerX = this.nextMiniplayerX), (this.settings.css.currentMiniplayerY = this.nextMiniplayerY));
+      ["transition", "left", "bottom"].forEach((prop) => this.videoContainer.style.removeProperty(prop));
+    });
     document.removeEventListener("mousemove", this._handleMiniplayerDragging);
     document.removeEventListener("touchmove", this._handleMiniplayerDragging, { passive: false });
     ["mouseup", "mouseleave", "touchend", "touchcancel"].forEach((e) => document.removeEventListener(e, this._handleMiniplayerDragEnd));
