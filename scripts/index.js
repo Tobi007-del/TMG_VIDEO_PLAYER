@@ -89,8 +89,8 @@ window.Memory = {
     ((sessionHandles = []), await DB.clear());
   },
   clearSettings() {
-    const { playlist, media, lightState, paused } = this.getState();
-    localStorage[_lssk] = JSON.stringify({ playlist, media, lightState, paused });
+    const { playlist, media, paused } = this.getState();
+    localStorage[_lssk] = JSON.stringify({ playlist, media, paused });
   },
 };
 // app logic variables
