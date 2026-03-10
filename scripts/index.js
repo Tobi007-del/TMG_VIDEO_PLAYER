@@ -290,8 +290,9 @@ function updateUI() {
   document.getElementById("total-time").textContent = tmg.formatMediaTime({ time: nums.time });
 }
 // Session utils
-async function restoreSession({ state, handles }) {
-  const files = [],
+async function restoreSession({ handles }) {
+  const state = Memory.getState(),
+    files = [],
     sureHandles = [];
   (sToast.info(sessionTId, { render: "Restoring your ongoing session now", icon: true, actions: false }), await tmg.deepBreath()); // take a deep breath browser, it's comming in hot. adding delays between toasts for better UX
   for (const handle of handles) {
