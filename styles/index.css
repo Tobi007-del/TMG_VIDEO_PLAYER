@@ -228,7 +228,9 @@ body:has(.dragging) {
   aspect-ratio: 16 / 9;
 }
 
-body:has(#video.stall) #clear-files-button {
+body:has(#video.stall) #clear-files-button,
+body:not(:has(#video.stall)) #clear-settings-button,
+#clear-settings-button:not(.shown) {
   display: none;
 }
 
@@ -455,7 +457,8 @@ body:has(#video.stall) #clear-files-button {
 }
 
 #install,
-#clear-files-button {
+#clear-files-button,
+#clear-settings-button {
   justify-self: center;
   display: flex;
   justify-content: center;
@@ -479,7 +482,8 @@ body:has(#video.stall) #clear-files-button {
 }
 
 #install:hover,
-#clear-files-button:hover {
+#clear-files-button:hover,
+#clear-settings-button:hover {
   cursor: pointer;
   transform: scale(1.05);
   color: var(--tmg-theme-accent-2-color);

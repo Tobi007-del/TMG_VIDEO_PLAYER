@@ -94,15 +94,17 @@ window.Memory = {
   },
 };
 // app logic variables
-let sessionTId, // session toast id
-  sessionTInt, // session toast interval for updating last updated time every minute
-  installed = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true,
+let installed = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true,
   installPrompt = null, // beforeinstallprompt event object
+  sessionTInt, // session toast interval for updating last updated time every minute
+  sessionTId, // session toast id
   readyTId, // ready toast id
+  clearTId, // clear toast id
   mP = null, // media player
   video = document.getElementById("video"),
   placeholderItem = null;
 const installButton = document.getElementById("install"),
+  clearSettingsButton = document.getElementById("clear-settings-button"),
   videoPlayerContainer = document.getElementById("video-player-container"),
   fileList = document.getElementById("file-list"),
   contentLines = document.getElementsByClassName("content-line"),
@@ -216,6 +218,7 @@ installButton.addEventListener("click", async () => {
   if (res.outcome === "accepted") ((installButton.style.display = "none"), (installPrompt = null));
 });
 document.getElementById("clear-files-button").addEventListener("click", clearFiles);
+clearSettingsButton.addEventListener("click", () => clearSettings(true));
 [
   { input: videosDropBox.lastElementChild, recurse: false },
   { input: foldersDropBox.lastElementChild, recurse: true },
@@ -316,6 +319,14 @@ function saveSession() {
   mP && nums.files && Memory.save(mP.Controller.config.snapshot());
 }
 // File utils
+async function clearSettings(prompt = false) {
+  const ok = prompt && (await Confirm("Are you sure you want to clear your settings?", { title: "Clear Settings", confirmText: "Clear" }));
+  if (prompt && !ok) return;
+  (Memory.clearSettings(), setColors());
+  clearSettingsButton.classList.remove("shown");
+  const render = "Settings cleared successfully";
+  Toast.success(clearTId ? clearTId : render, { render, actions: false });
+}
 async function clearFiles() {
   const ok = await Confirm("Are you sure you want to clear all files?", { title: "Clear Files", confirmText: "Clear" });
   if (!ok) return;
@@ -332,7 +343,8 @@ async function clearFiles() {
   });
   nums.files = nums.bytes = nums.time = 0;
   (Memory.clear(), defaultUI());
-  const tId = Toast.success("Cleared your files and session data, Settings too?", { autoClose: 5000, actions: { Clear: () => (Memory.clearSettings(), setColors(), Toast.success(tId, { render: "Settings cleared successfully", actions: false })) } });
+  clearSettingsButton.classList.add("shown");
+  clearTId = Toast.success("Cleared all files from your session, Settings too?", { autoClose: 5000, actions: { Clear: () => clearSettings() } });
 }
 async function handleFiles(files, restored = null, handles = null) {
   try {
@@ -361,7 +373,7 @@ async function handleFiles(files, restored = null, handles = null) {
           playsInline: true,
           onloadedmetadata: ({ target }) => {
             nums.time += tmg.safeNum(target.duration);
-            if (tmg.safeNum(target.duration) > 12) target.currentTime = 2;
+            if (tmg.safeNum(target.duration) > 12) target.currentTime = tmg.parseIfPercent(tmg.DEFAULT_VIDEO_BUILD.lightState.preview.time, target.duration);
             document.getElementById("total-time").textContent = tmg.formatMediaTime({ time: nums.time });
             li.querySelector(".file-duration span:last-child").innerHTML = `${tmg.formatMediaTime({ time: target.duration })}`;
             restored && thumbnails[i]?.parentElement?.style.setProperty("--video-progress-position", tmg.safeNum(state.settings.time.start / target.duration));
@@ -500,7 +512,7 @@ async function handleFiles(files, restored = null, handles = null) {
         window.addEventListener("pagehide", saveSession);
         document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && saveSession());
         video.addEventListener("loadedmetadata", () => setTimeout(dispatchPlayerReadyToast, 500), { once: true });
-        video.ontimeupdate = ({ target: { currentTime: ct, duration: d } }) => mP.Controller?.throttle("TVP_thumbnail_update", () => ct > 3 && containers[mP.Controller?.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.safeNum(ct / d)), 2500);
+        video.ontimeupdate = ({ target: { currentTime: ct, duration: d } }) => mP.Controller?.throttle("TVP_thumbnail_update", () => ct > 3 && mP.Controller?.config.lightState.disabled && containers[mP.Controller?.currentPlaylistIndex]?.style.setProperty("--video-progress-position", tmg.safeNum(ct / d)), 2500);
         video.onplay = () => {
           for (let i = 0; i < contentLines.length; i++) contentLines[i].classList.toggle("playing", i === mP.Controller?.currentPlaylistIndex);
           containers[mP.Controller?.currentPlaylistIndex]?.classList.remove("paused");

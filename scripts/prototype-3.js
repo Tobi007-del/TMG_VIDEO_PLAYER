@@ -11,6 +11,7 @@ const REJECTABLE = Symbol.for("S.I.A_REJECTABLE");
 const INERTIA = Symbol.for("S.I.A_INERTIA");
 const TERMINATOR = Symbol.for("S.I.A_TERMINATOR");
 const NOOP = () => {};
+const R_BATCH = ("undefined" !== typeof queueMicrotask ? queueMicrotask : setTimeout).bind(window);
 const R_LOG = console.log.bind(console, "[S.I.A Reactor]");
 const EV_WARN = console.warn.bind(console, "[S.I.A Event]");
 const EV_OPTS = { LISTENER: ["capture", "depth", "once", "signal", "immediate"], MEDIATOR: ["lazy", "signal", "immediate"] };
@@ -67,115 +68,151 @@ class ReactorEvent {
     if (this.rejectable) this._rejected = reason || `Couldn't ${this.staticType} intended value at "${this.path}"`;
   }
   composedPath() {
-    return tmg.getTrailPaths(this.path);
+    return getTrailPaths(this.path);
   }
   get canWarn() {
     return this._warn === EV_WARN;
   }
 }
 class Reactor {
+  // `?:`s | pay the ~600 byte price upfront for what u might never use
   constructor(obj = {}, options) {
     this.isBatching = false;
     this.isTracking = false;
     this.proxyCache = new WeakMap();
     this.log = NOOP;
     this._canLog = false;
-    this.config = { eventBubbling: true, crossRealms: false };
-    tmg.inert(this);
+    // keeping track so API getter doesn't slow down internal iterations in any way
+    this.config = { crossRealms: false, eventBubbling: true, batchingFunction: R_BATCH, equalityTracking: true };
+    inert(this);
     this.core = this.proxied(obj);
     if (!options) return;
     if ((this.isTracking = !!options.referenceTracking)) this.lineage = new WeakMap();
     if (options.debug) this.canLog = true;
-    const { get = this.config.get, set = this.config.set, delete: del = this.config.delete, eventBubbling = this.config.eventBubbling, crossRealms = this.config.crossRealms } = options;
-    Object.assign(this.config, { get, set, delete: del, eventBubbling, crossRealms });
+    const { get = this.config.get, set = this.config.set, delete: del = this.config.delete, crossRealms = this.config.crossRealms, eventBubbling = this.config.eventBubbling, equalityTracking = this.config.equalityTracking } = options;
+    Object.assign(this.config, { get, set, delete: del, crossRealms, eventBubbling, equalityTracking });
   }
   proxied(obj, rejectable = false, parent, key, path) {
     if (!obj || typeof obj !== "object") return obj;
-    if (!(tmg.isStrictObj(obj, this.config.crossRealms, false) || Array.isArray(obj)) || obj[INERTIA]) return obj;
+    if (!(isStrictObj(obj, this.config.crossRealms, false) || Array.isArray(obj)) || obj[INERTIA]) return obj;
     obj = obj[RAW] || obj;
     if (this.isTracking && parent && key) this.link(obj, parent, key, false);
     if (this.proxyCache.has(obj)) return this.proxyCache.get(obj);
-    rejectable ||= obj[REJECTABLE];
+    rejectable || (rejectable = obj[REJECTABLE]);
     const proxy = new Proxy(obj, {
-      get: (object, key, receiver) => {
-        if (key === RAW) return object;
-        let value = object[key];
-        const safeKey = String(key),
-          fullPath = this.isTracking ? undefined : path ? path + "." + safeKey : safeKey,
-          paths = this.isTracking ? this.trace(object, safeKey, []) : [fullPath];
-        this.log(`👀 [GET Trap] Initiated for "${safeKey}" on "${paths}"`);
-        if (this.config.get) value = this.config.get(object, key, value, receiver, paths);
-        if (this.getters)
-          for (let i = 0, len = paths.length; i < len; i++) {
-            const getters = this.getters.get(paths[i]);
-            if (!getters) continue;
-            const target = { path: paths[i], value, key: safeKey, object: receiver };
-            value = this.mediate(paths[i], { type: "get", target, currentTarget: target, root: this.core, rejectable }, "get", getters).value;
+      // Robust Proxy handler
+      get: (object, key2, receiver) => {
+        if (key2 === RAW) return object;
+        let value = object[key2];
+        const safeKey = String(key2),
+          fullPath = this.isTracking ? void 0 : path ? path + "." + safeKey : safeKey,
+          paths = this.isTracking ? this.trace(object, safeKey) : fullPath;
+        this.log(`\u{1F440} [GET Trap] Initiated for "${safeKey}" on "${paths}"`);
+        if (this.config.get) value = this.config.get(object, key2, value, receiver, paths);
+        if (this.getters) {
+          const wildcords = this.getters.get("*");
+          for (let i = 0, len = this.isTracking ? paths.length : 1; i < len; i++) {
+            const currPath = this.isTracking ? paths[i] : fullPath,
+              cords = this.getters.get(currPath);
+            if (!cords && !wildcords) continue;
+            const target = { path: currPath, value, key: safeKey, object: receiver },
+              payload = { type: "get", target, currentTarget: target, root: this.core, rejectable };
+            if (cords) value = this.mediate(currPath, payload, "get", cords);
+            if (!wildcords) continue;
+            target.value = value;
+            value = this.mediate("*", payload, "get", wildcords);
           }
+        }
         return this.proxied(value, rejectable, object, safeKey, fullPath);
       },
-      set: (object, key, value, receiver) => {
-        let terminated = false;
-        const safeKey = String(key),
-          fullPath = this.isTracking ? undefined : path ? path + "." + safeKey : safeKey,
-          paths = this.isTracking ? this.trace(object, safeKey, []) : [fullPath],
-          oldValue = object[key];
-        this.log(`✏️ [SET Trap] Initiated for "${safeKey}" on "${paths}"`);
-        if (this.config.set) terminated = (value = this.config.set(object, key, value, oldValue, receiver, paths)) === TERMINATOR;
-        if (this.setters)
-          for (let i = 0, len = paths.length; i < len; i++) {
-            const setters = this.setters.get(paths[i]);
-            if (!setters) continue;
-            const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver },
-              result = this.mediate(paths[i], { type: "set", target, currentTarget: target, root: this.core, rejectable }, "set", setters);
-            if (!(terminated ||= result.terminated)) value = result.value;
-          }
-        if (terminated) return (this.log(`🛡️ [SET Mediator] Terminated on "${paths}"`), true);
-        object[key] = value;
-        if (this.isTracking) {
-          const oldV = oldValue?.[RAW] || oldValue,
-            newV = value?.[RAW] || value;
-          !Object.is(newV, oldV) && (this.unlink(oldV, object, safeKey), this.link(newV, object, safeKey));
+      set: (object, key2, value, receiver) => {
+        let unchanged,
+          safeValue,
+          safeOldValue,
+          terminated = false;
+        const safeKey = String(key2),
+          fullPath = this.isTracking ? void 0 : path ? path + "." + safeKey : safeKey,
+          paths = this.isTracking ? this.trace(object, safeKey) : fullPath,
+          oldValue = object[key2];
+        if (this.isTracking || this.config.equalityTracking) {
+          safeOldValue = oldValue?.[RAW] || oldValue;
+          safeValue = value?.[RAW] || value;
+          unchanged = Object.is(safeValue, safeOldValue);
         }
+        if (this.config.equalityTracking && unchanged) return true;
+        this.log(`\u270F\uFE0F [SET Trap] Initiated for "${safeKey}" on "${paths}"`);
+        if (this.config.set) terminated = (value = this.config.set(object, key2, value, oldValue, receiver, paths)) === TERMINATOR;
+        if (this.setters) {
+          const wildcords = this.setters.get("*");
+          for (let i = 0, len = paths.length; i < len; i++) {
+            const currPath = this.isTracking ? paths[i] : fullPath,
+              cords = this.setters.get(currPath);
+            if (!cords && !wildcords) continue;
+            const target = { path: currPath, value, oldValue, key: safeKey, object: receiver },
+              payload = { type: "set", target, currentTarget: target, root: this.core, terminated, rejectable };
+            if (cords) {
+              const result2 = this.mediate(currPath, payload, "set", cords);
+              if (!(terminated || (terminated = payload.terminated))) value = result2;
+            }
+            if (!wildcords) continue;
+            target.value = value;
+            const result = this.mediate("*", payload, "set", wildcords);
+            if (!(terminated || (terminated = payload.terminated))) value = result;
+          }
+        }
+        if (terminated) return (this.log(`\u{1F6E1}\uFE0F [SET Mediator] Terminated on "${paths}"`), true);
+        object[key2] = value;
+        if (this.isTracking && !unchanged) (this.unlink(safeOldValue, object, safeKey), this.link(safeValue, object, safeKey));
         if (this.watchers || this.listeners)
-          for (let i = 0; i < paths.length; i++) {
-            const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver };
-            this.notify(paths[i], { type: "set", target, currentTarget: target, root: this.core, rejectable });
+          for (let i = 0, len = paths.length; i < len; i++) {
+            const currPath = this.isTracking ? paths[i] : fullPath,
+              target = { path: currPath, value, oldValue, key: safeKey, object: receiver };
+            this.notify(currPath, { type: "set", target, currentTarget: target, root: this.core, terminated, rejectable });
           }
         return true;
       },
-      deleteProperty: (object, key) => {
+      deleteProperty: (object, key2) => {
         let value,
           receiver = this.proxyCache.get(object),
           terminated = false;
-        const safeKey = String(key),
-          fullPath = this.isTracking ? undefined : path ? path + "." + safeKey : safeKey,
-          paths = this.isTracking ? this.trace(object, safeKey, []) : [fullPath],
-          oldValue = object[key];
-        this.log(`🗑️ [DELETE Trap] Initiated for "${safeKey}" on "${paths}"`);
-        if (this.config.delete) terminated = (value = this.config.delete(object, key, oldValue, receiver, paths)) === TERMINATOR;
-        if (this.deleters)
+        const safeKey = String(key2),
+          fullPath = this.isTracking ? void 0 : path ? path + "." + safeKey : safeKey,
+          paths = this.isTracking ? this.trace(object, safeKey) : fullPath,
+          oldValue = object[key2];
+        this.log(`\u{1F5D1}\uFE0F [DELETE Trap] Initiated for "${safeKey}" on "${paths}"`);
+        if (this.config.delete) terminated = (value = this.config.delete(object, key2, oldValue, receiver, paths)) === TERMINATOR;
+        if (this.deleters) {
+          const wildcords = this.deleters.get("*");
           for (let i = 0, len = paths.length; i < len; i++) {
-            const deleters = this.deleters.get(paths[i]);
-            if (!deleters) continue;
-            const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver },
-              result = this.mediate(paths[i], { type: "delete", target, currentTarget: target, root: this.core, rejectable }, "delete", deleters);
-            if (!(terminated ||= result.terminated)) value = result.value;
+            const currPath = this.isTracking ? paths[i] : fullPath,
+              cords = this.deleters.get(currPath);
+            if (!cords && !wildcords) continue;
+            const target = { path: currPath, value, oldValue, key: safeKey, object: receiver },
+              payload = { type: "delete", target, currentTarget: target, root: this.core, rejectable };
+            if (cords) {
+              const result2 = this.mediate(currPath, payload, "delete", cords);
+              if (!(terminated || (terminated = payload.terminated))) value = result2;
+            }
+            if (!wildcords) continue;
+            const result = this.mediate("*", payload, "delete", wildcords);
+            if (!(terminated || (terminated = payload.terminated))) value = result;
           }
-        if (terminated) return (this.log(`🛡️ [DELETE Mediator] Terminated on "${paths}"`), true);
-        delete object[key];
+        }
+        if (terminated) return (this.log(`\u{1F6E1}\uFE0F [DELETE Mediator] Terminated on "${paths}"`), true);
+        delete object[key2];
         this.isTracking && this.unlink(oldValue?.[RAW] || oldValue, object, safeKey);
         if (this.watchers || this.listeners)
           for (let i = 0, len = paths.length; i < len; i++) {
-            const target = { path: paths[i], value, oldValue, key: safeKey, object: receiver };
-            this.notify(paths[i], { type: "delete", target, currentTarget: target, root: this.core, rejectable });
+            const currPath = this.isTracking ? paths[i] : fullPath,
+              target = { path: currPath, value, oldValue, key: safeKey, object: receiver };
+            this.notify(currPath, { type: "delete", target, currentTarget: target, root: this.core, rejectable });
           }
         return true;
       },
     });
     return (this.proxyCache.set(obj, proxy), proxy);
   }
-  trace(target, path, paths, visited = new WeakSet()) {
+  trace(target, path, paths = [], visited = new WeakSet()) {
     if (Object.is(target, this.core[RAW] || this.core)) return (paths.push(path), paths);
     if (visited.has(target)) return paths;
     visited.add(target);
@@ -187,55 +224,64 @@ class Reactor {
     }
     return paths;
   }
+  // won't be called without `.isTracking` so internal guard avoided
   link(target, parent, key, typecheck = true, es) {
-    if (typecheck && !(tmg.isStrictObj(target, this.config.crossRealms) || Array.isArray(target))) return;
+    if (typecheck && !(isStrictObj(target, this.config.crossRealms) || Array.isArray(target))) return;
     es = this.lineage.get(target) ?? (this.lineage.set(target, (es = [])), es);
     for (let i = 0, len = es.length; i < len; i++) if (Object.is(es[i].parent, parent) && es[i].key === key) return;
     es.push({ parent, key });
   }
   unlink(target, parent, key) {
-    if (!(tmg.isStrictObj(target, this.config.crossRealms) || Array.isArray(target))) return;
+    if (!(isStrictObj(target, this.config.crossRealms) || Array.isArray(target))) return;
     const es = this.lineage.get(target);
-    if (es) for (let i = 0, len = es.length; i < len; i++) if (Object.is(es[i].parent, parent) && es[i].key === key) return void es.splice(i, 1);
+    if (es) {
+      for (let i = 0, len = es.length; i < len; i++) if (Object.is(es[i].parent, parent) && es[i].key === key) return void es.splice(i, 1);
+    }
   }
   mediate(path, payload, type, cords) {
     let terminated = false,
       value = payload.target.value;
-    const getting = type === "get",
-      setting = type === "set",
-      mediators = getting ? this.getters : setting ? this.setters : this.deleters;
-    for (let i = !getting ? 0 : cords.length - 1, len = !getting ? cords.length : -1; i !== len; i += !getting ? 1 : -1) {
-      const response = getting ? cords[i].cb(value, payload) : setting ? cords[i].cb(value, terminated, payload) : cords[i].cb(terminated, payload);
-      if (getting || !(terminated ||= response === TERMINATOR)) value = response;
+    const isGet = type === "get",
+      isSet = type === "set",
+      mediators = isGet ? this.getters : isSet ? this.setters : this.deleters;
+    for (let i = !isGet ? 0 : cords.length - 1, len = !isGet ? cords.length : -1; i !== len; i += !isGet ? 1 : -1) {
+      const response = isGet ? cords[i].cb(value, payload) : isSet ? cords[i].cb(value, terminated, payload) : cords[i].cb(terminated, payload);
+      if (isGet || !(terminated || (terminated = payload.terminated = response === TERMINATOR))) value = response;
       if (cords[i].once) (cords.splice(i--, 1), !cords.length && mediators.delete(path));
     }
-    return { value, terminated };
+    return value;
   }
   notify(path, payload) {
     if (this.watchers) {
-      const cords = this.watchers.get(path);
+      const wildcords = this.watchers.get("*"),
+        cords = this.watchers.get(path);
       if (cords)
         for (let i = 0, len = cords.length; i < len; i++) {
           cords[i].cb(payload.target.value, payload);
           if (cords[i].once) (cords.splice(i--, 1), !cords.length && this.watchers.delete(path));
         }
+      if (wildcords)
+        for (let i = 0, len = wildcords.length; i < len; i++) {
+          wildcords[i].cb(payload.target.value, payload);
+          if (wildcords[i].once) (wildcords.splice(i--, 1), !wildcords.length && this.watchers.delete("*"));
+        }
     }
     this.listeners && this.schedule(path, payload);
   }
   schedule(path, payload) {
-    this.batch ??= new Map();
+    this.batch ?? (this.batch = new Map());
     (this.batch.set(path, payload), !this.isBatching && this.initBatching());
   }
   initBatching() {
-    (queueMicrotask(() => this.flush()), (this.isBatching = true));
+    ((this.isBatching = true), this.config.batchingFunction(() => this.flush()));
   }
   flush() {
-    (this.batch && this.tick(this.batch.keys()), (this.isBatching = false));
+    ((this.isBatching = false), this.batch && this.tick(this.batch.keys()));
     if (this.queue?.size) for (const task of this.queue) (task(), this.queue.delete(task));
   }
   wave(path, payload) {
     const e = new ReactorEvent(payload, this.config.eventBubbling, this._canLog),
-      chain = tmg.getTrailRecords(this.core, path);
+      chain = getTrailRecords(this.core, path);
     e.eventPhase = ReactorEvent.CAPTURING_PHASE;
     for (let i = 0; i <= chain.length - 2; i++) {
       if (e.propagationStopped) break;
@@ -255,13 +301,13 @@ class Reactor {
   fire([path, object, value], e, isCapture, cords = this.listeners.get(path)) {
     if (!cords) return;
     e.type = path !== e.target.path ? "update" : e.staticType;
-    e.currentTarget = { path, value, oldValue: e.type !== "update" ? e.target.oldValue : undefined, key: e.type !== "update" ? path : path.slice(path.lastIndexOf(".") + 1) || "", object };
+    e.currentTarget = { path, value, oldValue: e.type !== "update" ? e.target.oldValue : void 0, key: e.type !== "update" ? path : path.slice(path.lastIndexOf(".") + 1) || "", object };
     let tDepth, lDepth;
-    for (let i = 0; i < cords.length; i++) {
+    for (let i = 0, len = cords.length; i < len; i++) {
       if (e.immediatePropagationStopped) break;
       if (cords[i].capture !== isCapture) continue;
-      if (cords[i].depth != undefined) {
-        ((tDepth ??= this.getDepth(e.target.path)), (lDepth ??= this.getDepth(path)));
+      if (cords[i].depth !== void 0) {
+        (tDepth ?? (tDepth = this.getDepth(e.target.path)), lDepth ?? (lDepth = this.getDepth(path)));
         if (tDepth > lDepth + cords[i].depth) continue;
       }
       cords[i].cb(e);
@@ -275,8 +321,8 @@ class Reactor {
   }
   getContext(path) {
     const lastDot = path.lastIndexOf("."),
-      value = path === "*" ? this.core : tmg.getAny(this.core, path),
-      object = lastDot === -1 ? this.core : tmg.getAny(this.core, path.slice(0, lastDot));
+      value = path === "*" ? this.core : getAny(this.core, path),
+      object = lastDot === -1 ? this.core : getAny(this.core, path.slice(0, lastDot));
     return { path, value, key: path.slice(lastDot + 1) || "", object };
   }
   getDepth(p, d = !p ? 0 : 1) {
@@ -295,107 +341,111 @@ class Reactor {
       }
   }
   stall(task) {
-    this.queue ??= new Set();
+    this.queue ?? (this.queue = new Set());
     (this.queue.add(task), !this.isBatching && this.initBatching());
   }
   nostall(task) {
     return this.queue?.delete(task);
   }
   get(path, cb, opts) {
-    this.getters ??= new Map();
-    const { lazy = false, once = false, signal, immediate = false } = tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR);
+    this.getters ?? (this.getters = new Map());
+    const { lazy = false, once = false, signal, immediate = false } = parseEvOpts(opts, EV_OPTS.MEDIATOR);
     let cords = this.getters.get(path),
       cord;
-    if (cords)
+    if (cords) {
       for (let i = 0, len = cords.length; i < len; i++)
         if (Object.is(cords[i].cb, cb)) {
           cord = cords[i];
           break;
         }
+    }
     if (cord) return cord.clup;
     cord = { cb, once, clup: () => (lazy && this.nostall(task), this.noget(path, cb)) };
-    if (immediate) (immediate !== "auto" || tmg.inAny(this.core, path)) && tmg.getAny(this.core, path);
+    if (immediate) (immediate !== "auto" || inAny(this.core, path)) && getAny(this.core, path);
     const task = () => (cords ?? (this.getters.set(path, (cords = [])), cords)).push(cord);
     lazy ? this.stall(task) : task();
     return this.bind(cord, signal);
   }
   gonce(path, cb, opts) {
-    return this.get(path, cb, { ...tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR), once: true });
+    return this.get(path, cb, { ...parseEvOpts(opts, EV_OPTS.MEDIATOR), once: true });
   }
   noget(path, cb) {
     const cords = this.getters?.get(path);
-    if (!cords) return undefined;
+    if (!cords) return void 0;
     for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.getters.delete(path), true);
     return false;
   }
   set(path, cb, opts) {
-    this.setters ??= new Map();
-    const { lazy = false, once = false, signal, immediate = false } = tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR);
+    this.setters ?? (this.setters = new Map());
+    const { lazy = false, once = false, signal, immediate = false } = parseEvOpts(opts, EV_OPTS.MEDIATOR);
     let cords = this.setters.get(path),
       cord;
-    if (cords)
+    if (cords) {
       for (let i = 0, len = cords.length; i < len; i++)
         if (Object.is(cords[i].cb, cb)) {
           cord = cords[i];
           break;
         }
+    }
     if (cord) return cord.clup;
     cord = { cb, once, clup: () => (lazy && this.nostall(task), this.noset(path, cb)) };
-    if (immediate) (immediate !== "auto" || tmg.inAny(this.core, path)) && tmg.setAny(this.core, path, this.getContext(path).value);
+    if (immediate) (immediate !== "auto" || inAny(this.core, path)) && setAny(this.core, path, this.getContext(path).value);
     const task = () => (cords ?? (this.setters.set(path, (cords = [])), cords)).push(cord);
     lazy ? this.stall(task) : task();
     return this.bind(cord, signal);
   }
   sonce(path, cb, opts) {
-    return this.set(path, cb, Object.assign(tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
+    return this.set(path, cb, Object.assign(parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
   }
   noset(path, cb) {
     const cords = this.setters?.get(path);
-    if (!cords) return undefined;
+    if (!cords) return void 0;
     for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.setters.delete(path), true);
     return false;
   }
   delete(path, cb, opts) {
-    this.deleters ??= new Map();
-    const { lazy = false, once = false, signal, immediate = false } = tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR);
+    this.deleters ?? (this.deleters = new Map());
+    const { lazy = false, once = false, signal, immediate = false } = parseEvOpts(opts, EV_OPTS.MEDIATOR);
     let cords = this.deleters.get(path),
       cord;
-    if (cords)
+    if (cords) {
       for (let i = 0, len = cords.length; i < len; i++)
         if (Object.is(cords[i].cb, cb)) {
           cord = cords[i];
           break;
         }
+    }
     if (cord) return cord.clup;
     cord = { cb, once, clup: () => (lazy && this.nostall(task), this.nodelete(path, cb)) };
-    if (immediate) (immediate !== "auto" || tmg.inAny(this.core, path)) && tmg.deleteAny(this.core, path, undefined);
+    if (immediate) (immediate !== "auto" || inAny(this.core, path)) && deleteAny(this.core, path, void 0);
     const task = () => (cords ?? (this.deleters.set(path, (cords = [])), cords)).push(cord);
     lazy ? this.stall(task) : task();
     return this.bind(cord, signal);
   }
   donce(path, cb, opts) {
-    return this.delete(path, cb, Object.assign(tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
+    return this.delete(path, cb, Object.assign(parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
   }
   nodelete(path, cb) {
     const cords = this.deleters?.get(path);
-    if (!cords) return undefined;
+    if (!cords) return void 0;
     for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.deleters.delete(path), true);
     return false;
   }
   watch(path, cb, opts) {
-    this.watchers ??= new Map();
-    const { lazy = false, once = false, signal, immediate = false } = tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR);
+    this.watchers ?? (this.watchers = new Map());
+    const { lazy = false, once = false, signal, immediate = false } = parseEvOpts(opts, EV_OPTS.MEDIATOR);
     let cords = this.watchers.get(path),
       cord;
-    if (cords)
+    if (cords) {
       for (let i = 0, len = cords.length; i < len; i++)
         if (Object.is(cords[i].cb, cb)) {
           cord = cords[i];
           break;
         }
+    }
     if (cord) return cord.clup;
     cord = { cb, once, clup: () => (lazy && this.nostall(task), this.nowatch(path, cb)) };
-    if (immediate && immediate !== "auto" && tmg.inAny(this.core, path)) {
+    if (immediate && immediate !== "auto" && inAny(this.core, path)) {
       const target = this.getContext(path);
       cb(target.value, { type: "init", target, currentTarget: target, root: this.core, rejectable: false });
     }
@@ -404,28 +454,29 @@ class Reactor {
     return this.bind(cord, signal);
   }
   wonce(path, cb, opts) {
-    return this.watch(path, cb, Object.assign(tmg.parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
+    return this.watch(path, cb, Object.assign(parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
   }
   nowatch(path, cb) {
     const cords = this.watchers?.get(path);
-    if (!cords) return undefined;
+    if (!cords) return void 0;
     for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.watchers.delete(path), true);
     return false;
   }
   on(path, cb, options) {
-    this.listeners ??= new Map();
-    const { capture = false, once = false, signal, immediate = false, depth } = tmg.parseEvOpts(options, EV_OPTS.LISTENER);
+    this.listeners ?? (this.listeners = new Map());
+    const { capture = false, once = false, signal, immediate = false, depth } = parseEvOpts(options, EV_OPTS.LISTENER);
     let cords = this.listeners.get(path),
       cord;
-    if (cords)
+    if (cords) {
       for (let i = 0, len = cords.length; i < len; i++)
         if (Object.is(cords[i].cb, cb) && capture === cords[i].capture) {
           cord = cords[i];
           break;
         }
+    }
     if (cord) return cord.clup;
     cord = { cb, capture, depth, once, clup: () => this.off(path, cb, options) };
-    if (immediate && (immediate !== "auto" || tmg.inAny(this.core, path))) {
+    if (immediate && (immediate !== "auto" || inAny(this.core, path))) {
       const target = this.getContext(path);
       cb(new ReactorEvent({ type: "init", target, currentTarget: target, root: this.core, rejectable: false }, this.config.eventBubbling, this._canLog));
     }
@@ -433,12 +484,12 @@ class Reactor {
     return this.bind(cord, signal);
   }
   once(path, cb, options) {
-    return this.on(path, cb, Object.assign(tmg.parseEvOpts(options, EV_OPTS.LISTENER), { once: true }));
+    return this.on(path, cb, Object.assign(parseEvOpts(options, EV_OPTS.LISTENER), { once: true }));
   }
   off(path, cb, options) {
     const cords = this.listeners?.get(path);
-    if (!cords) return undefined;
-    const { capture } = tmg.parseEvOpts(options, EV_OPTS.LISTENER);
+    if (!cords) return void 0;
+    const { capture } = parseEvOpts(options, EV_OPTS.LISTENER);
     for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb) && cords[i].capture === capture) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.listeners.delete(path), true);
     return false;
   }
@@ -452,13 +503,13 @@ class Reactor {
     return this.isTracking;
   }
   snapshot() {
-    return tmg.deepClone(this.core);
+    return deepClone(this.core, !!this.config.crossRealms);
   }
   cascade({ type, currentTarget: { path, value: news, oldValue: olds } }, objSafe = true) {
-    if ((type !== "set" && type !== "delete") || !(tmg.isStrictObj(news, this.config.crossRealms) || Array.isArray(news)) || (objSafe ? !(tmg.isStrictObj(olds, this.config.crossRealms) || Array.isArray(olds)) : false)) return;
-    const obj = objSafe ? tmg.mergeObjs(olds, news) : news,
+    if ((type !== "set" && type !== "delete") || !(isStrictObj(news, this.config.crossRealms) || Array.isArray(news)) || (objSafe ? !(isStrictObj(olds, this.config.crossRealms) || Array.isArray(olds)) : false)) return;
+    const obj = objSafe ? mergeObjs(olds, news) : news,
       keys = Object.keys(obj);
-    for (let i = 0, len = keys.length; i < len; i++) tmg.setAny(this.core, path + "." + keys[i], obj[keys[i]]);
+    for (let i = 0, len = keys.length; i < len; i++) setAny(this.core, path + "." + keys[i], obj[keys[i]]);
   }
   reset() {
     (this.getters?.clear(), this.setters?.clear(), this.deleters?.clear(), this.watchers?.clear(), this.listeners?.clear());
@@ -466,7 +517,7 @@ class Reactor {
     this.proxyCache = new WeakMap();
   }
   destroy() {
-    (this.reset(), tmg.nuke(this));
+    (this.reset(), nuke(this));
   }
 }
 const methods = ["tick", "stall", "nostall", "get", "gonce", "noget", "set", "sonce", "noset", "delete", "donce", "nodelete", "watch", "wonce", "nowatch", "on", "once", "off", "cascade", "snapshot", "reset", "destroy"];
@@ -484,7 +535,7 @@ class tmg_Video_Controller {
     this.setReadyState(0, medium); // had to be done before binding, for user info
     this.bindMethods(); // first thing, same this.cZoneWs throughout life cycle
     ((this.buildCache = { ...build }), (this.id = build.id), (this.video = medium));
-    this.config = reactive(build, { referenceTracking: true }); // merging the video build into the Video Player Instance
+    this.config = reactive(build, { equalityTracking: false }); // merging the video build into the Video Player Instance
     this.settings = this.config.settings; // alias for devx, for non reassignable common config
     (this.guardGenericPaths(), this.guardTimeValues(), this.plugSources(), this.plugTracks(), this.plugPlaylist());
     const { src, sources, tracks } = this.config;
@@ -529,18 +580,16 @@ class tmg_Video_Controller {
         if (this.readyState < 1) return;
         const v = root.playlist?.find((v) => (v.media.id && v.media.id === root.media.id) || tmg.isSameURL(v.src, root.src));
         this.currentPlaylistIndex = v ? root.playlist.indexOf(v) : 0;
-        if (v) {
-          root.media = v.media;
-          ["min", "max", "start", "end", "previews"].forEach((prop) => (this.settings.time[prop] = v.settings.time[prop]));
-          root.tracks = v.tracks ?? [];
-          this.setControlsState("playlist");
-        } else this.movePlaylistTo(this.currentPlaylistIndex);
+        v ? this.applyPlaylistItem(v, false) : this.movePlaylistTo(this.currentPlaylistIndex);
       },
       { depth: 1 }
     );
     this.config.playlist = this.config.playlist;
   }
-  setPosterState = (poster = this.config.media.artwork?.[0]?.src) => !tmg.isSameURL(poster, this.video.poster) && (poster ? this.video.setAttribute("poster", poster) : this.video.removeAttribute("poster"));
+  setPosterState(poster = this.config.media.artwork?.[0]?.src) {
+    !tmg.isSameURL(poster, this.video.poster) && (poster ? this.video.setAttribute("poster", poster) : this.video.removeAttribute("poster"));
+    this.settings.css.currentPosterUrl = `url(${poster})`;
+  }
   plugMedia() {
     this.setImgLoadState({ target: this.DOM.videoProfile });
     ["media.title", "media.artist", "media.profile"].forEach((e) => this.config.watch(e, (value, { root }) => (root.settings.controlPanel[e.replace("media.", "")] = value)));
@@ -553,6 +602,13 @@ class tmg_Video_Controller {
     this.config.on("media.artwork", ({ currentTarget: { value } }) => this.setPosterState(value?.[0]?.src));
     this.config.on("media", () => !this.video.paused && this.syncMediaSession());
     this.config.media = this.config.media;
+  }
+  async autoGenerateMedia() {
+    const url = this.config.media.artwork?.[0]?.src;
+    if (!this.config.media.autoGenerate || (url && !url.startsWith("blob:"))) return;
+    url && URL.revokeObjectURL(url);
+    this.config.media.artwork = [{ src: "" }];
+    this.config.media.artwork = [{ src: (await this.getVideoFrame(undefined, this.config.lightState.preview.time)).url || "" }];
   }
   get payload() {
     return { readyState: this.readyState, initialized: this.readyState > 0, destroyed: this.readyState < 0, Controller: this };
@@ -576,7 +632,11 @@ class tmg_Video_Controller {
   notify = (event) => this.settings.notifiers && this.fire(event, null, this.DOM.notifiersContainer);
   plugToastsSettings = () => {
     this.config.on("settings.toasts.disabled", ({ value }) => value && t007.toast.dismissAll(this.id)); // dismissals are mandatory
-    this.config.on("settings.toasts.nextVideoPreview.usePoster", ({ target: { value, object } }) => this.nextVideoPreview && (!value || !this.nextVideoPreview.poster) && (object[object.tease ? "tease" : "time"] = object[object.tease ? "tease" : "time"]));
+    this.config.on("settings.toasts.nextVideoPreview.usePoster", ({ target: { value, object } }) => {
+      if (!this.nextVideoPreview || (value && this.nextVideoPreview.poster)) return;
+      if (object.tease) object.tease = true;
+      else this.nextVideoPreview.currentTime = object.time;
+    });
     this.config.on("settings.toasts.nextVideoPreview.tease", ({ target: { value, object } }) => {
       if (this.nextVideoPreview) this.nextVideoPreview.ontimeupdate = ({ target: p }) => tmg.safeNum(p.currentTime) >= object.time && p.pause();
       value && (!object.usePoster || !this.nextVideoPreview.poster) && this.nextVideoPreview.play();
@@ -653,26 +713,19 @@ class tmg_Video_Controller {
         spec = () => (this.videoContainer.classList.forEach((cls) => cls.startsWith(pre) && this.videoContainer.classList.remove(cls)), this.videoContainer.classList.add(`${pre}-${value}`), true);
       ({ captionsCharacterEdgeStyle: spec, captionsTextAlignment: spec })[key]?.() ?? [this.videoContainer, this.pseudoVideoContainer].forEach((el) => el?.style.setProperty(`--${pre}`, value));
     };
-    this.config.on(
-      "settings.css",
-      ({ type, target: { key, value } }) => {
-        if (type !== "update" && type !== "init") return;
-        type !== "init" ? apply(key, value) : Object.keys(value).forEach((k) => k !== "syncWithMedia" && apply(k, value[k]));
-      },
-      { depth: 1, immediate: true }
-    );
     this.classKeys = ["captionsCharacterEdgeStyle", "captionsTextAlignment"];
     this.CSSCache ??= {};
-    const prevGet = this.config.__Reactor__.config.get;
-    this.config.__Reactor__.config.get = (obj, key, val, proxy, paths) => {
-      prevGet && (val = prevGet(obj, key, val, proxy, paths));
-      if (!paths[0]?.startsWith("settings.css.")) return val;
-      const safeKey = String(key);
-      if (paths[0]?.includes("syncWithMedia")) return val;
-      const newVal = this[this.classKeys.includes(safeKey) ? "getClassValue" : "getCSSValue"](safeKey);
-      this.CSSCache[safeKey] ||= newVal;
-      return newVal;
-    };
+    this.config.get("*", (val, { target: { key, path } }) => {
+      if (!path.startsWith("settings.css.")) return val;
+      if (path.includes("sync")) return val;
+      const newVal = this[this.classKeys.includes(key) ? "getClassValue" : "getCSSValue"](key);
+      return ((this.CSSCache[key] ||= newVal), newVal);
+    });
+    this.config.watch("*", (val, { target: { key, path } }) => {
+      if (!path.startsWith("settings.css.") || path.includes("sync")) return;
+      apply(key, val);
+    });
+    Object.keys(this.settings.css).forEach((k) => k !== "syncWithMedia" && apply(k, this.settings.css[k]));
   }
   getCSSValue(key) {
     const cssVar = `--tmg-video-${tmg.uncamelize(key, "-")}`;
@@ -1095,16 +1148,14 @@ class tmg_Video_Controller {
         this.initHeavyControls();
       } else {
         root.lightState.preview.usePoster = object.preview.usePoster;
-        root.lightState.preview.time = object.preview.time;
         this.videoContainer.classList.add("tmg-video-light");
         this.video.addEventListener("play", this.removeLightState);
         this.DOM.controlsContainer.addEventListener("click", this._handleLightStateClick);
       }
     });
-    this.config.on("lightState.controls", () => this.queryDOM("[data-control-id]", false, true).forEach((c) => (c.dataset.lightControl = this.isLight(c.dataset.controlId) ? "true" : "false")));
+    this.config.on("lightState.controls", () => this.queryDOM("[data-control-id]", false, true).forEach((c) => (c.dataset.lightControl = this.isLight(c.dataset.controlId) ? "true" : "false")), { immediate: true });
     this.config.on("lightState.preview.usePoster", ({ target: { value }, root }) => !root.lightState.disabled && (!value || !this.video.poster) && (this.currentTime = root.lightState.preview.time));
     this.config.on("lightState.preview.time", ({ target: { value, object }, root }) => !root.lightState.disabled && (!object.usePoster || !this.video.poster) && (this.currentTime = value));
-    this.config.lightState = this.config.lightState;
   }
   addLightState = () => (this.config.lightState.disabled = false);
   removeLightState = () => {
@@ -1449,26 +1500,20 @@ class tmg_Video_Controller {
     this.pseudoVideoContainer.parentElement?.replaceChild(destroy ? this.video : this.videoContainer, this.pseudoVideoContainer);
     !destroy && setTimeout(() => (this.mutatingDOMM = false));
   }
-  convertToMonoChrome(canvas, context) {
-    const frame = context.getImageData(0, 0, canvas.width || 1, canvas.height || 1);
-    for (let i = 0; i < frame.data.length / 4; i++) {
-      const grey = (frame.data[i * 4 + 0] + frame.data[i * 4 + 1] + frame.data[i * 4 + 2]) / 3;
-      ((frame.data[i * 4 + 0] = grey), (frame.data[i * 4 + 1] = grey), (frame.data[i * 4 + 2] = grey));
-    }
-    context.putImageData(frame, 0, 0);
-  }
   async getVideoFrame(display, time = this.currentTime, raw = false, min = 0, video = this.pseudoVideo) {
     if (video !== this.video) {
       await this.frameReadyPromise; // wait for it to get set by last getter 5 lines below
-      if (Math.abs(video.currentTime - time) > 0.01) {
-        this.frameReadyPromise ??= new Promise((res) => video.addEventListener("timeupdate", () => res(null), { once: true }));
+      if (Math.abs(video.currentTime - time) > 0.01 || !video.readyState) {
+        this.frameReadyPromise ??= new Promise((res) => video.addEventListener(video.readyState ? "timeupdate" : "loadeddata", () => res(null), { once: true }));
         video.currentTime = time; // small epsilon tolerance for video time comparison - 0.01(10ms)
       }
       this.frameReadyPromise = await this.frameReadyPromise;
     }
     ((this.exportCanvas.width = video.videoWidth || min), (this.exportCanvas.height = video.videoHeight || min));
+    this.exportContext.filter = this.settings.css.filter;
+    display === "monochrome" && (this.exportContext.filter = `${this.exportContext.filter} grayscale(100%)`);
     this.exportContext.drawImage(video, 0, 0, this.exportCanvas.width, this.exportCanvas.height);
-    display === "monochrome" && this.convertToMonoChrome(this.exportCanvas, this.exportContext);
+    this.exportContext.filter = "none";
     if (raw === true) return { canvas: this.exportCanvas, context: this.exportContext };
     const blob = (this.exportCanvas.width || this.exportCanvas.height) && (await new Promise((res) => this.exportCanvas.toBlob(res)));
     return { blob, url: blob && URL.createObjectURL(blob) };
@@ -1578,6 +1623,8 @@ class tmg_Video_Controller {
     (this.syncMediaAspectRatio(), this.syncWithMediaColor());
     this.setCaptionsState();
     this.reactivate();
+    this.config.lightState.preview.usePoster = this.config.lightState.preview.usePoster; // to retrigger incase poster preview time is a percentage
+    this.autoGenerateMedia();
   }
   _handleLoadedData = this._handleDurationChange;
   _handleDurationChange = () => {
@@ -1594,14 +1641,17 @@ class tmg_Video_Controller {
   movePlaylistTo(index, shouldPlay) {
     if (!this.config.playlist) return this.setControlsState("playlist");
     this.currentPlaylistIndex = index;
-    const v = this.config.playlist[index];
-    this.config.media = v.media;
-    ["min", "max", "start", "end", "previews"].forEach((prop) => (this.settings.time[prop] = v.settings.time[prop]));
-    this.config.tracks = v.tracks ?? [];
-    this.config.src = v.src || "";
-    if ("sources" in v) this.config.sources = v.sources;
+    this.applyPlaylistItem(this.config.playlist[index]);
     "boolean" === typeof shouldPlay && this.togglePlay(shouldPlay);
     this.canAutoMovePlaylist = true;
+  }
+  applyPlaylistItem(v, reset = true) {
+    this.config.media = tmg.deepClone(v.media);
+    ["min", "max", "start", "end", "previews"].forEach((prop) => (this.settings.time[prop] = v.settings.time[prop]));
+    this.config.tracks = tmg.deepClone(v.tracks ?? []);
+    if (reset) this.config.src = v.src || "";
+    if (reset && "sources" in v) this.config.sources = tmg.deepClone(v.sources);
+    this.setControlsState("playlist");
   }
   autonextVideo() {
     if (!this.loaded || !this.config.playlist || this.settings.auto.next < 0 || !this.canAutoMovePlaylist || this.currentPlaylistIndex >= this.config.playlist.length - 1 || this.video.paused || this.buffering) return;
@@ -1742,8 +1792,7 @@ class tmg_Video_Controller {
         const rect = this.DOM.timelineContainer?.getBoundingClientRect(),
           currX = tmg.clamp(0, !this.isScrubbing || this.settings.controlPanel.timeline.seek.relative ? clientX - rect.left : this.lastTimelineThumbPosition * rect.width + (clientX - this.lastTimelinePointerX), rect.width),
           p = tmg.safeNum(currX / rect.width),
-          { offsetLeft: pLeft, offsetWidth: pWidth } = this.DOM.previewContainer,
-          previewImgMin = pWidth / 2 / rect.width;
+          previewImgMin = this.DOM.previewContainer.offsetWidth / 2 / rect.width;
         this.DOM.previewContainer?.setAttribute("data-preview-time", this.toTimeText(p * this.video.duration, true));
         if (this.isScrubbing) {
           this.settings.css.currentThumbPosition = p;
@@ -1754,9 +1803,6 @@ class tmg_Video_Controller {
         }
         this.settings.css.currentPreviewPosition = p;
         this.settings.css.currentPreviewImgPosition = tmg.clamp(previewImgMin, p, 1 - previewImgMin);
-        let arrowBW = tmg.parseCSSUnit(getComputedStyle(this.DOM.previewContainer, "::before").borderWidth),
-          arrowPositionMin = Math.max(arrowBW / 5, tmg.parseCSSUnit(getComputedStyle(this.DOM.previewContainer).borderRadius) / 2);
-        this.settings.css.currentPreviewImgArrowPosition = p < previewImgMin ? `${Math.max(p * rect.width, arrowPositionMin + arrowBW / 2 + 1)}px` : p > 1 - previewImgMin ? `${Math.min(pWidth / 2 + p * rect.width - pLeft, pWidth - arrowPositionMin - arrowBW - 1)}px` : "50%";
         if (["sprite", "image"].includes(this.videoContainer.dataset.previewType)) {
           const frameI = Math.floor((p * this.duration) / this.settings.time.previews.spf) || 1;
           if (this.videoContainer.dataset.previewType === "sprite") {
@@ -1804,9 +1850,11 @@ class tmg_Video_Controller {
     if (t.c < t.s.time.min || t.c > t.s.time.max) ((this.currentTime = t.s.time.loop ? t.s.time.min : t.c), !t.s.time.loop && this.togglePlay(false));
     this.DOM.currentTimeElement.textContent = this.toTimeText(t.vc, true);
     if (this.speedCheck && !this.video.paused) this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.toTimeText(t.vc, true));
-    if (this.video.readyState && t.c && Math.floor((t.s.time.end ?? t.d) - t.c) <= t.s.auto.next) this.autonextVideo();
-    if (this.video.readyState && t.c) t.s.time.start = t.c > 3 && t.c < (t.s.time.end ?? t.d) - 3 ? t.c : this.actualTimeStart;
-    if (this.video.readyState && t.c && this.config.playlist) this.config.playlist[this.currentPlaylistIndex].settings.time.start = t.s.time.start;
+    if (this.video.readyState && t.c && this.readyState > 1) {
+      if (Math.floor((t.s.time.end ?? t.d) - t.c) <= t.s.auto.next) this.autonextVideo();
+      t.s.time.start = t.c > 3 && t.c < (t.s.time.end ?? t.d) - 3 ? t.c : this.actualTimeStart;
+      if (this.config.playlist) this.config.playlist[this.currentPlaylistIndex].settings.time.start = t.s.time.start;
+    }
     this.DOM.timelineContainer?.setAttribute("aria-valuenow", Math.floor(t.c));
     this.DOM.timelineContainer?.setAttribute("aria-valuetext", `${tmg.formatMediaTime({ time: t.c, format: "human-long" })} out of ${tmg.formatMediaTime({ time: t.d, format: "human-long" })}`);
     this.videoContainer.classList.remove("tmg-video-replay");
@@ -2346,6 +2394,7 @@ class tmg_Video_Controller {
       nextFit = fits[(i + 1) % fits.length];
     this.notify(`objectfit${nextFit[0]}`);
     this.videoContainer.dataset.objectFit = this.settings.css.objectFit = nextFit[0];
+    this.settings.css.bgSafeObjectFit = nextFit[0] === "fill" ? "contain" : nextFit[0];
     this.DOM.objectFitNotifierContent.textContent = nextFit[1];
     this.syncThumbnailSize();
   }
@@ -2413,7 +2462,7 @@ class tmg_Video_Controller {
     this.toggleMiniplayerMode(false);
     this.floatingWindow = await documentPictureInPicture.requestWindow(this.settings.modes.pictureInPicture.floatingPlayer);
     this.inFloatingPlayer = true;
-    this.floatingWindow.document.documentElement.style.cssText = `height:100%; background:url(${this.config.media.profile}) center / 32px no-repeat, url(${this.video.poster}) center / ${this.videoContainer.dataset.objectFit} no-repeat, black;`;
+    this.floatingWindow.document.documentElement.style.cssText = `height:100%; background:url(${this.config.media.profile}) center / 32px no-repeat, url(${this.video.poster}) center / ${this.settings.css.bgSafeObjectFit} no-repeat, black;`;
     await tmg.breath(this.floatingWindow); // paint the bg incase the stylesheet logic takes a while
     const cssTexts = [],
       whiteList = Object.keys(t007._resourceCache);
@@ -2814,7 +2863,7 @@ class tmg_Video_Controller {
           case "stepFwd":
             return this.moveVideoFrame("forwards");
           case "objectFit":
-            return !this.isUIActive("pictureInPicture") && this.rotateObjectFit();
+            return this.rotateObjectFit();
           case "volumeUp":
             return this.changeVolume(this.settings.keys.mods.volume[mod] ?? this.settings.volume.skip);
           case "volumeDown":
@@ -3162,7 +3211,8 @@ var tmg = {
   loadResource(src, type = "style", { module, media, crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, attempts = 3, retryKey = false } = {}, w = window) {
     ((w.t007 ??= {}), (w.t007._resourceCache ??= {}));
     if (w.t007._resourceCache[src]) return w.t007._resourceCache[src];
-    if (type === "script" ? Array.prototype.some.call(w.document.scripts, (s) => tmg.isSameURL(s.src, src)) : type === "style" ? Array.prototype.some.call(w.document.styleSheets, (s) => tmg.isSameURL(s.href, src)) : false) return Promise.resolve();
+    const existing = type === "script" ? Array.prototype.find.call(w.document.scripts, (s) => tmg.isSameURL(s.src, src)) : type === "style" ? Array.prototype.find.call(w.document.styleSheets, (s) => tmg.isSameURL(s.href, src)) : null;
+    if (existing) return (w.t007._resourceCache[src] = Promise.resolve(existing));
     w.t007._resourceCache[src] = new Promise((resolve, reject) => {
       (function tryLoad(remaining, el) {
         const onerror = () => {
@@ -3322,7 +3372,7 @@ var tmg = {
   isDef: (val) => val !== undefined,
   isIter: (obj) => obj != null && "function" === typeof obj[Symbol.iterator],
   isObj: (obj, checkArr = true) => "object" === typeof obj && obj !== null && (checkArr ? !Array.isArray(obj) : true),
-  isStrictObj: (obj, crossRealms = true, typecheck = true) => (typecheck ? tmg.isObj(obj, false) : true) && (crossRealms ? Object.prototype.toString.call(obj) === "[object Object]" : obj.constructor === Object),
+  isStrictObj: (obj, crossRealms = false, typecheck = true) => (typecheck ? tmg.isObj(obj, false) : true) && (crossRealms ? Object.prototype.toString.call(obj) === "[object Object]" : obj.constructor === Object),
   isArr: (arr) => Array.isArray(arr),
   isValidNum: (number) => !isNaN(number ?? NaN) && number !== Infinity,
   inBoolArrOpt: (opt, str) => opt?.includes?.(str) ?? opt,
@@ -3463,16 +3513,12 @@ var tmg = {
     const merged = { ...(o1 || {}), ...(o2 || {}) };
     return (Object.keys(merged).forEach((k) => tmg.isObj(o1[k]) && tmg.isObj(o2[k]) && (merged[k] = tmg.mergeObjs(o1[k], o2[k]))), merged);
   },
-  deepClone(obj, visited = new WeakMap()) {
-    if ((!tmg.isObj(obj) && !tmg.isArr(obj)) || "symbol" === typeof obj || "function" === typeof obj || obj instanceof Map || obj instanceof Set || obj instanceof WeakMap || obj instanceof Promise || obj instanceof Element || obj instanceof EventTarget) return obj;
-    if (visited.has(obj)) return visited.get(obj);
+  deepClone(obj, crossRealms, visited = new WeakMap()) {
+    if (!(tmg.isStrictObj(obj, crossRealms) || tmg.isArr(obj)) || visited.has(obj)) return obj;
     const clone = tmg.isArr(obj) ? [] : {};
     visited.set(obj, clone);
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        clone[key] = tmg.deepClone(obj[key], visited);
-      }
-    }
+    const keys = Object.keys(obj);
+    for (let i = 0; i < keys.length; i++) clone[keys[i]] = tmg.deepClone(obj[keys[i]], crossRealms, visited);
     return clone;
   },
   getTrailPaths(path, reverse = true) {
@@ -3571,7 +3617,7 @@ var tmg = {
       x = c.getContext("2d"),
       s = Math.min(64, src.width, src.height);
     c.width = c.height = s;
-    src && x.drawImage(src, 0, 0, s, s);
+    src?.width && src?.height && x.drawImage(src, 0, 0, s, s);
     const d = src && x.getImageData(0, 0, s, s).data,
       ct = {}, // count
       pt = {}; // per totaljust
@@ -3857,15 +3903,15 @@ var tmg = {
   Player: tmg_Media_Player, // THE TMG MEDIA PLAYER BUILDER CLASS
   Controllers: [], // REFERENCES TO ALL THE DEPLOYED TMG MEDIA CONTROLLERS
 };
-
+const { isStrictObj, mergeObjs, getTrailPaths, getTrailRecords, parseEvOpts, inAny, getAny, setAny, deleteAny, deepClone, inert, nuke } = tmg;
 if (typeof window !== "undefined") {
   window.tmg = tmg;
   tmg.DEFAULT_VIDEO_BUILD = {
     mediaPlayer: "TMG",
     mediaType: "video",
-    media: { title: "", artist: "", profile: "", album: "", artwork: [], chapterInfo: [], links: { title: "", artist: "", profile: "" } },
+    media: { title: "", artist: "", profile: "", album: "", artwork: [], chapterInfo: [], links: { title: "", artist: "", profile: "" }, autoGenerate: true },
     disabled: false,
-    lightState: { disabled: false, controls: ["meta", "bigplaypause", "fullscreenorientation"], preview: { usePoster: true, time: 2 } },
+    lightState: { disabled: false, controls: ["meta", "bigplaypause", "fullscreenorientation"], preview: { usePoster: true, time: 10 } },
     debug: true,
     settings: {
       auto: { next: 20 },

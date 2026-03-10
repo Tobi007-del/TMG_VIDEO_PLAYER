@@ -172,6 +172,7 @@
           </div>
           <div id="file-list-wrapper">
             <button type="button" title="Clear Files!" id="clear-files-button">Clear Files</button>
+            <button type="button" title="Clear Settings!" id="clear-settings-button">Clear Settings</button>
             <h2>Selected Files</h2>
             <div id="file-list">
               <p id="no-files-text">No videos currently selected :&lpar;</p>
@@ -182,7 +183,7 @@
       <div class="attribution">
         <details>
           <summary>Coded by <a href="https://github.com/Tobi007-del" target="_blank" rel="noopener noreferrer">Tobi007</a>.</summary>
-          <p>The main idea here is for you to test out the custom controls of the video player while enjoying a movie or two. The actual TVP is in development. This is actually just an early prototype but the video controls here has been in development for a while but needs some field testing so do well to give feedback, report bugs, request features or just criticize by sending me a mail.</p>
+          <p>The main idea here is for you to test out the custom controls of the video player while enjoying a movie or two. This is actually just an early prototype but the video controls here has been in development for a while but needs some field testing so do well to give feedback, report bugs, request features or just criticize by sending me a mail.</p>
         </details>
       </div>
     </div>
@@ -198,6 +199,7 @@
       }; // now to stop stored settings colors from flashing
       const settings = JSON.parse(localStorage[_lssk] || "{}").settings;
       settings && setColors(settings.css.brandColor, settings.css.themeColor);
+      document.getElementById("clear-settings-button").classList.toggle("shown", !!settings);
     </script>
     <script>
       window.TMG_VIDEO_ALT_IMG_SRC = "/assets/icons/movie-tape.png";
