@@ -78,19 +78,19 @@ window.Memory = {
     const state = this.getState(),
       session = await DB.vault.handles.get("last_handles");
     if (!state?.playlist || !session) return null; // no session handles, no session
-    return (Date.now() - session.lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (await this.clear(), console.log("TVP expired session cleaned up.")) : { state, handles: session.handles, lastUpdated: session.lastUpdated };
+    return (Date.now() - session.lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (await this.clearSession(), console.log("TVP expired session cleaned up.")) : { state, handles: session.handles, lastUpdated: session.lastUpdated };
   },
   async save(snapshot) {
-    localStorage[_lssk] = JSON.stringify({ settings: snapshot?.settings, playlist: snapshot?.playlist, media: snapshot?.media, lightState: snapshot?.lightState, paused: video.paused });
-    sessionHandles.length ? await DB.vault.handles.put({ handles: sessionHandles, lastUpdated: Date.now() }, "last_handles") : await this.clear();
+    localStorage[_lssk] = JSON.stringify({ settings: snapshot?.settings, playlist: snapshot?.playlist, media: snapshot?.media, hasPlayed: snapshot?.lightState?.disabled, paused: video.paused });
+    sessionHandles.length ? await DB.vault.handles.put({ handles: sessionHandles, lastUpdated: Date.now() }, "last_handles") : await this.clearSession();
   },
-  async clear() {
+  async clearSession() {
     localStorage[_lssk] = JSON.stringify({ settings: this.getState()?.settings || {} }); // might not wanna clear settings
-    ((sessionHandles = []), await DB.clear());
+    ((sessionHandles = []), await DB.clearSession());
   },
   clearSettings() {
-    const { playlist, media, paused } = this.getState();
-    localStorage[_lssk] = JSON.stringify({ playlist, media, paused });
+    const { playlist, media, hasPlayed, paused } = this.getState();
+    localStorage[_lssk] = JSON.stringify({ playlist, media, hasPlayed, paused });
   },
 };
 // app logic variables
@@ -343,7 +343,7 @@ async function clearFiles() {
     queue.drop(vid.dataset.captionId);
   });
   nums.files = nums.bytes = nums.time = 0;
-  (Memory.clear(), defaultUI());
+  (Memory.clearSession(), defaultUI());
   clearSettingsButton.classList.add("shown");
   clearTId = Toast.success("Cleared all files from your session, Settings too?", { autoClose: 5000, actions: { Clear: () => clearSettings() } });
 }
@@ -374,7 +374,7 @@ async function handleFiles(files, restored = null, handles = null) {
           playsInline: true,
           onloadedmetadata: ({ target }) => {
             nums.time += tmg.safeNum(target.duration);
-            if (tmg.safeNum(target.duration) > 12) target.currentTime = tmg.parseIfPercent(tmg.DEFAULT_VIDEO_BUILD.lightState.preview.time, target.duration);
+            target.currentTime = tmg.parseIfPercent(tmg.DEFAULT_VIDEO_BUILD.lightState.preview.time, target.duration);
             document.getElementById("total-time").textContent = tmg.formatMediaTime({ time: nums.time });
             li.querySelector(".file-duration span:last-child").innerHTML = `${tmg.formatMediaTime({ time: target.duration })}`;
             restored && thumbnails[i]?.parentElement?.style.setProperty("--video-progress-position", tmg.safeNum(state.settings.time.start / target.duration));
@@ -498,7 +498,7 @@ async function handleFiles(files, restored = null, handles = null) {
           "tmgattached",
           () => {
             const i = restored && playlist.findIndex((item) => item.media.id === restored.media.id),
-              should = restored?.lightState?.disabled && i !== -1;
+              should = (restored?.hasPlayed || restored?.lightState?.disabled) && i !== -1; // having a taste of backwards compat
             should && mP.Controller?.movePlaylistTo(i, !restored.paused);
             should && thumbnails[i]?.closest("li")?.classList.add("playing");
             should && thumbnails[i]?.parentElement?.classList.toggle("paused", video.paused);
@@ -508,7 +508,7 @@ async function handleFiles(files, restored = null, handles = null) {
           { once: true }
         );
         mP = new tmg.Player({ cloneOnDetach: true, playlist, "media.artist": "TMG Video Player", "media.profile": "assets/icons/tmg-icon.jpeg", "media.links.artist": "https://tmg-video-player.vercel.app", "media.links.profile": "https://github.com/Tobi007-del/TMG_MEDIA_PROTOTYPE", "settings.captions.font.size.value": 200, "settings.captions.font.weight.value": 700, "settings.captions.background.opacity.value": 0, "settings.captions.characterEdgeStyle.value": "drop-shadow", "settings.overlay.behavior": "auto" });
-        mP.configure({ settings: (restored ?? Memory.getState())?.settings ?? {}, lightState: restored?.lightState ?? {} }); // recursive mixing in
+        mP.configure({ settings: (restored ?? Memory.getState())?.settings ?? {}, lightState: restored?.hasPlayed || restored?.lightState?.disabled ? { disabled: true } : {} }); // recursive mixing in & having anoda taste of backwards compat
         mP.attach(video);
         window.addEventListener("pagehide", saveSession);
         document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && saveSession());

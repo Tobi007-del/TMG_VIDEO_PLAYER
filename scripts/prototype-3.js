@@ -641,7 +641,7 @@ class tmg_Video_Controller {
       if (this.nextVideoPreview) this.nextVideoPreview.ontimeupdate = ({ target: p }) => tmg.safeNum(p.currentTime) >= object.time && p.pause();
       value && (!object.usePoster || !this.nextVideoPreview.poster) && this.nextVideoPreview.play();
     });
-    this.config.on("settings.toasts.nextVideoPreview.time", ({ target: { value, object } }) => this.nextVideoPreview && (!object.usePoster || !this.nextVideoPreview.poster) && (this.nextVideoPreview.currentTime = tmg.safeNum(value)));
+    this.config.on("settings.toasts.nextVideoPreview.time", ({ target: { object } }) => this.nextVideoPreview && (!object.usePoster || !this.nextVideoPreview.poster) && (this.nextVideoPreview.currentTime = tmg.safeNum(object.time)));
     this.config.on("settings.toasts", ({ type, target: { path, key, value } }) => type === "update" && !path.match(/disabled|nextVideoPreview|captureAutoClose/) && t007.toast.doForAll("update", { [key]: value }, this.id));
   };
   get toast() {
@@ -1154,8 +1154,8 @@ class tmg_Video_Controller {
       }
     });
     this.config.on("lightState.controls", () => this.queryDOM("[data-control-id]", false, true).forEach((c) => (c.dataset.lightControl = this.isLight(c.dataset.controlId) ? "true" : "false")), { immediate: true });
-    this.config.on("lightState.preview.usePoster", ({ target: { value }, root }) => !root.lightState.disabled && (!value || !this.video.poster) && (this.currentTime = root.lightState.preview.time));
-    this.config.on("lightState.preview.time", ({ target: { value, object }, root }) => !root.lightState.disabled && (!object.usePoster || !this.video.poster) && (this.currentTime = value));
+    this.config.on("lightState.preview.usePoster", ({ target: { value, object }, root }) => !root.lightState.disabled && (!value || !this.video.poster) && (this.currentTime = object.time));
+    this.config.on("lightState.preview.time", ({ target: { object }, root }) => !root.lightState.disabled && (!object.usePoster || !this.video.poster) && (this.currentTime = object.time));
   }
   addLightState = () => (this.config.lightState.disabled = false);
   removeLightState = () => {
@@ -3478,7 +3478,10 @@ var tmg = {
     }
   },
   safeNum: (number, fallback = 0) => (tmg.isValidNum(number) ? number : fallback),
-  parseIfPercent: (percent, amount = 100) => (percent?.endsWith?.("%") ? tmg.safeNum((parseFloat(percent) / 100) * amount) : percent),
+  parseIfPercent: (percent, amount, autocap = 0.25) => {
+    const val = percent?.endsWith?.("%") ? tmg.safeNum((parseFloat(percent) / 100) * amount) : percent;
+    return val && amount && autocap && amount <= val ? amount * autocap : val;
+  },
   parseCSSTime: (time) => (time?.endsWith?.("ms") ? parseFloat(time) : parseFloat(time) * 1000),
   parseCSSUnit: (val) => (val?.endsWith?.("px") ? parseFloat(val) : tmg.remToPx(parseFloat(val))),
   parseUIObj(obj) {
@@ -4121,7 +4124,7 @@ if (typeof window !== "undefined") {
       playbackRate: { min: 0.25, max: 8, skip: 0.25 },
       playsInline: true,
       time: { min: 0, skip: 10, previews: false, mode: "elapsed", format: "digital", seekSync: false },
-      toasts: { disabled: false, nextVideoPreview: { usePoster: true, time: 2, tease: true }, captureAutoClose: 15000, maxToasts: 7, position: "bottom-left", hideProgressBar: true, closeButton: !tmg.ON_MOBILE, animation: "slide-up", dragToCloseDir: "x||y" },
+      toasts: { disabled: false, nextVideoPreview: { usePoster: true, time: 10, tease: true }, captureAutoClose: 15000, maxToasts: 7, position: "bottom-left", hideProgressBar: true, closeButton: !tmg.ON_MOBILE, animation: "slide-up", dragToCloseDir: "x||y" },
       volume: { min: 0, max: 300, skip: 5 },
     },
   };
