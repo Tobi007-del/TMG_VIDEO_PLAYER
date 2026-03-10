@@ -606,9 +606,9 @@ class tmg_Video_Controller {
   async autoGenerateMedia() {
     const url = this.config.media.artwork?.[0]?.src;
     if (!this.config.media.autoGenerate || (url && !url.startsWith("blob:"))) return;
-    url && URL.revokeObjectURL(url);
     this.config.media.artwork = [{ src: "" }];
     this.config.media.artwork = [{ src: (await this.getVideoFrame(undefined, this.config.lightState.preview.time)).url || "" }];
+    url && URL.revokeObjectURL(url);
   }
   get payload() {
     return { readyState: this.readyState, initialized: this.readyState > 0, destroyed: this.readyState < 0, Controller: this };
@@ -715,6 +715,7 @@ class tmg_Video_Controller {
     };
     this.classKeys = ["captionsCharacterEdgeStyle", "captionsTextAlignment"];
     this.CSSCache ??= {};
+    Object.keys(this.settings.css).forEach((k) => k !== "syncWithMedia" && apply(k, this.settings.css[k]));
     this.config.get("*", (val, { target: { key, path } }) => {
       if (!path.startsWith("settings.css.")) return val;
       if (path.includes("sync")) return val;
@@ -725,7 +726,6 @@ class tmg_Video_Controller {
       if (!path.startsWith("settings.css.") || path.includes("sync")) return;
       apply(key, val);
     });
-    Object.keys(this.settings.css).forEach((k) => k !== "syncWithMedia" && apply(k, this.settings.css[k]));
   }
   getCSSValue(key) {
     const cssVar = `--tmg-video-${tmg.uncamelize(key, "-")}`;
@@ -2549,7 +2549,7 @@ class tmg_Video_Controller {
     this.videoContainer.style.setProperty("left", this.wildMiniplayerX, "important");
     this.videoContainer.style.setProperty("bottom", this.wildMiniplayerY, "important");
     this.videoContainer.style.removeProperty("transform");
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       ((this.settings.css.currentMiniplayerX = this.nextMiniplayerX), (this.settings.css.currentMiniplayerY = this.nextMiniplayerY));
       ["transition", "left", "bottom"].forEach((prop) => this.videoContainer.style.removeProperty(prop));
     });
@@ -3914,7 +3914,7 @@ if (typeof window !== "undefined") {
     mediaType: "video",
     media: { title: "", artist: "", profile: "", album: "", artwork: [], chapterInfo: [], links: { title: "", artist: "", profile: "" }, autoGenerate: true },
     disabled: false,
-    lightState: { disabled: false, controls: ["meta", "bigplaypause", "fullscreenorientation"], preview: { usePoster: true, time: 10 } },
+    lightState: { disabled: false, controls: ["meta", "bigplaypause", "fullscreenorientation"], preview: { usePoster: true, time: 4 } },
     debug: true,
     settings: {
       auto: { next: 20 },
@@ -4124,7 +4124,7 @@ if (typeof window !== "undefined") {
       playbackRate: { min: 0.25, max: 8, skip: 0.25 },
       playsInline: true,
       time: { min: 0, skip: 10, previews: false, mode: "elapsed", format: "digital", seekSync: false },
-      toasts: { disabled: false, nextVideoPreview: { usePoster: true, time: 10, tease: true }, captureAutoClose: 15000, maxToasts: 7, position: "bottom-left", hideProgressBar: true, closeButton: !tmg.ON_MOBILE, animation: "slide-up", dragToCloseDir: "x||y" },
+      toasts: { disabled: false, nextVideoPreview: { usePoster: true, time: 4, tease: true }, captureAutoClose: 15000, maxToasts: 7, position: "bottom-left", hideProgressBar: true, closeButton: !tmg.ON_MOBILE, animation: "slide-up", dragToCloseDir: "x||y" },
       volume: { min: 0, max: 300, skip: 5 },
     },
   };

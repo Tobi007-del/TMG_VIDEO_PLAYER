@@ -347,8 +347,8 @@ export const Toasting = {
   },
 };
 export const Toaster = (defOptions = {}, idPrefix = "t007_toast_") => {
-  const defaults = () => ({ ...t007.TOAST_DEFAULT_OPTIONS, ...defOptions });
-  const base = (render, options = {}) => new T007_Toast({ ...defaults(), ...options, id: render.startsWith(idPrefix) ? render : options.id, render: render.startsWith(idPrefix) ? options.render : render, idPrefix }).id;
+  const defaults = () => ({ ...t007.TOAST_DEFAULT_OPTIONS, ...defOptions }),
+    base = (render, options = {}) => new T007_Toast({ ...defaults(), ...options, id: render?.startsWith?.(idPrefix) ? render : options.id, render: render?.startsWith?.(idPrefix) ? options.render : render, idPrefix }).id;
   base.update = (id, options) => Toasting.update(base, id, options);
   ["info", "success", "warn", "error"].forEach((action) => Toasting.message(base, defaults, action));
   base.loading = (render, options) => Toasting.loading(base, render, options);
@@ -381,7 +381,7 @@ if (typeof window !== "undefined") {
   t007.TOAST_DEFAULT_OPTIONS.autoClose ??= true;
   t007.TOAST_DEFAULT_OPTIONS.position ??= "top-right"; // "top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right", "center-left", "center-center", "center-right"
   t007.TOAST_DEFAULT_OPTIONS.isLoading ??= false;
-  t007.TOAST_DEFAULT_OPTIONS.closeButton ??= true;
+  t007.TOAST_DEFAULT_OPTIONS.closeButton ??= !(/Mobi|Android|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent));
   t007.TOAST_DEFAULT_OPTIONS.closeOnClick ??= false;
   t007.TOAST_DEFAULT_OPTIONS.hideProgressBar ??= false;
   t007.TOAST_DEFAULT_OPTIONS.pauseOnHover ??= true;

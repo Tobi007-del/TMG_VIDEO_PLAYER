@@ -20,9 +20,8 @@
   --tmg-theme-accent-2-color: rgb(from var(--tmg-theme-color) calc(r - 100) calc(g - 100) calc(b - 100));
   --tmg-theme-inverse-color: black;
   --tmg-theme-dark-color: rgb(from var(--tmg-theme-inverse-color) calc(r + 11) calc(g + 16) calc(b + 18));
-  --tmg-theme-shadow-color: rgb(from var(--tmg-theme-dark-color) r g b / 0.9);
-  --tmg-theme-shadow-2-color: rgb(from var(--tmg-theme-inverse-color) calc(r + 27) calc(g + 38) calc(b + 74) / 0.751);
-  --tmg-theme-shadow-3-color: rgb(from var(--tmg-theme-inverse-color) calc(r + 92) calc(g + 128) calc(b + 247) / 0.33);
+  --tmg-theme-shadow-color: rgb(from var(--tmg-theme-dark-color) r g b / 0.83);
+  --tmg-theme-shadow-2-color: rgb(from var(--tmg-theme-inverse-color) calc(r + 92) calc(g + 128) calc(b + 247) / 0.33);
   --max-turn: 0.235turn;
   --loader-size: 75px;
   --loader-width: 4px;
@@ -146,17 +145,17 @@ body::before {
   height: 100lvh;
   z-index: -1;
   background:
-    conic-gradient(from var(--turn) at 50% -10%, var(--tmg-theme-shadow-color) 10deg, var(--tmg-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--tmg-theme-shadow-2-color), var(--tmg-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--tmg-theme-shadow-color) 350deg),
+    linear-gradient(var(--tmg-theme-shadow-color), var(--tmg-theme-shadow-color)),
     center/cover url("../assets/images/lone-tree.jpg"),
     var(--tmg-theme-dark-color);
-  animation: rotateLight 30s linear infinite;
 }
 
 body.light::before {
   background:
-    conic-gradient(from var(--turn) at 50% -10%, var(--tmg-theme-shadow-color) 10deg, var(--tmg-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--tmg-theme-shadow-3-color), var(--tmg-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--tmg-theme-shadow-color) 350deg),
+    conic-gradient(from var(--turn) at 50% -10%, var(--tmg-theme-shadow-color) 10deg, var(--tmg-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--tmg-theme-shadow-2-color), var(--tmg-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--tmg-theme-shadow-color) 350deg),
     center/cover url("../assets/images/lone-tree.jpg"),
     var(--tmg-theme-dark-color);
+  animation: rotateLight 30s linear infinite;
 }
 
 body.offline .offline-notice {
@@ -257,8 +256,8 @@ body:not(:has(#video.stall)) #clear-settings-button,
   border-color: var(--tmg-brand-color) var(--tmg-theme-accent-2-color) var(--tmg-brand-color) var(--tmg-brand-color);
   rotate: 0;
   animation:
-    spin 800ms linear infinite,
-    switch 800ms infinite ease forwards;
+    spin 600ms linear infinite,
+    switch 600ms infinite ease forwards;
 }
 
 @media (max-width: 780px) {
@@ -305,7 +304,6 @@ body:not(:has(#video.stall)) #clear-settings-button,
 #content-header > p {
   color: var(--tmg-theme-accent-color);
   font-weight: bold;
-  text-shadow: 0.5px 0.5px 2px var(--tmg-theme-shadow-color);
 }
 
 #app-header-tip {
@@ -490,11 +488,16 @@ body:not(:has(#video.stall)) #clear-settings-button,
   box-shadow: 0 4px 10px rgb(from var(--tmg-brand-accent-color) r g b / 0.4); /* 🧪 glow */
 }
 
+#content-header > p,
+#files-header,
+#no-files-text {
+  text-shadow: 0.5px 0.5px 2px var(--tmg-theme-shadow-color);
+}
+
 #no-files-text {
   margin-block: max(30px, 8.5dvh);
   color: var(--tmg-theme-accent-color);
   text-align: center;
-  text-shadow: 0.5px 0.5px 2px var(--tmg-theme-shadow-color);
 }
 
 #file-list-wrapper h2 {

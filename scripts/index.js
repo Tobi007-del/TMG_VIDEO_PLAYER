@@ -78,7 +78,7 @@ window.Memory = {
     const state = this.getState(),
       session = await DB.vault.handles.get("last_handles");
     if (!state?.playlist || !session) return null; // no session handles, no session
-    return (Date.now() - session.lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (await this.clearSession(), console.log("TVP expired session cleaned up.")) : { state, handles: session.handles, lastUpdated: session.lastUpdated };
+    return (Date.now() - session.lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (await this.clearSession(), console.log("TVP cleaned up expired session.")) : { state, handles: session.handles, lastUpdated: session.lastUpdated };
   },
   async save(snapshot) {
     localStorage[_lssk] = JSON.stringify({ settings: snapshot?.settings, playlist: snapshot?.playlist, media: snapshot?.media, hasPlayed: snapshot?.lightState?.disabled, paused: video.paused });
@@ -86,7 +86,7 @@ window.Memory = {
   },
   async clearSession() {
     localStorage[_lssk] = JSON.stringify({ settings: this.getState()?.settings || {} }); // might not wanna clear settings
-    ((sessionHandles = []), await DB.clearSession());
+    ((sessionHandles = []), await DB.clear());
   },
   clearSettings() {
     const { playlist, media, hasPlayed, paused } = this.getState();
@@ -165,6 +165,8 @@ const installButton = document.getElementById("install"),
   localStorage[_lsik] = JSON.stringify({ ...vi, lastVisit: new Date().toISOString() });
 })();
 (async function registerServiceWorker() {
+  if (crossOriginIsolated) console.log("✅ TVP isolation active: SharedArrayBuffer is ready for FFmpeg.");
+  else console.warn("⚠️ TVP isolation failed: FFmpeg might not work.");
   if (!("serviceWorker" in navigator)) return Toast.warn("Offline support is currently unavailable");
   try {
     await navigator.serviceWorker.register("TVP_sw.js");
@@ -308,7 +310,7 @@ async function restoreSession({ handles }) {
       (tmg.isArr(file) ? files.push(...file.filter((file) => file.type.startsWith("video/"))) : files.push(file), sureHandles.push(handle));
       (sToast.success(sessionTId, { render: `Restored ${name} successfully`, actions: false }), await (resp === "User not needed" ? tmg.deepBreath() : tmg.mockAsync(200))); // perceive the success without slowing down the flow at all
     } catch (err) {
-      console.error(`TVP Skipped handle "${name}":`, err);
+      console.error(`TVP skipped handle "${name}":`, err);
       (sToast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false }), await (err === "User denied" ? tmg.deepBreath() : tmg.mockAsync(800))); // perceive the failure without slowing down the flow
     }
   }
@@ -331,7 +333,7 @@ async function clearSettings(prompt = false) {
 async function clearFiles() {
   const ok = await Confirm("Are you sure you want to clear all files?", { title: "Clear Files", confirmText: "Clear" });
   if (!ok) return;
-  (Toast.dismiss(readyTId), video.pause(), video.removeAttribute("src"));
+  (Toast.dismiss(readyTId), video.pause(), video.removeAttribute("src"), video.removeAttribute("poster"));
   video.onplay = video.onpause = video.ontimeupdate = null;
   video = mP?.detach();
   mP = null;
@@ -529,7 +531,7 @@ async function handleFiles(files, restored = null, handles = null) {
   }
 }
 // Caption utils
-async function deployCaption(file, thumbnail, autocancel = tmg.queryMediaMobile(), item) {
+async function deployCaption(file, thumbnail, autocancel = !crossOriginIsolated || tmg.queryMediaMobile(), item) {
   const id = item?.tracks?.[0]?.id ?? thumbnail.dataset.captionId ?? tmg.uid(); // checking captionId since we never clear it, incase in IDB; Magic! :)
   thumbnail.setAttribute("data-caption-id", id);
   thumbnail.setAttribute("data-caption-state", item?.tracks?.[0] ? "loading" : "waiting");
@@ -560,7 +562,7 @@ async function extractCaptions(file, id) {
   const outputName = `cue${id}.vtt`,
     inputName = `video${id}${file.name.slice(file.name.lastIndexOf("."))}`;
   try {
-    console.log(`🎥 TVP FFmpeg Processing file: '${file.name}'`);
+    console.log(`🎥 TVP processing file with FFmpeg: '${file.name}'`);
     if (!ffmpeg.isLoaded()) await ffmpeg.load();
     ffmpeg.FS("writeFile", inputName, await fetchFile(file));
     console.log("🛠 Extracting first subtitle stream to .vtt...");
