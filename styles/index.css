@@ -450,7 +450,7 @@ body:not(:has(#video.stall)) #clear-settings-button,
   flex-direction: column;
   align-items: center;
   color: var(--tmg-brand-accent-color);
-  padding: 10px 1px;
+  padding: 0px 1px 10px 1px;
   gap: 20px;
 }
 
@@ -490,7 +490,8 @@ body:not(:has(#video.stall)) #clear-settings-button,
 
 #content-header > p,
 #files-header,
-#no-files-text {
+#no-files-text,
+summary {
   text-shadow: 0.5px 0.5px 2px var(--tmg-theme-shadow-color);
 }
 

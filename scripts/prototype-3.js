@@ -713,12 +713,11 @@ class tmg_Video_Controller {
         spec = () => (this.videoContainer.classList.forEach((cls) => cls.startsWith(pre) && this.videoContainer.classList.remove(cls)), this.videoContainer.classList.add(`${pre}-${value}`), true);
       ({ captionsCharacterEdgeStyle: spec, captionsTextAlignment: spec })[key]?.() ?? [this.videoContainer, this.pseudoVideoContainer].forEach((el) => el?.style.setProperty(`--${pre}`, value));
     };
+    const entries = Object.entries(this.settings.css);
     this.classKeys = ["captionsCharacterEdgeStyle", "captionsTextAlignment"];
     this.CSSCache ??= {};
-    Object.keys(this.settings.css).forEach((k) => k !== "syncWithMedia" && apply(k, this.settings.css[k]));
     this.config.get("*", (val, { target: { key, path } }) => {
-      if (!path.startsWith("settings.css.")) return val;
-      if (path.includes("sync")) return val;
+      if (!path.startsWith("settings.css.") || path.includes("sync")) return val;
       const newVal = this[this.classKeys.includes(key) ? "getClassValue" : "getCSSValue"](key);
       return ((this.CSSCache[key] ||= newVal), newVal);
     });
@@ -726,6 +725,7 @@ class tmg_Video_Controller {
       if (!path.startsWith("settings.css.") || path.includes("sync")) return;
       apply(key, val);
     });
+    entries.forEach(([k, v]) => k !== "syncWithMedia" && ((this.CSSCache[k] = this.settings.css[k]), apply(k, v)));
   }
   getCSSValue(key) {
     const cssVar = `--tmg-video-${tmg.uncamelize(key, "-")}`;
