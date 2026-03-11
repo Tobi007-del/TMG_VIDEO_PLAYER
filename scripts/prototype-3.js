@@ -721,10 +721,7 @@ class tmg_Video_Controller {
       const newVal = this[this.classKeys.includes(key) ? "getClassValue" : "getCSSValue"](key);
       return ((this.CSSCache[key] ||= newVal), newVal);
     });
-    this.config.watch("*", (val, { target: { key, path } }) => {
-      if (!path.startsWith("settings.css.") || path.includes("sync")) return;
-      apply(key, val);
-    });
+    this.config.watch("*", (val, { target: { key, path } }) => path.startsWith("settings.css.") && !path.includes("sync") && apply(key, val));
     entries.forEach(([k, v]) => k !== "syncWithMedia" && ((this.CSSCache[k] = this.settings.css[k]), apply(k, v)));
   }
   getCSSValue(key) {
