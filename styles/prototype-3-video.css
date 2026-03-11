@@ -1946,13 +1946,10 @@ body:not(:has(.tmg-video-container.tmg-video-miniplayer)) .tmg-pseudo-video-cont
 }
 .tmg-video-container:is(:not(.tmg-video-overlay, :has(:focus-visible, .tmg-video-playback-rate-notifier.tmg-video-control-active)).tmg-video-progress-bar, [data-size-tier^="xxxxx"]) .tmg-video-bottom-controls-wrapper:not(:hover) :is(.tmg-video-timeline-container, .tmg-video-seek-bars-wrapper) {
   position: absolute;
-  bottom: 0.5px;
+  bottom: 0.1px;
   width: 100%;
   margin-inline: 0;
   border-radius: 0;
-}
-.tmg-video-container:has(.tmg-video-playback-rate-notifier.tmg-video-control-active) .tmg-video-timeline-container {
-  opacity: 1;
 }
 .tmg-video-container:not(.tmg-video-overlay, :has(:focus-visible, .tmg-video-playback-rate-notifier.tmg-video-control-active)).tmg-video-progress-bar .tmg-video-timeline-container {
   opacity: var(--tmg-video-progress-bar-opacity);
@@ -2426,12 +2423,14 @@ div.tmg-video-thumbnail {
 .tmg-video-curtain,
 .tmg-video-top-controls-wrapper,
 .tmg-video-big-controls-wrapper,
-.tmg-video-bottom-controls-wrapper > * {
+.tmg-video-bottom-controls-wrapper > * > *:not(.tmg-video-timeline-container),
+.tmg-video-container:not(.tmg-video-progress-bar, :has(.tmg-video-playback-rate-notifier.tmg-video-control-active)) .tmg-video-timeline-container {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--tmg-video-fade-transition-time) ease;
 }
-.tmg-video-container:is(.tmg-video-overlay, :has(:focus-visible)) :is(.tmg-video-top-controls-wrapper, .tmg-video-big-controls-wrapper, .tmg-video-bottom-controls-wrapper > *) {
+.tmg-video-container:is(.tmg-video-overlay, :has(:focus-visible)) :is(.tmg-video-top-controls-wrapper, .tmg-video-big-controls-wrapper, .tmg-video-bottom-controls-wrapper > * > *:not(.tmg-video-timeline-container)),
+.tmg-video-container:is(.tmg-video-overlay, :has(:focus-visible)):not(.tmg-video-progress-bar, :has(.tmg-video-playback-rate-notifier.tmg-video-control-active)) .tmg-video-timeline-container {
   opacity: 1;
   pointer-events: all;
 }
@@ -2442,7 +2441,7 @@ div.tmg-video-thumbnail {
 .tmg-video-container:has(.tmg-video-playback-rate-notifier.tmg-video-control-active) .tmg-video-bottom-curtain {
   opacity: 1;
 }
-.tmg-video-container:is(:is(.tmg-video-miniplayer, .tmg-video-mobile):is(.tmg-video-scrubbing, :has(.tmg-video-notifier.tmg-video-control-persist)), :has(:is(.tmg-video-playback-rate-notifier, .tmg-video-touch-vb-notifier).tmg-video-control-active)) :is(.tmg-video-top-curtain, .tmg-video-bottom-curtain, .tmg-video-top-controls-wrapper, .tmg-video-big-controls-wrapper, .tmg-video-bottom-controls-wrapper *:not(:has(.tmg-video-timeline-container), .tmg-video-timeline-container, .tmg-video-timeline-container *)),
+.tmg-video-container:is(:is(.tmg-video-miniplayer, .tmg-video-mobile):is(.tmg-video-scrubbing, :has(.tmg-video-notifier.tmg-video-control-persist)), :has(:is(.tmg-video-playback-rate-notifier, .tmg-video-touch-vb-notifier).tmg-video-control-active)) :is(.tmg-video-top-curtain, .tmg-video-bottom-curtain, .tmg-video-top-controls-wrapper, .tmg-video-big-controls-wrapper, .tmg-video-bottom-controls-wrapper > * > *:not(.tmg-video-timeline-container)),
 .tmg-video-container:has(.tmg-video-touch-vb-notifier.tmg-video-control-active) :is(.tmg-video-bottom-curtain, .tmg-video-timeline-container) {
   opacity: 0;
   pointer-events: none;
