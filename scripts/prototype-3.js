@@ -389,7 +389,7 @@ class Reactor {
     }
     if (cord) return cord.clup;
     cord = { cb, once, clup: () => (lazy && this.nostall(task), this.noset(path, cb)) };
-    if (immediate) (immediate !== "auto" || inAny(this.core, path)) && setAny(this.core, path, this.getContext(path).value);
+    if (immediate) (immediate !== "auto" || inAny(this.core, path)) && setAny(this.core, path, getAny(this.core, path));
     const task = () => (cords ?? (this.setters.set(path, (cords = [])), cords)).push(cord);
     lazy ? this.stall(task) : task();
     return this.bind(cord, signal);
@@ -999,6 +999,7 @@ class tmg_Video_Controller {
       bottomWrapper.append(tmg.createEl("div", { className: `tmg-video-bottom-sub-controls-wrapper tmg-video-bottom-${i}-sub-controls-wrapper tmg-video-apt-controls-wrapper` }, { dropZone: "", dragId: "wrapper" }));
       ((this.zoneWs.bottom[i].left = buildWSkel("left", false)), (this.zoneWs.bottom[i].center = buildWSkel("center", false)), (this.zoneWs.bottom[i].right = buildWSkel("right", true)));
     });
+    this.zonesArr = [...Object.values(this.zoneWs.top), ...Object.values(this.zoneWs.bottom).map((v) => Object.values(v))].flat().map((w) => w.zone);
     controlsContainer.prepend(...[HTML.pictureinpicturewrapper, HTML.thumbnail, HTML.videobuffer, HTML.captionsContainer].flat().filter(Boolean), notifiersContainer, topWrapper, centerWrapper, bottomWrapper);
     this.pseudoVideoContainer.append(HTML.pictureinpicturewrapper?.cloneNode(true) || "");
     ["settings.controlPanel.title", "settings.controlPanel.artist", "settings.controlPanel.profile"].forEach((e) => this.config.on(e, ({ target: { key, value } }) => value !== true && (this.DOM[`video${tmg.capitalize(key)}`][key === "profile" ? "src" : "textContent"] = this.DOM[`video${tmg.capitalize(key)}`].dataset["video" + tmg.capitalize(key)] = value || "")));
@@ -1022,7 +1023,6 @@ class tmg_Video_Controller {
     this.settings.controlPanel = this.settings.controlPanel;
     (this.config.tick("settings.controlPanel"), this.config.tick(["settings.controlPanel.top", "settings.controlPanel.center", "settings.controlPanel.bottom"])); // needed for DOM retrieval
   }
-  getZones = () => [...Object.values(this.zoneWs.top), ...Object.values(this.zoneWs.bottom).map((v) => Object.values(v))].flat().map((w) => w.zone);
   getUIZoneWCoord(target, zoneW = false) {
     let key;
     const pos = { 0: "left", 1: "center", 2: "right" }[[...target.parentElement.children].indexOf(target)],
@@ -1053,7 +1053,6 @@ class tmg_Video_Controller {
       bigControlsWrapper: this.queryDOM(".tmg-video-big-controls-wrapper"),
       topControlsWrapper: this.queryDOM(".tmg-video-top-controls-wrapper"),
       bottomControlsWrapper: this.queryDOM(".tmg-video-bottom-controls-wrapper"),
-      sideControlWrappers: this.videoContainer.getElementsByClassName("tmg-video-side-controls-wrapper"), // has to be dynamic
       pictureInPictureWrapper: this.queryDOM(".tmg-video-picture-in-picture-wrapper"),
       pictureInPictureIconWrapper: this.queryDOM(".tmg-video-picture-in-picture-icon-wrapper"),
       videoProfile: this.queryDOM(".tmg-video-profile"),
@@ -1116,7 +1115,6 @@ class tmg_Video_Controller {
       fullscreenBtn: this.queryDOM(".tmg-video-fullscreen-btn"),
       svgs: this.videoContainer.getElementsByTagName("svg"),
       draggableControls: this.queryDOM("[data-draggable-control]", false, true),
-      dropZones: [...this.queryDOM("[data-drop-zone][data-drag-id]", false, true), ...this.getZones()],
       settingsCloseBtn: this.settings ? this.queryDOM(".tmg-video-settings-close-btn") : null,
     };
   }
@@ -1288,7 +1286,7 @@ class tmg_Video_Controller {
       c[`${act}EventListener`]("drag", this._handleDrag);
       c[`${act}EventListener`]("dragend", this._handleDragEnd);
     });
-    this.DOM.dropZones?.forEach((c) => {
+    this.zonesArr.forEach((c) => {
       c.dataset.dragId = c.dataset.dragId ?? "";
       const act = !tmg.inBoolArrOpt(this.settings.controlPanel.draggable, c.dataset.dragId) ? "remove" : want;
       c.dataset.dropZone = act === "add";
@@ -1334,8 +1332,8 @@ class tmg_Video_Controller {
     this._handleMediaParentResize();
     tmg.initScrollAssist(this.DOM.videoTitle, { pxPerSecond: 60 });
     tmg.initScrollAssist(this.DOM.videoArtist, { pxPerSecond: 30 });
-    Array.prototype.forEach.call(this.DOM.sideControlWrappers, (el) => {
-      this._handleControlsWrapperResize(el);
+    this.zonesArr.forEach((el) => {
+      this._handleControlsView(el);
       tmg.initScrollAssist(el, { pxPerSecond: 60 });
       el && tmg.resizeObserver.observe(el);
       el?.addEventListener("scroll", this._handleDirtyScroll, { passive: true });
@@ -1345,7 +1343,7 @@ class tmg_Video_Controller {
   unobserveResize() {
     tmg.removeScrollAssist(this.DOM.videoTitle);
     tmg.removeScrollAssist(this.DOM.videoArtist);
-    Array.prototype.forEach.call(this.DOM.sideControlWrappers, (el) => {
+    this.zonesArr.forEach((el) => {
       tmg.removeScrollAssist(el);
       el && tmg.resizeObserver.unobserve(el);
     });
@@ -1360,7 +1358,7 @@ class tmg_Video_Controller {
     p && tmg.intersectionObserver.unobserve(p);
     tmg.intersectionObserver.unobserve(this.video);
   }
-  _handleResize = (target) => (target.classList.contains("tmg-media-container") ? this._handleMediaParentResize(target.className.includes("pseudo")) : target.classList.contains("tmg-video-side-controls-wrapper") && this._handleControlsWrapperResize(target));
+  _handleResize = (target) => (target.classList.contains("tmg-media-container") ? this._handleMediaParentResize(target.className.includes("pseudo")) : target.classList.contains("tmg-video-side-controls-wrapper") && this._handleControlsView(target));
   _handleMediaParentResize(isPseudo = false) {
     const getTier = (container) => {
       const { offsetWidth: w, offsetHeight: h } = container;
@@ -1377,7 +1375,6 @@ class tmg_Video_Controller {
       this.pseudoVideoContainer.dataset.sizeTier = tier;
     }
   }
-  _handleControlsWrapperResize = (wrapper) => this._handleControlsView({ target: wrapper });
   _handleWindowResize() {
     if (!this.isUIActive("fullscreen")) this.toggleMiniplayerMode();
   }
@@ -1403,8 +1400,10 @@ class tmg_Video_Controller {
     if (el.scrollLeft > 0) el.dataset.hasScrolled = true;
     el.dataset.resetScrolled = el.scrollLeft === (el.dataset.scroller === "reverse" ? el.scrollWidth - el.clientWidth : 0);
   }
-  _handleControlsView({ target: w }, spacer) {
-    let c = w?.children?.[0];
+  _handleControlsView(w) {
+    if (!w.isConnected) return;
+    let spacer,
+      c = w?.children?.[0];
     do {
       c?.setAttribute("data-displayed", getComputedStyle(c).display !== "none" ? "true" : "false");
       c?.setAttribute("data-spacer", false);
@@ -2481,9 +2480,7 @@ class tmg_Video_Controller {
     this.floatingWindow && document.documentElement.getAttributeNames().forEach((attr) => this.floatingWindow.document.documentElement.setAttribute(attr, document.documentElement.getAttribute(attr)));
     tmg.DOMMutationObserver.observe(this.floatingWindow.document.documentElement, { childList: true, subtree: true });
     this.floatingWindow.addEventListener("pagehide", this._handleFloatingPlayerClose);
-    this.floatingWindow.addEventListener("resize", this._handleMediaParentResize);
     this.setKeyEventListeners("add");
-    (this._handleMediaParentResize(), setTimeout(this._handleMediaParentResize));
   }
   _handleFloatingPlayerClose() {
     ((this.inFloatingPlayer = false), (this.floatingWindow = null));
@@ -3001,7 +2998,7 @@ class tmg_Video_Controller {
         }
         const afterControl = tmg.getElSiblingAt(x, "x", t.querySelectorAll("[draggable=true]:not(.tmg-video-control-dragging)"));
         afterControl ? t.insertBefore(this.dragging, afterControl) : t.append(this.dragging);
-        !t.dataset.dragId && Array.prototype.forEach.call(this.DOM.sideControlWrappers, this._handleControlsWrapperResize);
+        !t.dataset.dragId && this.zonesArr.forEach(this._handleControlsView);
       },
       500,
       false
