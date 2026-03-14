@@ -7,8 +7,9 @@ TODO:
 */
 const arrRx = /^([^\[\]]+)\[(\d+)\]$/;
 const RAW = Symbol.for("S.I.A_RAW");
-const REJECTABLE = Symbol.for("S.I.A_REJECTABLE");
 const INERTIA = Symbol.for("S.I.A_INERTIA");
+const REJECTABLE = Symbol.for("S.I.A_REJECTABLE");
+const INDIFFABLE = Symbol.for("S.I.A_INDIFFABLE");
 const TERMINATOR = Symbol.for("S.I.A_TERMINATOR");
 const NOOP = () => {};
 const R_BATCH = ("undefined" !== typeof queueMicrotask ? queueMicrotask : setTimeout).bind(window);
@@ -83,22 +84,23 @@ class Reactor {
     this.log = NOOP;
     this._canLog = false;
     // keeping track so API getter doesn't slow down internal iterations in any way
-    this.config = { crossRealms: false, eventBubbling: true, batchingFunction: R_BATCH, equalityTracking: true };
+    this.config = { crossRealms: false, eventBubbling: true, batchingFunction: R_BATCH };
     inert(this);
     this.core = this.proxied(obj);
     if (!options) return;
     if ((this.isTracking = !!options.referenceTracking)) this.lineage = new WeakMap();
     if (options.debug) this.canLog = true;
-    const { get = this.config.get, set = this.config.set, delete: del = this.config.delete, crossRealms = this.config.crossRealms, eventBubbling = this.config.eventBubbling, equalityTracking = this.config.equalityTracking } = options;
-    Object.assign(this.config, { get, set, delete: del, crossRealms, eventBubbling, equalityTracking });
+    const { get = this.config.get, set = this.config.set, delete: del = this.config.delete, crossRealms = this.config.crossRealms, eventBubbling = this.config.eventBubbling } = options;
+    Object.assign(this.config, { get, set, delete: del, crossRealms, eventBubbling });
   }
-  proxied(obj, rejectable = false, parent, key, path) {
+  proxied(obj, rejectable = false, indiffable = false, parent, key, path) {
     if (!obj || typeof obj !== "object") return obj;
     if (!(isStrictObj(obj, this.config.crossRealms, false) || Array.isArray(obj)) || obj[INERTIA]) return obj;
     obj = obj[RAW] || obj;
     if (this.isTracking && parent && key) this.link(obj, parent, key, false);
     if (this.proxyCache.has(obj)) return this.proxyCache.get(obj);
-    rejectable || (rejectable = obj[REJECTABLE]);
+    rejectable || (rejectable = isIntent(obj));
+    indiffable || (indiffable = isVolatile(obj));
     const proxy = new Proxy(obj, {
       // Robust Proxy handler
       get: (object, key2, receiver) => {
@@ -123,7 +125,7 @@ class Reactor {
             value = this.mediate("*", payload, "get", wildcords);
           }
         }
-        return this.proxied(value, rejectable, object, safeKey, fullPath);
+        return this.proxied(value, rejectable, indiffable, object, safeKey, fullPath);
       },
       set: (object, key2, value, receiver) => {
         let unchanged,
@@ -134,12 +136,12 @@ class Reactor {
           fullPath = this.isTracking ? void 0 : path ? path + "." + safeKey : safeKey,
           paths = this.isTracking ? this.trace(object, safeKey) : fullPath,
           oldValue = object[key2];
-        if (this.isTracking || this.config.equalityTracking) {
+        if (this.isTracking || !indiffable) {
           safeOldValue = oldValue?.[RAW] || oldValue;
           safeValue = value?.[RAW] || value;
           unchanged = Object.is(safeValue, safeOldValue);
         }
-        if (this.config.equalityTracking && unchanged) return true;
+        if (!indiffable && unchanged) return true;
         this.log(`\u270F\uFE0F [SET Trap] Initiated for "${safeKey}" on "${paths}"`);
         if (this.config.set) terminated = (value = this.config.set(object, key2, value, oldValue, receiver, paths)) === TERMINATOR;
         if (this.setters) {
@@ -535,7 +537,7 @@ class tmg_Video_Controller {
     this.setReadyState(0, medium); // had to be done before binding, for user info
     this.bindMethods(); // first thing, same this.cZoneWs throughout life cycle
     ((this.buildCache = { ...build }), (this.id = build.id), (this.video = medium));
-    this.config = reactive(build, { equalityTracking: false }); // merging the video build into the Video Player Instance
+    this.config = reactive(tmg.volatile(build)); // merging the video build into the Video Player Instance
     this.settings = this.config.settings; // alias for devx, for non reassignable common config
     (this.guardGenericPaths(), this.guardTimeValues(), this.plugSources(), this.plugTracks(), this.plugPlaylist());
     const { src, sources, tracks } = this.config;
@@ -1115,6 +1117,7 @@ class tmg_Video_Controller {
       fullscreenBtn: this.queryDOM(".tmg-video-fullscreen-btn"),
       svgs: this.videoContainer.getElementsByTagName("svg"),
       draggableControls: this.queryDOM("[data-draggable-control]", false, true),
+      dropZones: [...this.queryDOM("[data-drop-zone][data-drag-id]", false, true), ...this.zonesArr],
       settingsCloseBtn: this.settings ? this.queryDOM(".tmg-video-settings-close-btn") : null,
     };
   }
@@ -1286,7 +1289,7 @@ class tmg_Video_Controller {
       c[`${act}EventListener`]("drag", this._handleDrag);
       c[`${act}EventListener`]("dragend", this._handleDragEnd);
     });
-    this.zonesArr.forEach((c) => {
+    this.DOM.dropZones?.forEach((c) => {
       c.dataset.dragId = c.dataset.dragId ?? "";
       const act = !tmg.inBoolArrOpt(this.settings.controlPanel.draggable, c.dataset.dragId) ? "remove" : want;
       c.dataset.dropZone = act === "add";
@@ -2461,17 +2464,17 @@ class tmg_Video_Controller {
     this.floatingWindow.document.documentElement.style.cssText = `height:100%; background:url(${this.config.media.profile}) center / 32px no-repeat, url(${this.video.poster}) center / ${this.settings.css.bgSafeObjectFit} no-repeat, black;`;
     await tmg.breath(this.floatingWindow); // paint the bg incase the stylesheet logic takes a while
     const cssTexts = [],
-      whiteList = Object.keys(t007._resourceCache);
+      whitelist = Object.keys(t007._resourceCache);
     for (const sheet of document.styleSheets) {
       try {
-        if (whiteList.some((href) => tmg.isSameURL(href, sheet.href))) continue;
+        if (whitelist.some((href) => tmg.isSameURL(href, sheet.href))) continue;
         for (const cssRule of sheet.cssRules) if (cssRule.selectorText?.includes(":root") || cssRule.cssText.includes("tmg") || cssRule.cssText.includes("t007")) cssTexts.push(cssRule.cssText);
       } catch {
         continue; // add extensible whitelisting and blacklisting hrefs later
       }
     }
     this.floatingWindow.document.head.append(tmg.createEl("style", { textContent: cssTexts.join("\n") }));
-    await Promise.all(whiteList.map((href) => href.includes(".css") && tmg.loadResource(href, "style", undefined, this.floatingWindow)));
+    await Promise.all(whitelist.map((href) => href.includes(".css") && tmg.loadResource(href, "style", undefined, this.floatingWindow)));
     this.activatePseudoMode();
     this.videoContainer.classList.add("tmg-video-floating-player", "tmg-video-progress-bar");
     this.floatingWindow.document.body.append(this.videoContainer);
@@ -2749,6 +2752,7 @@ class tmg_Video_Controller {
       false
     );
   }
+  whitelist;
   _handleGestureTouchEnd() {
     if (this.gestureTouchXCheck) {
       this.gestureTouchXCheck = false;
@@ -2813,7 +2817,7 @@ class tmg_Video_Controller {
       { overrides, shortcuts, blocks, strictMatches: s } = this.settings.keys;
     if (tmg.matchKeys(overrides, combo, s)) terms.override = true;
     if (tmg.matchKeys(blocks, combo, s)) terms.block = true;
-    if (tmg.matchKeys(tmg.WHITE_LISTED_KEYS, combo)) terms.allowed = true; // Allow whitelisted system keys - w
+    if (tmg.matchKeys(tmg.WHITE_LISTED_KEYS, combo)) terms.allowed = true; // Allow ed system keys - w
     terms.action = Object.keys(shortcuts).find((key) => tmg.matchKeys(shortcuts[key], combo, s)) || null; // Find action name for shortcuts
     return terms;
   }
@@ -3556,8 +3560,18 @@ var tmg = {
     target[INERTIA] = true;
     return target;
   },
+  isInert(target) {
+    return !!target?.[INERTIA];
+  },
   isIntent(target) {
     return !!target?.[REJECTABLE];
+  },
+  volatile(target) {
+    target[INDIFFABLE] = true;
+    return target;
+  },
+  isVolatile(target) {
+    return !!target?.[INDIFFABLE];
   },
   formatMediaTime({ time, format = "digital", elapsed = true, showMs = false, casing = "normal" } = {}) {
     const long = format.endsWith("long"),
@@ -3900,7 +3914,7 @@ var tmg = {
   Player: tmg_Media_Player, // THE TMG MEDIA PLAYER BUILDER CLASS
   Controllers: [], // REFERENCES TO ALL THE DEPLOYED TMG MEDIA CONTROLLERS
 };
-const { isStrictObj, mergeObjs, getTrailPaths, getTrailRecords, parseEvOpts, inAny, getAny, setAny, deleteAny, deepClone, inert, nuke } = tmg;
+const { isStrictObj, mergeObjs, getTrailPaths, getTrailRecords, parseEvOpts, inAny, getAny, setAny, deleteAny, deepClone, inert, isIntent, isVolatile, nuke } = tmg;
 if (typeof window !== "undefined") {
   window.tmg = tmg;
   tmg.DEFAULT_VIDEO_BUILD = {
@@ -4072,7 +4086,7 @@ if (typeof window !== "undefined") {
         artist: true,
         top: ["expandminiplayer", "spacer", "meta", "spacer", "capture", "fullscreenlock", "fullscreenorientation", "removeminiplayer"],
         center: ["bigprev", "bigplaypause", "bignext"],
-        bottom: { 1: [], 2: ["spacer", "timeline", "spacer"], 3: ["prev", "playpause", "next", "brightness", "volume", "timeandduration", "spacer", "captions", "settings", "objectfit", "pictureinpicture", "theater", "fullscreen"] },
+        bottom: { 1: [], 2: ["spacer", "timeline", "spacer"], 3: [...(!tmg.ON_MOBILE ? ["prev", "playpause", "next"] : []), "brightness", "volume", "timeandduration", "spacer", "captions", "settings", "objectfit", "pictureinpicture", "theater", "fullscreen"] },
         buffer: "spinner",
         timeline: { thumbIndicator: true, seek: { relative: !tmg.ON_MOBILE, cancel: { delta: 15, timeout: 2000 } } },
         progressBar: tmg.ON_MOBILE,

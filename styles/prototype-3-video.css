@@ -1644,7 +1644,7 @@ body:not(:has(.tmg-video-container.tmg-video-miniplayer)) .tmg-pseudo-video-cont
 .tmg-video-vb-container.tmg-video-control-dragging > *:not(.tmg-video-vb-btn),
 .tmg-video-container:not(.tmg-video-miniplayer) :is(.tmg-video-miniplayer-remove-btn, .tmg-video-miniplayer-expand-btn),
 .tmg-video-container:is(.tmg-video-miniplayer, .tmg-video-floating-player, .tmg-video-fullscreen) .tmg-video-theater-btn,
-.tmg-video-container:is(.tmg-video-miniplayer, .tmg-video-floating-player, .tmg-video-mobile) :is(.tmg-video-prev-btn, .tmg-video-play-pause-btn, .tmg-video-next-btn),
+.tmg-video-container:is(.tmg-video-miniplayer, .tmg-video-floating-player) :is(.tmg-video-prev-btn, .tmg-video-play-pause-btn, .tmg-video-next-btn),
 .tmg-video-container.tmg-video-picture-in-picture :is(.tmg-video-cover-curtain, button:has(.tmg-video-play-icon, .tmg-video-pause-icon, .tmg-video-prev-icon, .tmg-video-next-icon), .tmg-video-brightness-container, .tmg-video-buffer),
 .tmg-media-container[data-size-tier^="xxxxx"] :is(.tmg-video-profile-link, .tmg-video-artist-wrapper, .tmg-video-bottom-controls-wrapper:not(:hover) .tmg-video-thumb-indicator, .tmg-video-side-controls-wrapper > *:not(.tmg-video-play-pause-btn, .tmg-video-next-btn, .tmg-video-prev-btn, .tmg-video-captions-btn:not(.tmg-video-control-disabled), .tmg-video-fullscreen-btn, .tmg-video-volume-container, .tmg-video-time-and-duration-btn)),
 .tmg-video-container:has([data-notify^="playbackrate"], [data-notify^="volume"], [data-notify^="brightness"], [data-notify^="objectfit"], [data-notify="capture"]) :is(.tmg-video-big-controls-wrapper, .tmg-video-buffer) {
@@ -1944,7 +1944,8 @@ body:not(:has(.tmg-video-container.tmg-video-miniplayer)) .tmg-pseudo-video-cont
   cursor: pointer;
   container-type: size;
 }
-.tmg-video-container:is(:not(.tmg-video-overlay, :has(:focus-visible, .tmg-video-playback-rate-notifier.tmg-video-control-active)).tmg-video-progress-bar, [data-size-tier^="xxxxx"]) .tmg-video-bottom-controls-wrapper:not(:hover) :is(.tmg-video-timeline-container, .tmg-video-seek-bars-wrapper) {
+.tmg-video-container:not(.tmg-video-overlay, :has(:focus-visible, .tmg-video-playback-rate-notifier.tmg-video-control-active)).tmg-video-progress-bar :is(.tmg-video-timeline-container, .tmg-video-seek-bars-wrapper),
+.tmg-video-container[data-size-tier^="xxxxx"] .tmg-video-bottom-controls-wrapper:not(:hover) :is(.tmg-video-timeline-container, .tmg-video-seek-bars-wrapper) {
   position: absolute;
   bottom: 0.1px;
   width: 100%;
@@ -2069,6 +2070,7 @@ body:not(:has(.tmg-video-container.tmg-video-miniplayer)) .tmg-pseudo-video-cont
   translate: -50% 0;
   color: var(--tmg-video-text-color);
   font-weight: 500;
+  white-space: nowrap;
 }
 .tmg-media-container:is([data-size-tier^="xxxx"], .tmg-video-mobile, .tmg-video-no-previews) .tmg-video-preview-container::after {
   position: relative;
