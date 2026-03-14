@@ -724,7 +724,7 @@ class tmg_Video_Controller {
       return ((this.CSSCache[key] ||= newVal), newVal);
     });
     this.config.watch("*", (val, { target: { key, path } }) => path.startsWith("settings.css.") && !path.includes("sync") && apply(key, val));
-    entries.forEach(([k, v]) => k !== "syncWithMedia" && ((this.CSSCache[k] = this.settings.css[k]), apply(k, v)));
+    entries.forEach(([k, v]) => k !== "syncWithMedia" && ((this.CSSCache[k] ||= this.settings.css[k]), apply(k, v)));
   }
   getCSSValue(key) {
     const cssVar = `--tmg-video-${tmg.uncamelize(key, "-")}`;
@@ -2021,6 +2021,7 @@ class tmg_Video_Controller {
     Object.entries(this.settings.captions.window).forEach(([k, { value }]) => (this.settings.css[`captionsWindow${tmg.capitalize(k)}`] = value));
     this.settings.css.captionsCharacterEdgeStyle = this.settings.captions.characterEdgeStyle.value;
     this.settings.css.captionsTextAlignment = this.settings.captions.textAlignment.value;
+    (this.settings.css.currentCaptionsX, this.settings.css.currentCaptionsY); // reading to trigger CSS caching just incase
     this.config.on("settings.captions.disabled", ({ value }) => {
       ((this.settings.css.currentCaptionsX = this.CSSCache.currentCaptionsX), (this.settings.css.currentCaptionsY = this.CSSCache.currentCaptionsY));
       if (!this.video.textTracks[this.textTrackIndex]) return;
@@ -2752,7 +2753,6 @@ class tmg_Video_Controller {
       false
     );
   }
-  whitelist;
   _handleGestureTouchEnd() {
     if (this.gestureTouchXCheck) {
       this.gestureTouchXCheck = false;
@@ -2817,7 +2817,7 @@ class tmg_Video_Controller {
       { overrides, shortcuts, blocks, strictMatches: s } = this.settings.keys;
     if (tmg.matchKeys(overrides, combo, s)) terms.override = true;
     if (tmg.matchKeys(blocks, combo, s)) terms.block = true;
-    if (tmg.matchKeys(tmg.WHITE_LISTED_KEYS, combo)) terms.allowed = true; // Allow ed system keys - w
+    if (tmg.matchKeys(tmg.WHITE_LISTED_KEYS, combo)) terms.allowed = true; // Allow whitelisted system keys - w
     terms.action = Object.keys(shortcuts).find((key) => tmg.matchKeys(shortcuts[key], combo, s)) || null; // Find action name for shortcuts
     return terms;
   }
