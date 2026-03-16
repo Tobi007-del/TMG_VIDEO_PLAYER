@@ -354,7 +354,7 @@ async function handleFiles(files, restored = null, handles = null) {
     if (!files?.length && !nums.files) return defaultUI();
     (sToast.dismiss(sessionTId), initUI());
     if (handles?.length) sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))];
-    for (const file of (files = smartFlatSort(files))) (nums.files++, (nums.bytes += file.size)); // providing some available metrics to the user
+    for (const file of (files = !restored ? smartFlatSort(files) : playlistSort(files, restored.playlist))) (nums.files++, (nums.bytes += file.size)); // providing some available metrics to the user
     (updateUI(), await tmg.deepBreath()); // browser breathe small first, UI; u still update nah
     const stateMap = new Map(restored?.playlist?.map((v) => [v.media.title, v]) || []), // Pre-map for O(1) lookups
       list = fileList.appendChild(document.getElementById("media-list") || tmg.createEl("ul", { id: "media-list" })), // building the media list
@@ -636,16 +636,19 @@ async function getHandlesFiles(handles) {
   return files;
 }
 // Misc helpers
-function syncPlaylist() {
-  const map = Object.fromEntries(mP.Controller.config.playlist.map((v) => [v.media.id, v]));
-  mP.Controller.config.playlist = Array.from(contentLines, (li) => map[li.querySelector("video")?.mediaId]).filter(Boolean);
-}
 function dispatchPlayerReadyToast(hour = new Date().getHours()) {
   if (!nums.files) return;
   const timeLines = readyLines[hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : hour >= 17 && hour < 21 ? "evening" : "night"] || [],
     combined = [...timeLines, ...readyLines.default, ...timeLines],
     { body, icon } = combined[Math.floor(Math.random() * combined.length)];
   readyTId = Toast(body, { vibrate: true, icon });
+}
+function syncPlaylist() {
+  const map = Object.fromEntries(mP.Controller.config.playlist.map((v) => [v.media.id, v]));
+  mP.Controller.config.playlist = Array.from(contentLines, (li) => map[li.querySelector("video")?.mediaId]).filter(Boolean);
+}
+function playlistSort(files, playlist) {
+  return Array.from(playlist, (item) => files.find((f) => f.name.startsWith(item.media.title))).filter(Boolean);
 }
 function smartFlatSort(files) {
   // Extracts the main series title + optional season
