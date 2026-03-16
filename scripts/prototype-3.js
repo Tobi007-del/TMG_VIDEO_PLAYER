@@ -2483,8 +2483,13 @@ class tmg_Video_Controller {
     this.floatingWindow.document.documentElement.className = document.documentElement.className;
     this.floatingWindow && document.documentElement.getAttributeNames().forEach((attr) => this.floatingWindow.document.documentElement.setAttribute(attr, document.documentElement.getAttribute(attr)));
     tmg.DOMMutationObserver.observe(this.floatingWindow.document.documentElement, { childList: true, subtree: true });
+    this.floatingWindow.addEventListener("resize", this._handleFloatingPlayerResize);
     this.floatingWindow.addEventListener("pagehide", this._handleFloatingPlayerClose);
     this.setKeyEventListeners("add");
+  }
+  _handleFloatingPlayerResize() {
+    this.settings.modes.pictureInPicture.floatingPlayer.width = this.floatingWindow?.innerWidth ?? this.settings.modes.pictureInPicture.floatingPlayer.width;
+    this.settings.modes.pictureInPicture.floatingPlayer.height = this.floatingWindow?.innerHeight ?? this.settings.modes.pictureInPicture.floatingPlayer.height;
   }
   _handleFloatingPlayerClose() {
     ((this.inFloatingPlayer = false), (this.floatingWindow = null));
