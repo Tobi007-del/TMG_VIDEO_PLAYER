@@ -11,6 +11,8 @@ const INERTIA = Symbol.for("S.I.A_INERTIA");
 const REJECTABLE = Symbol.for("S.I.A_REJECTABLE");
 const INDIFFABLE = Symbol.for("S.I.A_INDIFFABLE");
 const TERMINATOR = Symbol.for("S.I.A_TERMINATOR");
+const VERSION = Symbol.for("S.I.A_VERSION");
+const SSVERSION = Symbol.for("S.I.A_SNAPSHOT_VERSION");
 const NOOP = () => {};
 const R_BATCH = ("undefined" !== typeof queueMicrotask ? queueMicrotask : setTimeout).bind(window);
 const R_LOG = console.log.bind(console, "[S.I.A Reactor]");
@@ -76,20 +78,25 @@ class ReactorEvent {
   }
 }
 class Reactor {
-  // `?:`s | pay the ~600 byte price upfront for what u might never use
   constructor(obj = {}, options) {
-    this.isBatching = false;
-    this.isTracking = false;
     this.proxyCache = new WeakMap();
     this.log = NOOP;
-    this._canLog = false;
-    // keeping track so API getter doesn't slow down internal iterations in any way
     this.config = { crossRealms: false, eventBubbling: true, batchingFunction: R_BATCH };
-    inert(this);
+    // `?:`s | pay the ~800 byte price upfront for what u might never use
+    this.isLogging = false;
+    // keeping track so API getter doesn't slow down internal iterations in any way
+    this.isTracing = false;
+    this.isTracking = false;
+    this.isSCloning = false;
+    // Smart Cloning
+    this.isBatching = false;
+    this[INERTIA] = true;
     this.core = this.proxied(obj);
     if (!options) return;
+    this.canLog = !!options.debug;
     if ((this.isTracking = !!options.referenceTracking)) this.lineage = new WeakMap();
-    if (options.debug) this.canLog = true;
+    if ((this.isSCloning = this.isTracking && !!options.smartCloning)) this.snapshotCache = new WeakMap();
+    this.isTracing = this.isTracking && !!options.lineageTracing;
     const { get = this.config.get, set = this.config.set, delete: del = this.config.delete, crossRealms = this.config.crossRealms, eventBubbling = this.config.eventBubbling } = options;
     Object.assign(this.config, { get, set, delete: del, crossRealms, eventBubbling });
   }
@@ -99,22 +106,22 @@ class Reactor {
     obj = obj[RAW] || obj;
     if (this.isTracking && parent && key) this.link(obj, parent, key, false);
     if (this.proxyCache.has(obj)) return this.proxyCache.get(obj);
-    rejectable || (rejectable = isIntent(obj));
-    indiffable || (indiffable = isVolatile(obj));
+    rejectable || (rejectable = obj[REJECTABLE]);
+    indiffable || (indiffable = obj[INDIFFABLE]);
     const proxy = new Proxy(obj, {
       // Robust Proxy handler
       get: (object, key2, receiver) => {
         if (key2 === RAW) return object;
         let value = object[key2];
         const safeKey = String(key2),
-          fullPath = this.isTracking ? void 0 : path ? path + "." + safeKey : safeKey,
-          paths = this.isTracking ? this.trace(object, safeKey) : fullPath;
+          fullPath = this.isTracing ? void 0 : path ? path + "." + safeKey : safeKey,
+          paths = this.isTracing ? this.trace(object, safeKey) : fullPath;
         this.log(`\u{1F440} [GET Trap] Initiated for "${safeKey}" on "${paths}"`);
         if (this.config.get) value = this.config.get(object, key2, value, receiver, paths);
         if (this.getters) {
           const wildcords = this.getters.get("*");
-          for (let i = 0, len = this.isTracking ? paths.length : 1; i < len; i++) {
-            const currPath = this.isTracking ? paths[i] : fullPath,
+          for (let i = 0, len = this.isTracing ? paths.length : 1; i < len; i++) {
+            const currPath = this.isTracing ? paths[i] : fullPath,
               cords = this.getters.get(currPath);
             if (!cords && !wildcords) continue;
             const target = { path: currPath, value, key: safeKey, object: receiver },
@@ -133,8 +140,9 @@ class Reactor {
           safeOldValue,
           terminated = false;
         const safeKey = String(key2),
-          fullPath = this.isTracking ? void 0 : path ? path + "." + safeKey : safeKey,
-          paths = this.isTracking ? this.trace(object, safeKey) : fullPath,
+          fullPath = this.isTracing ? void 0 : path ? path + "." + safeKey : safeKey,
+          paths = this.isTracing ? this.trace(object, safeKey) : fullPath,
+          loopLen = this.isTracing ? paths.length : 1,
           oldValue = object[key2];
         if (this.isTracking || !indiffable) {
           safeOldValue = oldValue?.[RAW] || oldValue;
@@ -146,7 +154,7 @@ class Reactor {
         if (this.config.set) terminated = (value = this.config.set(object, key2, value, oldValue, receiver, paths)) === TERMINATOR;
         if (this.setters) {
           const wildcords = this.setters.get("*");
-          for (let i = 0, len = paths.length; i < len; i++) {
+          for (let i = 0; i < loopLen; i++) {
             const currPath = this.isTracking ? paths[i] : fullPath,
               cords = this.setters.get(currPath);
             if (!cords && !wildcords) continue;
@@ -164,9 +172,9 @@ class Reactor {
         }
         if (terminated) return (this.log(`\u{1F6E1}\uFE0F [SET Mediator] Terminated on "${paths}"`), true);
         object[key2] = value;
-        if (this.isTracking && !unchanged) (this.unlink(safeOldValue, object, safeKey), this.link(safeValue, object, safeKey));
+        if (this.isTracking && !unchanged) (this.isSCloning && this.stamp(object), this.unlink(safeOldValue, object, safeKey), this.link(safeValue, object, safeKey));
         if (this.watchers || this.listeners)
-          for (let i = 0, len = paths.length; i < len; i++) {
+          for (let i = 0; i < loopLen; i++) {
             const currPath = this.isTracking ? paths[i] : fullPath,
               target = { path: currPath, value, oldValue, key: safeKey, object: receiver };
             this.notify(currPath, { type: "set", target, currentTarget: target, root: this.core, terminated, rejectable });
@@ -178,14 +186,15 @@ class Reactor {
           receiver = this.proxyCache.get(object),
           terminated = false;
         const safeKey = String(key2),
-          fullPath = this.isTracking ? void 0 : path ? path + "." + safeKey : safeKey,
-          paths = this.isTracking ? this.trace(object, safeKey) : fullPath,
+          fullPath = this.isTracing ? void 0 : path ? path + "." + safeKey : safeKey,
+          paths = this.isTracing ? this.trace(object, safeKey) : fullPath,
+          loopLen = this.isTracing ? paths.length : 1,
           oldValue = object[key2];
         this.log(`\u{1F5D1}\uFE0F [DELETE Trap] Initiated for "${safeKey}" on "${paths}"`);
         if (this.config.delete) terminated = (value = this.config.delete(object, key2, oldValue, receiver, paths)) === TERMINATOR;
         if (this.deleters) {
           const wildcords = this.deleters.get("*");
-          for (let i = 0, len = paths.length; i < len; i++) {
+          for (let i = 0; i < loopLen; i++) {
             const currPath = this.isTracking ? paths[i] : fullPath,
               cords = this.deleters.get(currPath);
             if (!cords && !wildcords) continue;
@@ -202,9 +211,9 @@ class Reactor {
         }
         if (terminated) return (this.log(`\u{1F6E1}\uFE0F [DELETE Mediator] Terminated on "${paths}"`), true);
         delete object[key2];
-        this.isTracking && this.unlink(oldValue?.[RAW] || oldValue, object, safeKey);
+        if (this.isTracking) (this.isSCloning && this.stamp(object), this.unlink(oldValue?.[RAW] || oldValue, object, safeKey));
         if (this.watchers || this.listeners)
-          for (let i = 0, len = paths.length; i < len; i++) {
+          for (let i = 0; i < loopLen; i++) {
             const currPath = this.isTracking ? paths[i] : fullPath,
               target = { path: currPath, value, oldValue, key: safeKey, object: receiver };
             this.notify(currPath, { type: "delete", target, currentTarget: target, root: this.core, rejectable });
@@ -218,27 +227,30 @@ class Reactor {
     if (Object.is(target, this.core[RAW] || this.core)) return (paths.push(path), paths);
     if (visited.has(target)) return paths;
     visited.add(target);
-    const parents = this.lineage.get(target);
-    if (!parents) return paths;
-    for (let i = 0, len = parents.length; i < len; i++) {
-      const { parent, key } = parents[i];
-      this.trace(parent, key ? key + "." + path : path, paths, visited);
-    }
+    const es = this.lineage.get(target);
+    if (!es) return paths;
+    for (let i = 0, len = es.length; i < len; i += 2) this.trace(es[i], es[i + 1] ? es[i + 1] + "." + path : path, paths, visited);
     return paths;
   }
   // won't be called without `.isTracking` so internal guard avoided
   link(target, parent, key, typecheck = true, es) {
     if (typecheck && !(isStrictObj(target, this.config.crossRealms) || Array.isArray(target))) return;
     es = this.lineage.get(target) ?? (this.lineage.set(target, (es = [])), es);
-    for (let i = 0, len = es.length; i < len; i++) if (Object.is(es[i].parent, parent) && es[i].key === key) return;
-    es.push({ parent, key });
+    for (let i = 0, len = es.length; i < len; i += 2) if (Object.is(es[i], parent) && es[i + 1] === key) return;
+    es.push(parent, key);
   }
   unlink(target, parent, key) {
     if (!(isStrictObj(target, this.config.crossRealms) || Array.isArray(target))) return;
     const es = this.lineage.get(target);
     if (es) {
-      for (let i = 0, len = es.length; i < len; i++) if (Object.is(es[i].parent, parent) && es[i].key === key) return void es.splice(i, 1);
+      for (let i = 0, len = es.length; i < len; i += 2) if (Object.is(es[i], parent) && es[i + 1] === key) return void es.splice(i, 2);
     }
+  }
+  stamp(target, typecheck = true) {
+    if (typecheck && "object" !== typeof target) return;
+    target[VERSION] = (target[VERSION] || 0) + 1;
+    const es = this.lineage?.get(target);
+    if (es) for (let i = 0, len = es.length; i < len; i += 2) this.stamp(es[i]);
   }
   mediate(path, payload, type, cords) {
     let terminated = false,
@@ -282,7 +294,7 @@ class Reactor {
     if (this.queue?.size) for (const task of this.queue) (task(), this.queue.delete(task));
   }
   wave(path, payload) {
-    const e = new ReactorEvent(payload, this.config.eventBubbling, this._canLog),
+    const e = new ReactorEvent(payload, this.config.eventBubbling, this.isLogging),
       chain = getTrailRecords(this.core, path);
     e.eventPhase = ReactorEvent.CAPTURING_PHASE;
     for (let i = 0; i <= chain.length - 2; i++) {
@@ -349,10 +361,11 @@ class Reactor {
   nostall(task) {
     return this.queue?.delete(task);
   }
-  get(path, cb, opts) {
-    this.getters ?? (this.getters = new Map());
-    const { lazy = false, once = false, signal, immediate = false } = parseEvOpts(opts, EV_OPTS.MEDIATOR);
-    let cords = this.getters.get(path),
+  syncAdd(key, path, cb, opts, onImmediate) {
+    var _a;
+    const { lazy = false, once = false, signal, immediate = false } = parseEvOpts(opts, EV_OPTS.MEDIATOR),
+      store = this[(_a = `${key}${key.endsWith("t") ? "t" : ""}ers`)] ?? (this[_a] = new Map());
+    let cords = store.get(path),
       cord;
     if (cords) {
       for (let i = 0, len = cords.length; i < len; i++)
@@ -362,107 +375,69 @@ class Reactor {
         }
     }
     if (cord) return cord.clup;
-    cord = { cb, once, clup: () => (lazy && this.nostall(task), this.noget(path, cb)) };
-    if (immediate) (immediate !== "auto" || inAny(this.core, path)) && getAny(this.core, path);
-    const task = () => (cords ?? (this.getters.set(path, (cords = [])), cords)).push(cord);
+    let task;
+    cord = { cb, once, clup: () => (lazy && this.nostall(task), this[`no${key}`](path, cb)) };
+    immediate && onImmediate?.(immediate);
+    task = () => (cords ?? (store.set(path, (cords = [])), cords)).push(cord);
     lazy ? this.stall(task) : task();
     return this.bind(cord, signal);
+  }
+  syncDrop(store, path, cb) {
+    const cords = store?.get(path);
+    if (!cords) return void 0;
+    for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && store.delete(path), true);
+    return false;
+  }
+  clone(obj, raw, visited = new WeakMap()) {
+    if (!(isStrictObj(obj, this.config.crossRealms) || Array.isArray(obj)) || visited.has(obj)) return obj;
+    const version = obj[VERSION] || 0,
+      cached = !raw && this.isSCloning && this.snapshotCache.get(obj);
+    if (cached && obj[SSVERSION] === version) return cached;
+    const clone = !raw ? (Array.isArray(obj) ? [] : {}) : obj[RAW] || obj;
+    visited.set(obj, clone);
+    const keys = Object.keys(obj);
+    for (let i = 0, len = keys.length; i < len; i++) clone[keys[i]] = this.clone(obj[keys[i]], raw, visited);
+    if (!raw && this.isSCloning) {
+      this.snapshotCache.set(obj, clone);
+      obj[SSVERSION] = version;
+    }
+    return clone;
+  }
+  get(path, cb, opts) {
+    return this.syncAdd("get", path, cb, opts, (imm) => (imm !== "auto" || inAny(this.core, path)) && getAny(this.core, path));
   }
   gonce(path, cb, opts) {
     return this.get(path, cb, { ...parseEvOpts(opts, EV_OPTS.MEDIATOR), once: true });
   }
   noget(path, cb) {
-    const cords = this.getters?.get(path);
-    if (!cords) return void 0;
-    for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.getters.delete(path), true);
-    return false;
+    return this.syncDrop(this.getters, path, cb);
   }
   set(path, cb, opts) {
-    this.setters ?? (this.setters = new Map());
-    const { lazy = false, once = false, signal, immediate = false } = parseEvOpts(opts, EV_OPTS.MEDIATOR);
-    let cords = this.setters.get(path),
-      cord;
-    if (cords) {
-      for (let i = 0, len = cords.length; i < len; i++)
-        if (Object.is(cords[i].cb, cb)) {
-          cord = cords[i];
-          break;
-        }
-    }
-    if (cord) return cord.clup;
-    cord = { cb, once, clup: () => (lazy && this.nostall(task), this.noset(path, cb)) };
-    if (immediate) (immediate !== "auto" || inAny(this.core, path)) && setAny(this.core, path, getAny(this.core, path));
-    const task = () => (cords ?? (this.setters.set(path, (cords = [])), cords)).push(cord);
-    lazy ? this.stall(task) : task();
-    return this.bind(cord, signal);
+    return this.syncAdd("set", path, cb, opts, (imm) => (imm !== "auto" || inAny(this.core, path)) && setAny(this.core, path, getAny(this.core, path)));
   }
   sonce(path, cb, opts) {
     return this.set(path, cb, Object.assign(parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
   }
   noset(path, cb) {
-    const cords = this.setters?.get(path);
-    if (!cords) return void 0;
-    for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.setters.delete(path), true);
-    return false;
+    return this.syncDrop(this.setters, path, cb);
   }
   delete(path, cb, opts) {
-    this.deleters ?? (this.deleters = new Map());
-    const { lazy = false, once = false, signal, immediate = false } = parseEvOpts(opts, EV_OPTS.MEDIATOR);
-    let cords = this.deleters.get(path),
-      cord;
-    if (cords) {
-      for (let i = 0, len = cords.length; i < len; i++)
-        if (Object.is(cords[i].cb, cb)) {
-          cord = cords[i];
-          break;
-        }
-    }
-    if (cord) return cord.clup;
-    cord = { cb, once, clup: () => (lazy && this.nostall(task), this.nodelete(path, cb)) };
-    if (immediate) (immediate !== "auto" || inAny(this.core, path)) && deleteAny(this.core, path, void 0);
-    const task = () => (cords ?? (this.deleters.set(path, (cords = [])), cords)).push(cord);
-    lazy ? this.stall(task) : task();
-    return this.bind(cord, signal);
+    return this.syncAdd("delete", path, cb, opts, (imm) => (imm !== "auto" || inAny(this.core, path)) && deleteAny(this.core, path, void 0));
   }
   donce(path, cb, opts) {
     return this.delete(path, cb, Object.assign(parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
   }
   nodelete(path, cb) {
-    const cords = this.deleters?.get(path);
-    if (!cords) return void 0;
-    for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.deleters.delete(path), true);
-    return false;
+    return this.syncDrop(this.deleters, path, cb);
   }
   watch(path, cb, opts) {
-    this.watchers ?? (this.watchers = new Map());
-    const { lazy = false, once = false, signal, immediate = false } = parseEvOpts(opts, EV_OPTS.MEDIATOR);
-    let cords = this.watchers.get(path),
-      cord;
-    if (cords) {
-      for (let i = 0, len = cords.length; i < len; i++)
-        if (Object.is(cords[i].cb, cb)) {
-          cord = cords[i];
-          break;
-        }
-    }
-    if (cord) return cord.clup;
-    cord = { cb, once, clup: () => (lazy && this.nostall(task), this.nowatch(path, cb)) };
-    if (immediate && immediate !== "auto" && inAny(this.core, path)) {
-      const target = this.getContext(path);
-      cb(target.value, { type: "init", target, currentTarget: target, root: this.core, rejectable: false });
-    }
-    const task = () => (cords ?? (this.watchers.set(path, (cords = [])), cords)).push(cord);
-    lazy ? this.stall(task) : task();
-    return this.bind(cord, signal);
+    return this.syncAdd("watch", path, cb, opts, (imm) => imm !== "auto" && inAny(this.core, path) && ((target) => cb(target.value, { type: "init", target, currentTarget: target, root: this.core, rejectable: false }))(this.getContext(path)));
   }
   wonce(path, cb, opts) {
     return this.watch(path, cb, Object.assign(parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
   }
   nowatch(path, cb) {
-    const cords = this.watchers?.get(path);
-    if (!cords) return void 0;
-    for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.watchers.delete(path), true);
-    return false;
+    return this.syncDrop(this.watchers, path, cb);
   }
   on(path, cb, options) {
     this.listeners ?? (this.listeners = new Map());
@@ -480,7 +455,7 @@ class Reactor {
     cord = { cb, capture, depth, once, clup: () => this.off(path, cb, options) };
     if (immediate && (immediate !== "auto" || inAny(this.core, path))) {
       const target = this.getContext(path);
-      cb(new ReactorEvent({ type: "init", target, currentTarget: target, root: this.core, rejectable: false }, this.config.eventBubbling, this._canLog));
+      cb(new ReactorEvent({ type: "init", target, currentTarget: target, root: this.core, rejectable: false }, this.config.eventBubbling, this.isLogging));
     }
     (cords ?? (this.listeners.set(path, (cords = [])), cords)).push(cord);
     return this.bind(cord, signal);
@@ -495,17 +470,8 @@ class Reactor {
     for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb) && cords[i].capture === capture) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.listeners.delete(path), true);
     return false;
   }
-  get canLog() {
-    return this.log === R_LOG;
-  }
-  set canLog(value) {
-    this.log = (this._canLog = value) ? R_LOG : NOOP;
-  }
-  get canTrackReferences() {
-    return this.isTracking;
-  }
-  snapshot() {
-    return deepClone(this.core, !!this.config.crossRealms);
+  snapshot(raw = !this.isSCloning, branch = this.core) {
+    return this.clone(branch, raw);
   }
   cascade({ type, currentTarget: { path, value: news, oldValue: olds } }, objSafe = true) {
     if ((type !== "set" && type !== "delete") || !(isStrictObj(news, this.config.crossRealms) || Array.isArray(news)) || (objSafe ? !(isStrictObj(olds, this.config.crossRealms) || Array.isArray(olds)) : false)) return;
@@ -521,15 +487,35 @@ class Reactor {
   destroy() {
     (this.reset(), nuke(this));
   }
+  get canLog() {
+    return this.log === R_LOG;
+  }
+  set canLog(value) {
+    this.log = (this.isLogging = value) ? R_LOG : NOOP;
+  }
+  get canTrackReferences() {
+    return this.isTracking;
+  }
+  get canTraceLineage() {
+    return this.isTracing;
+  }
+  get canSmartClone() {
+    return this.isSCloning;
+  }
 }
 const methods = ["tick", "stall", "nostall", "get", "gonce", "noget", "set", "sonce", "noset", "delete", "donce", "nodelete", "watch", "wonce", "nowatch", "on", "once", "off", "cascade", "snapshot", "reset", "destroy"];
-function reactive(target, options) {
+function reactive(target, options, prefs) {
   const descriptors = {},
-    r = target instanceof Reactor ? target : new Reactor(target, options),
-    locks = { writable: false, enumerable: false, configurable: true };
-  for (const m of methods) descriptors[m] = { value: r[m].bind(r), ...locks };
-  descriptors["__Reactor__"] = { value: r, ...locks };
-  return (Object.defineProperties(r.core, descriptors), r.core);
+    rtr = target instanceof Reactor ? target : new Reactor(target, options),
+    locks = { enumerable: false, configurable: true, writable: false },
+    hasAffix = !!(prefs?.prefix || prefs?.suffix);
+  for (let key of methods) {
+    if (hasAffix) (prefs?.whitelist?.includes(key) ?? true) && (key = `${prefs?.prefix || ""}${key}${prefs?.suffix || ""}`);
+    else if (prefs?.whitelist?.includes(key)) continue;
+    descriptors[key] = { value: rtr[key].bind(rtr), ...locks };
+  }
+  descriptors["__Reactor__"] = { value: rtr, ...locks };
+  return (Object.defineProperties(rtr.core, descriptors), rtr.core);
 }
 
 class tmg_Video_Controller {
@@ -3561,22 +3547,9 @@ var tmg = {
       proto = Object.getPrototypeOf(proto);
     }
   },
-  inert(target) {
-    target[INERTIA] = true;
-    return target;
-  },
-  isInert(target) {
-    return !!target?.[INERTIA];
-  },
-  isIntent(target) {
-    return !!target?.[REJECTABLE];
-  },
   volatile(target) {
     target[INDIFFABLE] = true;
     return target;
-  },
-  isVolatile(target) {
-    return !!target?.[INDIFFABLE];
   },
   formatMediaTime({ time, format = "digital", elapsed = true, showMs = false, casing = "normal" } = {}) {
     const long = format.endsWith("long"),
@@ -3919,7 +3892,7 @@ var tmg = {
   Player: tmg_Media_Player, // THE TMG MEDIA PLAYER BUILDER CLASS
   Controllers: [], // REFERENCES TO ALL THE DEPLOYED TMG MEDIA CONTROLLERS
 };
-const { isStrictObj, mergeObjs, getTrailPaths, getTrailRecords, parseEvOpts, inAny, getAny, setAny, deleteAny, deepClone, inert, isIntent, isVolatile, nuke } = tmg;
+const { isStrictObj, mergeObjs, getTrailPaths, getTrailRecords, parseEvOpts, inAny, getAny, setAny, deleteAny, deepClone, inert, nuke } = tmg;
 if (typeof window !== "undefined") {
   window.tmg = tmg;
   tmg.DEFAULT_VIDEO_BUILD = {

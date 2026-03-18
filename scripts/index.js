@@ -319,7 +319,7 @@ async function restoreSession({ handles }) {
   handleFiles(files, state, sureHandles);
 }
 function saveSession() {
-  mP && nums.files && Memory.save(mP.Controller.config.snapshot());
+  mP && nums.files && Memory.save(mP.Controller.config);
 }
 // File utils
 async function clearSettings(prompt = false) {
