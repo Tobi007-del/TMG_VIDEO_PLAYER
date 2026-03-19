@@ -452,12 +452,13 @@ async function handleFiles(files, restored = null, handles = null) {
       const dragHandle = tmg.createEl("span", { title: "Drag to Reorder", className: "drag-handle", innerHTML: `<svg fill="#000000" height="20px" width="20px" viewBox="0 0 24 24"><path d="M10,6H6V2h4V6z M18,2h-4v4h4V2z M10,10H6v4h4V10z M18,10h-4v4h4V10z M10,18H6v4h4V18z M18,18h-4v4h4V18z"/></svg>` });
       dragHandle.addEventListener(
         "pointerdown",
-        () => {
+        (e) => {
           navigator.vibrate?.([50]);
           let initialOffsetY = list.getBoundingClientRect().top,
             initialScrollY = document.body.scrollTop;
-          li.classList.add("dragging");
           li.parentElement.insertBefore((placeholderItem = tmg.createEl("div", { className: "drag-placeholder" }, {}, { cssText: `height:${li.offsetHeight}px;width:${li.offsetWidth}px;` })), li.nextElementSibling);
+          li.classList.add("dragging");
+          li.style.top = `${(li.top = tmg.clamp(0, e.clientY - initialOffsetY, list.offsetHeight - li.offsetHeight))}px`;
           ["pointermove", "pointerup", "pointercancel"].forEach((e, i) => document.addEventListener(e, !i ? onPointerMove : onPointerUp));
           function onPointerMove(e) {
             e.preventDefault();
