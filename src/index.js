@@ -3,6 +3,9 @@ import "@t007/dialog/style.css";
 
 import toast, { toaster } from "@t007/toast";
 import { confirm } from "@t007/dialog";
+import { inject } from "@vercel/analytics";
+
+inject(); // Realtime Vercel Analytics
 
 // global variables
 window._lsik = "TVP_visitor_info"; // localStorage info key
