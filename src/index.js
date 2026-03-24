@@ -4,8 +4,9 @@ import "@t007/dialog/style.css";
 import toast, { toaster } from "@t007/toast";
 import { confirm } from "@t007/dialog";
 import { inject } from "@vercel/analytics";
+import { injectSpeedInsights } from "@vercel/speed-insights";
 
-inject(); // Realtime Vercel Analytics
+(inject(), injectSpeedInsights()); // Realtime Vercel Analytics
 
 // global variables
 window._lsik = "TVP_visitor_info"; // localStorage info key
