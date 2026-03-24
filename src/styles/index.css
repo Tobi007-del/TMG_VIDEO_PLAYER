@@ -146,14 +146,14 @@ body::before {
   z-index: -1;
   background:
     linear-gradient(var(--tvp-theme-shadow-color), var(--tvp-theme-shadow-color)),
-    center/cover url("../assets/images/lone-tree.jpg"),
+    center/cover url("/assets/images/lone-tree.jpg"),
     var(--tvp-theme-dark-color);
 }
 
 body.light::before {
   background:
     conic-gradient(from var(--turn) at 50% -10%, var(--tvp-theme-shadow-color) 10deg, var(--tvp-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--tvp-theme-shadow-2-color), var(--tvp-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--tvp-theme-shadow-color) 350deg),
-    center/cover url("../assets/images/lone-tree.jpg"),
+    center/cover url("/assets/images/lone-tree.jpg"),
     var(--tvp-theme-dark-color);
   animation: rotateLight 30s linear infinite;
 }

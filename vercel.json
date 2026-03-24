@@ -7,5 +7,8 @@
         { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
       ]
     }
-  ]
+  ],
+  "devCommand": "vite --port $PORT",
+  "installCommand": "npm install",
+  "framework": "vite"
 }

@@ -13,7 +13,7 @@
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:domain" content="https://tmg-video-player.vercel.app">
+    <meta name="twitter:domain" content="https://tmg-video-player.vercel.app" />
     <meta name="twitter:title" content="TVP" />
     <meta name="twitter:description" content="The Video Player that brings the power of VLC to your web browser with tons of incredible features just waiting to make your next movie a blast." />
     <meta name="twitter:image" content="https://tmg-video-player.vercel.app/assets/images/hero_image.png" />
@@ -29,7 +29,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/tmg-icon.png" />
     <link rel="apple-touch-icon" sizes="32x32" href="assets/icons/tmg-icon.png" />
     <link rel="preload" href="assets/images/lone-tree.jpg" type="image/jpg" as="image" />
-    <link rel="stylesheet" href="styles/index.css" />
+    <link rel="stylesheet" href="src/styles/index.css" />
     <style>
       .magic {
         --tvp-orange: rgb(from var(--tvp-brand-color) r g b/0.85);
@@ -203,19 +203,11 @@
     </script>
     <script>
       window.TMG_VIDEO_ALT_IMG_SRC = "/assets/icons/movie-tape.png";
-      window.TMG_VIDEO_CSS_SRC = "styles/prototype-3-video.css";
-      window.T007_INPUT_JS_SRC = "scripts/T007_input.js";
-      window.T007_INPUT_CSS_SRC = "styles/T007_input.css";
-      window.T007_TOAST_JS_SRC = "scripts/T007_toast.js";
-      window.T007_TOAST_CSS_SRC = "styles/T007_toast.css";
-      window.T007_DIALOG_JS_SRC = "scripts/T007_dialog.js";
-      window.T007_DIALOG_CSS_SRC = "styles/T007_dialog.css";
+      window.TMG_VIDEO_CSS_SRC = "assets/css/beta-player-video.css";
+      window.T007_INPUT_JS_SRC = window.T007_INPUT_CSS_SRC = window.T007_TOAST_JS_SRC = window.T007_TOAST_CSS_SRC = window.T007_DIALOG_JS_SRC = window.T007_DIALOG_CSS_SRC = Symbol.for("T007_VIRTUAL_RESOURCE");
     </script>
-    <!-- <script src="/TMG_MEDIA_PROTOTYPE/prototype-3/prototype-3.js"></script> -->
-    <script src="scripts/prototype-3.js"></script>
-    <script type="module" src="scripts/T007_toast.js"></script>
-    <script type="module" src="scripts/T007_dialog.js"></script>
-    <script type="module" src="scripts/index.js"></script>
+    <script type="module" src="src/scripts/beta-player.js"></script>
+    <script type="module" src="src/index.js"></script>
     <script src="assets/ffmpeg/ffmpeg.min.js"></script>
     <script>
       let index = 0,

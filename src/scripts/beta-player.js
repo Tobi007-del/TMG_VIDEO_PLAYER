@@ -1,527 +1,13 @@
-"use strict";
-// NOTE: boolean expressions used where fitting for code brevity, also comma assignment but sparingly
-/* 
-TODO: 
-  editable settings
-  video resolution
-*/
-const arrRx = /^([^\[\]]+)\[(\d+)\]$/;
-const RAW = Symbol.for("S.I.A_RAW");
-const INERTIA = Symbol.for("S.I.A_INERTIA");
-const REJECTABLE = Symbol.for("S.I.A_REJECTABLE");
-const INDIFFABLE = Symbol.for("S.I.A_INDIFFABLE");
-const TERMINATOR = Symbol.for("S.I.A_TERMINATOR");
-const VERSION = Symbol.for("S.I.A_VERSION");
-const SSVERSION = Symbol.for("S.I.A_SNAPSHOT_VERSION");
-const NOOP = () => {};
-const R_BATCH = ("undefined" !== typeof queueMicrotask ? queueMicrotask : setTimeout).bind(window);
-const R_LOG = console.log.bind(console, "[S.I.A Reactor]");
-const EV_WARN = console.warn.bind(console, "[S.I.A Event]");
-const EV_OPTS = { LISTENER: ["capture", "depth", "once", "signal", "immediate"], MEDIATOR: ["lazy", "signal", "immediate"] };
-class ReactorEvent {
-  static NONE = 0;
-  static CAPTURING_PHASE = 1;
-  static AT_TARGET = 2;
-  static BUBBLING_PHASE = 3;
-  constructor(payload, bubbles = false, canWarn = true) {
-    this.eventPhase = ReactorEvent.NONE;
-    this._propagationStopped = false;
-    this._immediatePropagationStopped = false;
-    this._resolved = "";
-    this._rejected = "";
-    this._warn = NOOP;
-    this.type = this.staticType = payload.type;
-    this.target = payload.target;
-    this.currentTarget = payload.currentTarget;
-    this.root = payload.root;
-    this.value = payload.target.value;
-    this.oldValue = payload.target.oldValue;
-    this.path = payload.target.path;
-    this.rejectable = payload.rejectable;
-    this.bubbles = bubbles;
-    if (canWarn) this._warn = EV_WARN;
-  }
-  get propagationStopped() {
-    return this._propagationStopped;
-  }
-  stopPropagation() {
-    this._propagationStopped = true;
-  }
-  get immediatePropagationStopped() {
-    return this._immediatePropagationStopped;
-  }
-  stopImmediatePropagation() {
-    this._propagationStopped = true;
-    this._immediatePropagationStopped = true;
-  }
-  get resolved() {
-    return this._resolved;
-  }
-  resolve(message) {
-    if (!this.rejectable) return this._warn(`Ignored resolve() call on a non-rejectable ${this.staticType} at "${this.path}"`);
-    if (this.eventPhase !== ReactorEvent.CAPTURING_PHASE) this._warn(`Resolving an intent on ${this.staticType} at "${this.path}" outside of the capture phase is unadvised.`);
-    if (this.rejectable) this._resolved = message || `Could ${this.staticType} intended value at "${this.path}"`;
-  }
-  get rejected() {
-    return this._rejected;
-  }
-  reject(reason) {
-    if (!this.rejectable) return this._warn(`Ignored reject() call on a non-rejectable ${this.staticType} at "${this.path}"`);
-    if (this.eventPhase !== ReactorEvent.CAPTURING_PHASE) this._warn(`Rejecting an intent on ${this.staticType} at "${this.path}" outside of the capture phase is unadvised.`);
-    if (this.rejectable) this._rejected = reason || `Couldn't ${this.staticType} intended value at "${this.path}"`;
-  }
-  composedPath() {
-    return getTrailPaths(this.path);
-  }
-  get canWarn() {
-    return this._warn === EV_WARN;
-  }
-}
-class Reactor {
-  constructor(obj = {}, options) {
-    this.proxyCache = new WeakMap();
-    this.log = NOOP;
-    this.config = { crossRealms: false, eventBubbling: true, batchingFunction: R_BATCH };
-    // `?:`s | pay the ~800 byte price upfront for what u might never use
-    this.isLogging = false;
-    // keeping track so API getter doesn't slow down internal iterations in any way
-    this.isTracing = false;
-    this.isTracking = false;
-    this.isSCloning = false;
-    // Smart Cloning
-    this.isBatching = false;
-    this[INERTIA] = true;
-    this.core = this.proxied(obj);
-    if (!options) return;
-    this.canLog = !!options.debug;
-    if ((this.isTracking = !!options.referenceTracking)) this.lineage = new WeakMap();
-    if ((this.isSCloning = this.isTracking && !!options.smartCloning)) this.snapshotCache = new WeakMap();
-    this.isTracing = this.isTracking && !!options.lineageTracing;
-    const { get = this.config.get, set = this.config.set, delete: del = this.config.delete, crossRealms = this.config.crossRealms, eventBubbling = this.config.eventBubbling } = options;
-    Object.assign(this.config, { get, set, delete: del, crossRealms, eventBubbling });
-  }
-  proxied(obj, rejectable = false, indiffable = false, parent, key, path) {
-    if (!obj || typeof obj !== "object") return obj;
-    if (!(isStrictObj(obj, this.config.crossRealms, false) || Array.isArray(obj)) || obj[INERTIA]) return obj;
-    obj = obj[RAW] || obj;
-    if (this.isTracking && parent && key) this.link(obj, parent, key, false);
-    if (this.proxyCache.has(obj)) return this.proxyCache.get(obj);
-    rejectable || (rejectable = obj[REJECTABLE]);
-    indiffable || (indiffable = obj[INDIFFABLE]);
-    const proxy = new Proxy(obj, {
-      // Robust Proxy handler
-      get: (object, key2, receiver) => {
-        if (key2 === RAW) return object;
-        let value = object[key2];
-        const safeKey = String(key2),
-          fullPath = this.isTracing ? void 0 : path ? path + "." + safeKey : safeKey,
-          paths = this.isTracing ? this.trace(object, safeKey) : fullPath;
-        this.log(`\u{1F440} [GET Trap] Initiated for "${safeKey}" on "${paths}"`);
-        if (this.config.get) value = this.config.get(object, key2, value, receiver, paths);
-        if (this.getters) {
-          const wildcords = this.getters.get("*");
-          for (let i = 0, len = this.isTracing ? paths.length : 1; i < len; i++) {
-            const currPath = this.isTracing ? paths[i] : fullPath,
-              cords = this.getters.get(currPath);
-            if (!cords && !wildcords) continue;
-            const target = { path: currPath, value, key: safeKey, object: receiver },
-              payload = { type: "get", target, currentTarget: target, root: this.core, rejectable };
-            if (cords) value = this.mediate(currPath, payload, "get", cords);
-            if (!wildcords) continue;
-            target.value = value;
-            value = this.mediate("*", payload, "get", wildcords);
-          }
-        }
-        return this.proxied(value, rejectable, indiffable, object, safeKey, fullPath);
-      },
-      set: (object, key2, value, receiver) => {
-        let unchanged,
-          safeValue,
-          safeOldValue,
-          terminated = false;
-        const safeKey = String(key2),
-          fullPath = this.isTracing ? void 0 : path ? path + "." + safeKey : safeKey,
-          paths = this.isTracing ? this.trace(object, safeKey) : fullPath,
-          loopLen = this.isTracing ? paths.length : 1,
-          oldValue = object[key2];
-        if (this.isTracking || !indiffable) {
-          safeOldValue = oldValue?.[RAW] || oldValue;
-          safeValue = value?.[RAW] || value;
-          unchanged = Object.is(safeValue, safeOldValue);
-        }
-        if (!indiffable && unchanged) return true;
-        this.log(`\u270F\uFE0F [SET Trap] Initiated for "${safeKey}" on "${paths}"`);
-        if (this.config.set) terminated = (value = this.config.set(object, key2, value, oldValue, receiver, paths)) === TERMINATOR;
-        if (this.setters) {
-          const wildcords = this.setters.get("*");
-          for (let i = 0; i < loopLen; i++) {
-            const currPath = this.isTracking ? paths[i] : fullPath,
-              cords = this.setters.get(currPath);
-            if (!cords && !wildcords) continue;
-            const target = { path: currPath, value, oldValue, key: safeKey, object: receiver },
-              payload = { type: "set", target, currentTarget: target, root: this.core, terminated, rejectable };
-            if (cords) {
-              const result2 = this.mediate(currPath, payload, "set", cords);
-              if (!(terminated || (terminated = payload.terminated))) value = result2;
-            }
-            if (!wildcords) continue;
-            target.value = value;
-            const result = this.mediate("*", payload, "set", wildcords);
-            if (!(terminated || (terminated = payload.terminated))) value = result;
-          }
-        }
-        if (terminated) return (this.log(`\u{1F6E1}\uFE0F [SET Mediator] Terminated on "${paths}"`), true);
-        object[key2] = value;
-        if (this.isTracking && !unchanged) (this.isSCloning && this.stamp(object), this.unlink(safeOldValue, object, safeKey), this.link(safeValue, object, safeKey));
-        if (this.watchers || this.listeners)
-          for (let i = 0; i < loopLen; i++) {
-            const currPath = this.isTracking ? paths[i] : fullPath,
-              target = { path: currPath, value, oldValue, key: safeKey, object: receiver };
-            this.notify(currPath, { type: "set", target, currentTarget: target, root: this.core, terminated, rejectable });
-          }
-        return true;
-      },
-      deleteProperty: (object, key2) => {
-        let value,
-          receiver = this.proxyCache.get(object),
-          terminated = false;
-        const safeKey = String(key2),
-          fullPath = this.isTracing ? void 0 : path ? path + "." + safeKey : safeKey,
-          paths = this.isTracing ? this.trace(object, safeKey) : fullPath,
-          loopLen = this.isTracing ? paths.length : 1,
-          oldValue = object[key2];
-        this.log(`\u{1F5D1}\uFE0F [DELETE Trap] Initiated for "${safeKey}" on "${paths}"`);
-        if (this.config.delete) terminated = (value = this.config.delete(object, key2, oldValue, receiver, paths)) === TERMINATOR;
-        if (this.deleters) {
-          const wildcords = this.deleters.get("*");
-          for (let i = 0; i < loopLen; i++) {
-            const currPath = this.isTracking ? paths[i] : fullPath,
-              cords = this.deleters.get(currPath);
-            if (!cords && !wildcords) continue;
-            const target = { path: currPath, value, oldValue, key: safeKey, object: receiver },
-              payload = { type: "delete", target, currentTarget: target, root: this.core, rejectable };
-            if (cords) {
-              const result2 = this.mediate(currPath, payload, "delete", cords);
-              if (!(terminated || (terminated = payload.terminated))) value = result2;
-            }
-            if (!wildcords) continue;
-            const result = this.mediate("*", payload, "delete", wildcords);
-            if (!(terminated || (terminated = payload.terminated))) value = result;
-          }
-        }
-        if (terminated) return (this.log(`\u{1F6E1}\uFE0F [DELETE Mediator] Terminated on "${paths}"`), true);
-        delete object[key2];
-        if (this.isTracking) (this.isSCloning && this.stamp(object), this.unlink(oldValue?.[RAW] || oldValue, object, safeKey));
-        if (this.watchers || this.listeners)
-          for (let i = 0; i < loopLen; i++) {
-            const currPath = this.isTracking ? paths[i] : fullPath,
-              target = { path: currPath, value, oldValue, key: safeKey, object: receiver };
-            this.notify(currPath, { type: "delete", target, currentTarget: target, root: this.core, rejectable });
-          }
-        return true;
-      },
-    });
-    return (this.proxyCache.set(obj, proxy), proxy);
-  }
-  trace(target, path, paths = [], visited = new WeakSet()) {
-    if (Object.is(target, this.core[RAW] || this.core)) return (paths.push(path), paths);
-    if (visited.has(target)) return paths;
-    visited.add(target);
-    const es = this.lineage.get(target);
-    if (!es) return paths;
-    for (let i = 0, len = es.length; i < len; i += 2) this.trace(es[i], es[i + 1] ? es[i + 1] + "." + path : path, paths, visited);
-    return paths;
-  }
-  // won't be called without `.isTracking` so internal guard avoided
-  link(target, parent, key, typecheck = true, es) {
-    if (typecheck && !(isStrictObj(target, this.config.crossRealms) || Array.isArray(target))) return;
-    es = this.lineage.get(target) ?? (this.lineage.set(target, (es = [])), es);
-    for (let i = 0, len = es.length; i < len; i += 2) if (Object.is(es[i], parent) && es[i + 1] === key) return;
-    es.push(parent, key);
-  }
-  unlink(target, parent, key) {
-    if (!(isStrictObj(target, this.config.crossRealms) || Array.isArray(target))) return;
-    const es = this.lineage.get(target);
-    if (es) {
-      for (let i = 0, len = es.length; i < len; i += 2) if (Object.is(es[i], parent) && es[i + 1] === key) return void es.splice(i, 2);
-    }
-  }
-  stamp(target, typecheck = true) {
-    if (typecheck && "object" !== typeof target) return;
-    target[VERSION] = (target[VERSION] || 0) + 1;
-    const es = this.lineage?.get(target);
-    if (es) for (let i = 0, len = es.length; i < len; i += 2) this.stamp(es[i]);
-  }
-  mediate(path, payload, type, cords) {
-    let terminated = false,
-      value = payload.target.value;
-    const isGet = type === "get",
-      isSet = type === "set",
-      mediators = isGet ? this.getters : isSet ? this.setters : this.deleters;
-    for (let i = !isGet ? 0 : cords.length - 1, len = !isGet ? cords.length : -1; i !== len; i += !isGet ? 1 : -1) {
-      const response = isGet ? cords[i].cb(value, payload) : isSet ? cords[i].cb(value, terminated, payload) : cords[i].cb(terminated, payload);
-      if (isGet || !(terminated || (terminated = payload.terminated = response === TERMINATOR))) value = response;
-      if (cords[i].once) (cords.splice(i--, 1), !cords.length && mediators.delete(path));
-    }
-    return value;
-  }
-  notify(path, payload) {
-    if (this.watchers) {
-      const wildcords = this.watchers.get("*"),
-        cords = this.watchers.get(path);
-      if (cords)
-        for (let i = 0, len = cords.length; i < len; i++) {
-          cords[i].cb(payload.target.value, payload);
-          if (cords[i].once) (cords.splice(i--, 1), !cords.length && this.watchers.delete(path));
-        }
-      if (wildcords)
-        for (let i = 0, len = wildcords.length; i < len; i++) {
-          wildcords[i].cb(payload.target.value, payload);
-          if (wildcords[i].once) (wildcords.splice(i--, 1), !wildcords.length && this.watchers.delete("*"));
-        }
-    }
-    this.listeners && this.schedule(path, payload);
-  }
-  schedule(path, payload) {
-    this.batch ?? (this.batch = new Map());
-    (this.batch.set(path, payload), !this.isBatching && this.initBatching());
-  }
-  initBatching() {
-    ((this.isBatching = true), this.config.batchingFunction(() => this.flush()));
-  }
-  flush() {
-    ((this.isBatching = false), this.batch && this.tick(this.batch.keys()));
-    if (this.queue?.size) for (const task of this.queue) (task(), this.queue.delete(task));
-  }
-  wave(path, payload) {
-    const e = new ReactorEvent(payload, this.config.eventBubbling, this.isLogging),
-      chain = getTrailRecords(this.core, path);
-    e.eventPhase = ReactorEvent.CAPTURING_PHASE;
-    for (let i = 0; i <= chain.length - 2; i++) {
-      if (e.propagationStopped) break;
-      this.fire(chain[i], e, true);
-    }
-    if (e.propagationStopped) return;
-    e.eventPhase = ReactorEvent.AT_TARGET;
-    this.fire(chain[chain.length - 1], e, true);
-    !e.immediatePropagationStopped && this.fire(chain[chain.length - 1], e, false);
-    if (!e.bubbles) return;
-    e.eventPhase = ReactorEvent.BUBBLING_PHASE;
-    for (let i = chain.length - 2; i >= 0; i--) {
-      if (e.propagationStopped) break;
-      this.fire(chain[i], e, false);
-    }
-  }
-  fire([path, object, value], e, isCapture, cords = this.listeners.get(path)) {
-    if (!cords) return;
-    e.type = path !== e.target.path ? "update" : e.staticType;
-    e.currentTarget = { path, value, oldValue: e.type !== "update" ? e.target.oldValue : void 0, key: e.type !== "update" ? path : path.slice(path.lastIndexOf(".") + 1) || "", object };
-    let tDepth, lDepth;
-    for (let i = 0, len = cords.length; i < len; i++) {
-      if (e.immediatePropagationStopped) break;
-      if (cords[i].capture !== isCapture) continue;
-      if (cords[i].depth !== void 0) {
-        (tDepth ?? (tDepth = this.getDepth(e.target.path)), lDepth ?? (lDepth = this.getDepth(path)));
-        if (tDepth > lDepth + cords[i].depth) continue;
-      }
-      cords[i].cb(e);
-      if (cords[i].once) (cords.splice(i--, 1), !cords.length && this.listeners.delete(path));
-    }
-  }
-  bind(cord, signal) {
-    signal?.aborted ? cord.clup() : signal?.addEventListener("abort", cord.clup, { once: true });
-    if (signal && !signal.aborted) cord.sclup = () => signal.removeEventListener("abort", cord.clup);
-    return cord.clup;
-  }
-  getContext(path) {
-    const lastDot = path.lastIndexOf("."),
-      value = path === "*" ? this.core : getAny(this.core, path),
-      object = lastDot === -1 ? this.core : getAny(this.core, path.slice(0, lastDot));
-    return { path, value, key: path.slice(lastDot + 1) || "", object };
-  }
-  getDepth(p, d = !p ? 0 : 1) {
-    for (let i = 0, len = p.length; i < len; i++) if (p.charCodeAt(i) === 46) d++;
-    return d;
-  }
-  tick(paths) {
-    if (!paths) return this.flush();
-    if ("string" === typeof paths) {
-      const task = this.batch?.get(paths);
-      task && (this.wave(paths, task), this.batch.delete(paths));
-    } else
-      for (const path of paths) {
-        const task = this.batch.get(path);
-        task && (this.wave(path, task), this.batch.delete(path));
-      }
-  }
-  stall(task) {
-    this.queue ?? (this.queue = new Set());
-    (this.queue.add(task), !this.isBatching && this.initBatching());
-  }
-  nostall(task) {
-    return this.queue?.delete(task);
-  }
-  syncAdd(key, path, cb, opts, onImmediate) {
-    var _a;
-    const { lazy = false, once = false, signal, immediate = false } = parseEvOpts(opts, EV_OPTS.MEDIATOR),
-      store = this[(_a = `${key}${key.endsWith("t") ? "t" : ""}ers`)] ?? (this[_a] = new Map());
-    let cords = store.get(path),
-      cord;
-    if (cords) {
-      for (let i = 0, len = cords.length; i < len; i++)
-        if (Object.is(cords[i].cb, cb)) {
-          cord = cords[i];
-          break;
-        }
-    }
-    if (cord) return cord.clup;
-    let task;
-    cord = { cb, once, clup: () => (lazy && this.nostall(task), this[`no${key}`](path, cb)) };
-    immediate && onImmediate?.(immediate);
-    task = () => (cords ?? (store.set(path, (cords = [])), cords)).push(cord);
-    lazy ? this.stall(task) : task();
-    return this.bind(cord, signal);
-  }
-  syncDrop(store, path, cb) {
-    const cords = store?.get(path);
-    if (!cords) return void 0;
-    for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb)) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && store.delete(path), true);
-    return false;
-  }
-  clone(obj, raw, visited = new WeakMap()) {
-    if (!(isStrictObj(obj, this.config.crossRealms) || Array.isArray(obj)) || visited.has(obj)) return obj;
-    const version = obj[VERSION] || 0,
-      cached = !raw && this.isSCloning && this.snapshotCache.get(obj);
-    if (cached && obj[SSVERSION] === version) return cached;
-    const clone = !raw ? (Array.isArray(obj) ? [] : {}) : obj[RAW] || obj;
-    visited.set(obj, clone);
-    const keys = Object.keys(obj);
-    for (let i = 0, len = keys.length; i < len; i++) clone[keys[i]] = this.clone(obj[keys[i]], raw, visited);
-    if (!raw && this.isSCloning) {
-      this.snapshotCache.set(obj, clone);
-      obj[SSVERSION] = version;
-    }
-    return clone;
-  }
-  get(path, cb, opts) {
-    return this.syncAdd("get", path, cb, opts, (imm) => (imm !== "auto" || inAny(this.core, path)) && getAny(this.core, path));
-  }
-  gonce(path, cb, opts) {
-    return this.get(path, cb, { ...parseEvOpts(opts, EV_OPTS.MEDIATOR), once: true });
-  }
-  noget(path, cb) {
-    return this.syncDrop(this.getters, path, cb);
-  }
-  set(path, cb, opts) {
-    return this.syncAdd("set", path, cb, opts, (imm) => (imm !== "auto" || inAny(this.core, path)) && setAny(this.core, path, getAny(this.core, path)));
-  }
-  sonce(path, cb, opts) {
-    return this.set(path, cb, Object.assign(parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
-  }
-  noset(path, cb) {
-    return this.syncDrop(this.setters, path, cb);
-  }
-  delete(path, cb, opts) {
-    return this.syncAdd("delete", path, cb, opts, (imm) => (imm !== "auto" || inAny(this.core, path)) && deleteAny(this.core, path, void 0));
-  }
-  donce(path, cb, opts) {
-    return this.delete(path, cb, Object.assign(parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
-  }
-  nodelete(path, cb) {
-    return this.syncDrop(this.deleters, path, cb);
-  }
-  watch(path, cb, opts) {
-    return this.syncAdd("watch", path, cb, opts, (imm) => imm !== "auto" && inAny(this.core, path) && ((target) => cb(target.value, { type: "init", target, currentTarget: target, root: this.core, rejectable: false }))(this.getContext(path)));
-  }
-  wonce(path, cb, opts) {
-    return this.watch(path, cb, Object.assign(parseEvOpts(opts, EV_OPTS.MEDIATOR), { once: true }));
-  }
-  nowatch(path, cb) {
-    return this.syncDrop(this.watchers, path, cb);
-  }
-  on(path, cb, options) {
-    this.listeners ?? (this.listeners = new Map());
-    const { capture = false, once = false, signal, immediate = false, depth } = parseEvOpts(options, EV_OPTS.LISTENER);
-    let cords = this.listeners.get(path),
-      cord;
-    if (cords) {
-      for (let i = 0, len = cords.length; i < len; i++)
-        if (Object.is(cords[i].cb, cb) && capture === cords[i].capture) {
-          cord = cords[i];
-          break;
-        }
-    }
-    if (cord) return cord.clup;
-    cord = { cb, capture, depth, once, clup: () => this.off(path, cb, options) };
-    if (immediate && (immediate !== "auto" || inAny(this.core, path))) {
-      const target = this.getContext(path);
-      cb(new ReactorEvent({ type: "init", target, currentTarget: target, root: this.core, rejectable: false }, this.config.eventBubbling, this.isLogging));
-    }
-    (cords ?? (this.listeners.set(path, (cords = [])), cords)).push(cord);
-    return this.bind(cord, signal);
-  }
-  once(path, cb, options) {
-    return this.on(path, cb, Object.assign(parseEvOpts(options, EV_OPTS.LISTENER), { once: true }));
-  }
-  off(path, cb, options) {
-    const cords = this.listeners?.get(path);
-    if (!cords) return void 0;
-    const { capture } = parseEvOpts(options, EV_OPTS.LISTENER);
-    for (let i = 0, len = cords.length; i < len; i++) if (Object.is(cords[i].cb, cb) && cords[i].capture === capture) return (cords[i].sclup?.(), cords.splice(i--, 1), !cords.length && this.listeners.delete(path), true);
-    return false;
-  }
-  snapshot(raw = !this.isSCloning, branch = this.core) {
-    return this.clone(branch, raw);
-  }
-  cascade({ type, currentTarget: { path, value: news, oldValue: olds } }, objSafe = true) {
-    if ((type !== "set" && type !== "delete") || !(isStrictObj(news, this.config.crossRealms) || Array.isArray(news)) || (objSafe ? !(isStrictObj(olds, this.config.crossRealms) || Array.isArray(olds)) : false)) return;
-    const obj = objSafe ? mergeObjs(olds, news) : news,
-      keys = Object.keys(obj);
-    for (let i = 0, len = keys.length; i < len; i++) setAny(this.core, path + "." + keys[i], obj[keys[i]]);
-  }
-  reset() {
-    (this.getters?.clear(), this.setters?.clear(), this.deleters?.clear(), this.watchers?.clear(), this.listeners?.clear());
-    (this.queue?.clear(), this.batch?.clear(), (this.isBatching = false));
-    this.proxyCache = new WeakMap();
-  }
-  destroy() {
-    (this.reset(), nuke(this));
-  }
-  get canLog() {
-    return this.log === R_LOG;
-  }
-  set canLog(value) {
-    this.log = (this.isLogging = value) ? R_LOG : NOOP;
-  }
-  get canTrackReferences() {
-    return this.isTracking;
-  }
-  get canTraceLineage() {
-    return this.isTracing;
-  }
-  get canSmartClone() {
-    return this.isSCloning;
-  }
-}
-const methods = ["tick", "stall", "nostall", "get", "gonce", "noget", "set", "sonce", "noset", "delete", "donce", "nodelete", "watch", "wonce", "nowatch", "on", "once", "off", "cascade", "snapshot", "reset", "destroy"];
-function reactive(target, options, prefs) {
-  const descriptors = {},
-    rtr = target instanceof Reactor ? target : new Reactor(target, options),
-    locks = { enumerable: false, configurable: true, writable: false },
-    hasAffix = !!(prefs?.prefix || prefs?.suffix);
-  for (let key of methods) {
-    if (hasAffix) (prefs?.whitelist?.includes(key) ?? true) && (key = `${prefs?.prefix || ""}${key}${prefs?.suffix || ""}`);
-    else if (prefs?.whitelist?.includes(key)) continue;
-    descriptors[key] = { value: rtr[key].bind(rtr), ...locks };
-  }
-  descriptors["__Reactor__"] = { value: rtr, ...locks };
-  return (Object.defineProperties(rtr.core, descriptors), rtr.core);
-}
+import { loadResource, isSameURL, uid, clamp, bindAllMethods, createEl, initVScrollerator, initScrollAssist, removeScrollAssist } from "@t007/utils";
+import { reactive, TERMINATOR, volatile } from "sia-reactor";
+import { isDef, isIter, isObj, isStrictObj, isArr, setAny, getAny, parseAnyObj, mergeObjs, deepClone } from "sia-reactor/utils";
+import { field } from "@t007/input";
+import "@t007/input/style.css";
 
 class tmg_Video_Controller {
   constructor(medium, build) {
     this.setReadyState(0, medium); // had to be done before binding, for user info
-    this.bindMethods(); // first thing, same this.cZoneWs throughout life cycle
+    this.bindAllMethods(); // first thing, same this.cZoneWs throughout life cycle
     ((this.buildCache = { ...build }), (this.id = build.id), (this.video = medium));
     this.config = reactive(tmg.volatile(build)); // merging the video build into the Video Player Instance
     this.settings = this.config.settings; // alias for devx, for non reassignable common config
@@ -635,8 +121,8 @@ class tmg_Video_Controller {
   get toast() {
     return !this.settings.toasts.disabled ? t007.toaster({ idPrefix: this.id, rootElement: this.videoContainer, ...this.settings.toasts }) : null;
   }
-  bindMethods() {
-    tmg.bindMethods(this, (method) => {
+  bindAllMethods() {
+    tmg.bindAllMethods(this, (method) => {
       const fn = this[method].bind(this);
       this[method] = (...args) => {
         const onError = (e) => {
@@ -731,10 +217,10 @@ class tmg_Video_Controller {
       ],
       gcolors = options.slice(0, -2).map((opt) => opt.value),
       defs = { brand: this.settings.css.brandColor ?? "#e26e02", theme: this.settings.css.themeColor ?? "#ffffff", bcolors: ["#e26e02", ...gcolors], tcolors: ["#ffffff", ...gcolors] },
-      bField = createField?.({ type: "select", label: "Brand Color", helperText: { info: "You should just try changing your brand color for now" }, options: [{ option: "Tastey Orange", value: "#e26e02" }, ...options], value: !defs.bcolors.includes(defs.brand) ? (!this.settings.css.syncWithMedia.brandColor ? "custom" : "auto") : defs.brand }),
-      cBField = createField?.({ type: "color" }),
-      tField = createField?.({ type: "select", label: "Theme Color", helperText: { info: "You should also try changing your theme color for now" }, options: [{ option: "Pure White", value: "#ffffff" }, ...options], value: !defs.tcolors.includes(defs.theme) ? (!this.settings.css.syncWithMedia.themeColor ? "custom" : "auto") : defs.theme }),
-      cTField = createField?.({ type: "color" }),
+      bField = field?.({ type: "select", label: "Brand Color", helperText: { info: "You should just try changing your brand color for now" }, options: [{ option: "Tastey Orange", value: "#e26e02" }, ...options], value: !defs.bcolors.includes(defs.brand) ? (!this.settings.css.syncWithMedia.brandColor ? "custom" : "auto") : defs.brand }),
+      cBField = field?.({ type: "color" }),
+      tField = field?.({ type: "select", label: "Theme Color", helperText: { info: "You should also try changing your theme color for now" }, options: [{ option: "Pure White", value: "#ffffff" }, ...options], value: !defs.tcolors.includes(defs.theme) ? (!this.settings.css.syncWithMedia.themeColor ? "custom" : "auto") : defs.theme }),
+      cTField = field?.({ type: "color" }),
       bWrapper = tmg.createEl("div"),
       tWrapper = tmg.createEl("div");
     this.config.on("settings.css.brandColor", ({ target: { value = defs.brand } }) => ((cBField.inputEl.value = value), cBField.style.setProperty("--input-current-color", value)), { immediate: true });
@@ -2451,16 +1937,16 @@ class tmg_Video_Controller {
     this.floatingWindow.document.documentElement.style.cssText = `height:100%; background:url(${this.config.media.profile}) center / 32px no-repeat, url(${this.video.poster}) center / ${this.settings.css.bgSafeObjectFit} no-repeat, black;`;
     await tmg.breath(this.floatingWindow); // paint the bg incase the stylesheet logic takes a while
     const cssTexts = [],
-      whitelist = Object.keys(t007._resourceCache);
+      parse = (src) => ("string" === typeof src ? src : null),
+      whitelist = [parse(window.T007_TOAST_CSS_SRC), parse(window.T007_INPUT_CSS_SRC), parse(window.TMG_VIDEO_CSS_SRC) ?? "/tmg-media-player/src/beta/index-video.css"].filter(Boolean); // video CSS too experimental; needs a link :)
     for (const sheet of document.styleSheets) {
       try {
-        if (whitelist.some((href) => tmg.isSameURL(href, sheet.href))) continue;
-        for (const cssRule of sheet.cssRules) if (cssRule.selectorText?.includes(":root") || cssRule.cssText.includes("tmg") || cssRule.cssText.includes("t007")) cssTexts.push(cssRule.cssText);
+        if (!whitelist.some((src) => tmg.isSameURL(src, sheet.href))) for (const cssRule of sheet.cssRules) if (cssRule.selectorText?.includes(":root") || cssRule.cssText.includes("tmg") || cssRule.cssText.includes("t007")) cssTexts.push(cssRule.cssText);
       } catch {
         continue; // add extensible whitelisting and blacklisting hrefs later
       }
     }
-    this.floatingWindow.document.head.append(tmg.createEl("style", { textContent: cssTexts.join("\n") }));
+    this.floatingWindow.document.head.append(tmg.createEl("style", { innerHTML: cssTexts.join("\n") }));
     await Promise.all(whitelist.map((href) => href.includes(".css") && tmg.loadResource(href, "style", undefined, this.floatingWindow)));
     this.activatePseudoMode();
     this.videoContainer.classList.add("tmg-video-floating-player", "tmg-video-progress-bar");
@@ -3197,36 +2683,8 @@ var tmg = {
   queryFullscreen: () => !!(document.fullscreenElement || document.fullscreen || document.webkitIsFullscreen || document.mozFullscreen || document.msFullscreenElement),
   supportsFullscreen: () => !!(document.fullscreenEnabled || document.mozFullscreenEnabled || document.msFullscreenEnabled || document.webkitFullscreenEnabled || document.webkitSupportsFullscreen || HTMLVideoElement.prototype.webkitEnterFullscreen),
   supportsPictureInPicture: () => !!(document.pictureInPictureEnabled || HTMLVideoElement.prototype.requestPictureInPicture || window.documentPictureInPicture),
-  loadResource(src, type = "style", { module, media, crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, attempts = 3, retryKey = false } = {}, w = window) {
-    ((w.t007 ??= {}), (w.t007._resourceCache ??= {}));
-    if (w.t007._resourceCache[src]) return w.t007._resourceCache[src];
-    const existing = type === "script" ? Array.prototype.find.call(w.document.scripts, (s) => tmg.isSameURL(s.src, src)) : type === "style" ? Array.prototype.find.call(w.document.styleSheets, (s) => tmg.isSameURL(s.href, src)) : null;
-    if (existing) return (w.t007._resourceCache[src] = Promise.resolve(existing));
-    w.t007._resourceCache[src] = new Promise((resolve, reject) => {
-      (function tryLoad(remaining, el) {
-        const onerror = () => {
-          el?.remove(); // Remove failed element before retry
-          if (remaining > 1) (setTimeout(tryLoad, 1000, remaining - 1), console.warn(`Retrying ${type} load (${attempts - remaining + 1}): ${src}...`));
-          else (delete w.t007._resourceCache[src], reject(new Error(`${type} load failed after ${attempts} attempts: ${src}`))); // Final fail: clear cache so user can manually retry
-        };
-        const url = retryKey && remaining < attempts ? `${src}${src.includes("?") ? "&" : "?"}_${retryKey}=${Date.now()}` : src;
-        if (type === "script") w.document.body.append((el = tmg.createEl("script", { src: url, type: module ? "module" : "text/javascript", crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, onload: () => resolve(el), onerror }) || ""));
-        else if (type === "style") w.document.head.append((el = tmg.createEl("link", { rel: "stylesheet", href: url, media, crossOrigin, integrity, referrerPolicy, nonce, fetchPriority, onload: () => resolve(el), onerror }) || ""));
-        else reject(new Error(`Unsupported resource type: ${type}`));
-      })(attempts);
-    });
-    return w.t007._resourceCache[src];
-  },
-  isSameURL(src1, src2) {
-    if ("string" !== typeof src1 || "string" !== typeof src2 || !src1 || !src2) return false;
-    try {
-      const u1 = new URL(src1, window.location.href),
-        u2 = new URL(src2, window.location.href);
-      return decodeURIComponent(u1.origin + u1.pathname) === decodeURIComponent(u2.origin + u2.pathname);
-    } catch {
-      return src1.replace(/\\/g, "/").split("?")[0].trim() === src2.replace(/\\/g, "/").split("?")[0].trim();
-    }
-  },
+  loadResource: loadResource,
+  isSameURL: isSameURL,
   putSourceDetails(source, el) {
     if (source.src) el.src = source.src;
     if (source.type) el.type = source.type;
@@ -3355,14 +2813,14 @@ var tmg = {
     });
     return (flush(), state.parts);
   },
-  uid: (prefix = "tmg-") => `${prefix}${Date.now().toString(36)}_${performance.now().toString(36).replace(".", "")}_${Math.random().toString(36).slice(2)}`,
-  clamp: (min = 0, amount, max) => Math.min(Math.max(amount, min), max ?? Infinity),
+  uid: (prefix = "tmg-") => uid(prefix),
+  clamp: clamp,
   remToPx: (val) => parseFloat(getComputedStyle(document.documentElement).fontSize * val),
-  isDef: (val) => val !== undefined,
-  isIter: (obj) => obj != null && "function" === typeof obj[Symbol.iterator],
-  isObj: (obj, checkArr = true) => "object" === typeof obj && obj !== null && (checkArr ? !Array.isArray(obj) : true),
-  isStrictObj: (obj, crossRealms = false, typecheck = true) => (typecheck ? tmg.isObj(obj, false) : true) && (crossRealms ? Object.prototype.toString.call(obj) === "[object Object]" : obj.constructor === Object),
-  isArr: (arr) => Array.isArray(arr),
+  isDef: isDef,
+  isIter: isIter,
+  isObj: isObj,
+  isStrictObj: isStrictObj,
+  isArr: isArr,
   isValidNum: (number) => !isNaN(number ?? NaN) && number !== Infinity,
   inBoolArrOpt: (opt, str) => opt?.includes?.(str) ?? opt,
   inDocView(el, axis = "y") {
@@ -3384,88 +2842,10 @@ var tmg = {
     })();
     tmg.setAny(target, path, parsedValue, "--", (p) => tmg.camelize(p));
   },
-  setAny(target, key, value, separator = ".", keyFunc = (p) => p) {
-    if (!key.includes(separator)) return (target[keyFunc ? keyFunc(key) : key] = value);
-    const keys = key.split(separator);
-    let currObj = target;
-    for (let i = 0; i < keys.length; i++) {
-      const key = keyFunc ? keyFunc(keys[i]) : keys[i],
-        match = key.includes("[") && key.match(arrRx);
-      if (match) {
-        const [, key, iStr] = match;
-        if (!tmg.isArr(currObj[key])) currObj[key] = [];
-        if (i === keys.length - 1) currObj[key][Number(iStr)] = value;
-        else ((currObj[key][Number(iStr)] ||= {}), (currObj = currObj[key][Number(iStr)]));
-      } else {
-        if (i === keys.length - 1) currObj[key] = value;
-        else ((currObj[key] ||= {}), (currObj = currObj[key]));
-      }
-    }
-  },
-  getAny(source, key, separator = ".", keyFunc = (p) => p) {
-    if (!key.includes(separator)) return source[keyFunc ? keyFunc(key) : key];
-    const keys = key.split(separator);
-    let currObj = source;
-    for (let i = 0; i < keys.length; i++) {
-      const key = keyFunc ? keyFunc(keys[i]) : keys[i],
-        match = key.includes("[") && key.match(arrRx);
-      if (match) {
-        const [, key, iStr] = match;
-        if (!tmg.isArr(currObj[key]) || !(key in currObj)) return undefined;
-        currObj = currObj[key][Number(iStr)];
-      } else {
-        if (!tmg.isObj(currObj) || !(key in currObj)) return undefined;
-        currObj = currObj[key];
-      }
-    }
-    return currObj;
-  },
-  deleteAny(target, key, separator = ".", keyFunc = (p) => p) {
-    if (!key.includes(separator)) return delete target[keyFunc ? keyFunc(key) : key];
-    const keys = key.split(separator);
-    let currObj = target;
-    for (let i = 0; i < keys.length; i++) {
-      const key = keyFunc ? keyFunc(keys[i]) : keys[i],
-        match = key.includes("[") && key.match(arrRx);
-      if (match) {
-        const [, key, iStr] = match;
-        if (!tmg.isArr(currObj[key]) || !(key in currObj)) return;
-        if (i === keys.length - 1) delete currObj[key][Number(iStr)];
-        else currObj = currObj[key][Number(iStr)];
-      } else {
-        if (!tmg.isObj(currObj) || !(key in currObj)) return;
-        if (i === keys.length - 1) delete currObj[key];
-        else currObj = currObj[key];
-      }
-    }
-  },
-  inAny(source, key, separator = ".", keyFunc = (p) => p) {
-    if (!key.includes(separator)) return key in source;
-    const keys = key.split(separator);
-    let currObj = source;
-    for (let i = 0; i < keys.length; i++) {
-      const key = keyFunc ? keyFunc(keys[i]) : keys[i],
-        match = key.includes("[") && key.match(arrRx);
-      if (match) {
-        const [, key, iStr] = match;
-        if (!tmg.isArr(currObj[key]) || !(key in currObj)) return false;
-        if (i === keys.length - 1) return true;
-        currObj = currObj[key][Number(iStr)];
-      } else {
-        if (!tmg.isObj(currObj) || !(key in currObj)) return false;
-        if (i === keys.length - 1) return true;
-        currObj = currObj[key];
-      }
-    }
-    return true;
-  },
-  bindMethods(owner, callback = (method, owner) => (owner[method] = owner[method].bind(owner))) {
-    let proto = owner;
-    while (proto && proto !== Object.prototype) {
-      for (const method of Object.getOwnPropertyNames(proto)) method !== "constructor" && typeof Object.getOwnPropertyDescriptor(proto, method)?.value === "function" && callback(method, owner);
-      proto = Object.getPrototypeOf(proto);
-    }
-  },
+  setAny: setAny,
+  getAny: getAny,
+  bindAllMethods: bindAllMethods,
+  volatile: volatile,
   safeNum: (number, fallback = 0) => (tmg.isValidNum(number) ? number : fallback),
   parseIfPercent: (percent, amount, autocap = 0.25) => {
     const val = percent?.endsWith?.("%") ? tmg.safeNum((parseFloat(percent) / 100) * amount) : percent;
@@ -3487,70 +2867,14 @@ var tmg = {
     }
     return result;
   },
-  parseAnyObj(obj = {}, separator = ".", keyFunc = (p) => p, visited = new WeakSet()) {
-    if (!tmg.isObj(obj) || visited.has(obj)) return obj; // no circular references
-    visited.add(obj);
-    const result = {};
-    return (Object.entries(obj).forEach(([k, v]) => (k.includes(separator) ? tmg.setAny(result, k, tmg.parseAnyObj(v, separator, keyFunc), separator, keyFunc, visited) : (result[k] = v))), result);
-  },
-  parseEvOpts(options, opts, boolOpt = opts[0], result = {}) {
-    return (Object.assign(result, "boolean" === typeof options ? { [boolOpt]: options } : options), result);
-  },
+  parseAnyObj: parseAnyObj,
   parsePanelBottomObj(obj = [], arr = false) {
     if (!tmg.isObj(obj) && !tmg.isArr(obj)) return false;
     const [third = [], second = [], first = []] = tmg.isObj(obj) ? Object.values(obj).reverse() : tmg.isArr(obj[0]) ? obj.toReversed() : [obj];
     return !arr ? { 1: first, 2: second, 3: third } : [...third, ...second, ...first];
   },
-  mergeObjs(o1 = {}, o2 = {}) {
-    const merged = { ...(o1 || {}), ...(o2 || {}) };
-    return (Object.keys(merged).forEach((k) => tmg.isObj(o1[k]) && tmg.isObj(o2[k]) && (merged[k] = tmg.mergeObjs(o1[k], o2[k]))), merged);
-  },
-  deepClone(obj, crossRealms, visited = new WeakMap()) {
-    if (!(tmg.isStrictObj(obj, crossRealms) || tmg.isArr(obj)) || visited.has(obj)) return obj;
-    const clone = tmg.isArr(obj) ? [] : {};
-    visited.set(obj, clone);
-    const keys = Object.keys(obj);
-    for (let i = 0; i < keys.length; i++) clone[keys[i]] = tmg.deepClone(obj[keys[i]], crossRealms, visited);
-    return clone;
-  },
-  getTrailPaths(path, reverse = true) {
-    const parts = path.split(".");
-    const chain = ["*"];
-    let acc = "";
-    for (let i = 0; i < parts.length; i++) {
-      acc += (i === 0 ? "" : ".") + parts[i];
-      chain.push(acc);
-    }
-    return reverse ? chain.reverse() : chain;
-  },
-  getTrailRecords(obj, path) {
-    const parts = path.split("."),
-      record = [["*", obj, obj]];
-    let acc = "",
-      currObj = obj;
-    for (let i = 0; i < parts.length; i++) {
-      acc += (i === 0 ? "" : ".") + parts[i];
-      record.push([acc, currObj, (currObj = currObj?.[parts[i]])]);
-    }
-    return record;
-  },
-  nuke(target) {
-    let proto = target;
-    while (proto && proto !== Object.prototype) {
-      for (const key of Object.getOwnPropertyNames(proto)) {
-        if (key === "constructor") continue;
-        const desc = Object.getOwnPropertyDescriptor(proto, key);
-        if ("function" === typeof desc?.value) continue;
-        if (desc?.get || desc?.set) continue;
-        proto[key] = null;
-      }
-      proto = Object.getPrototypeOf(proto);
-    }
-  },
-  volatile(target) {
-    target[INDIFFABLE] = true;
-    return target;
-  },
+  mergeObjs: mergeObjs,
+  deepClone: deepClone,
   formatMediaTime({ time, format = "digital", elapsed = true, showMs = false, casing = "normal" } = {}) {
     const long = format.endsWith("long"),
       sx = (n = 0) => (n == 1 ? "" : "s"), //suffix
@@ -3628,13 +2952,7 @@ var tmg = {
     // console.log(clrs.map((c) => [c, tmg.getRGBSat(c.rgb), tmg.getRGBBri(c.rgb)]));
     return format === "hex" ? `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}` : raw == false ? `rgb(${r},${g},${b})` : [r, g, b];
   },
-  createEl(tag, props = {}, dataset = {}, styles = {}) {
-    const el = tag ? document.createElement(tag) : null;
-    for (const k of Object.keys(props)) if (el && props[k] !== undefined) el[k] = props[k];
-    for (const k of Object.keys(dataset)) if (el && dataset[k] !== undefined) el.dataset[k] = dataset[k];
-    for (const k of Object.keys(styles)) if (el && styles[k] !== undefined) el.style[k] = styles[k];
-    return el;
-  },
+  createEl: createEl,
   getWindow: (el) => (el instanceof Window ? el : el instanceof Document ? el?.defaultView : el?.ownerDocument?.defaultView),
   cloneVideo(v) {
     const newV = v.cloneNode(true);
@@ -3729,103 +3047,9 @@ var tmg = {
     };
     ["pointerup", "pointercancel"].forEach((e) => tmg.getWindow(el)?.addEventListener(e, release));
   },
-  initVScrollerator({ baseSpeed = 3, maxSpeed = 10, stepDelay = 2000, baseRate = 16, lineHeight = 80, margin = 80, car = window }) {
-    let linesPerSec = baseSpeed,
-      accelId = null,
-      lastTime = null;
-    const drive = (clientY, brake = false, offsetY = 0) => {
-      if (car !== window) clientY -= offsetY; // it's bounding client rect top
-      const now = performance.now(),
-        speed = linesPerSec * lineHeight * ((lastTime ? now - lastTime : baseRate) / 1000); // browser slows down but not us
-      if (!brake && (clientY < margin || clientY > (car.innerHeight ?? car.offsetHeight) - margin)) {
-        accelId === null ? (accelId = setTimeout(() => (linesPerSec += 1), stepDelay)) : linesPerSec > baseSpeed && (linesPerSec = Math.min(linesPerSec + 1, maxSpeed));
-        car.scrollBy?.(0, clientY < margin ? -speed : speed);
-      } else reset();
-      return ((lastTime = !brake ? now : null), speed);
-    }; // scrolls with ajustable speed during a drag
-    const reset = () => (clearTimeout(accelId), (accelId = null), (linesPerSec = baseSpeed), (lastTime = null));
-    return { drive, reset };
-  },
-  _SCROLLERS: new WeakMap(),
-  _SCROLLER_R_OBSERVER: "undefined" !== typeof window && new ResizeObserver((entries) => entries.forEach(({ target }) => tmg._SCROLLERS.get(target)?.update())),
-  _SCROLLER_M_OBSERVER:
-    "undefined" !== typeof window &&
-    new MutationObserver((entries) => {
-      const els = new Set();
-      for (const entry of entries) {
-        let node = entry.target;
-        while (node && !tmg._SCROLLERS.has(node)) node = node.parentElement;
-        if (node) els.add(node);
-      }
-      for (const el of els) tmg._SCROLLERS.get(el)?.update();
-    }),
-  initScrollAssist(el, { pxPerSecond = 80, assistClassName = "tmg-video-controls-scroll-assist", vertical = true, horizontal = true } = {}) {
-    const parent = el?.parentElement;
-    if (!parent || tmg._SCROLLERS.has(el)) return;
-    const assist = {};
-    let scrollId = null,
-      last = performance.now(),
-      assistWidth = 20,
-      assistHeight = 20;
-    const update = () => {
-      const hasInteractive = !!parent.querySelector('button, a[href], input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])');
-      if (horizontal) {
-        const w = assist.left?.offsetWidth || assistWidth,
-          check = hasInteractive ? el.clientWidth < w * 2 : false;
-        assist.left.style.display = check ? "none" : el.scrollLeft > 0 ? "block" : "none";
-        assist.right.style.display = check ? "none" : el.scrollLeft + el.clientWidth < el.scrollWidth - 1 ? "block" : "none";
-        assistWidth = w;
-      }
-      if (vertical) {
-        const h = assist.up?.offsetHeight || assistHeight,
-          check = hasInteractive ? el.clientHeight < h * 2 : false;
-        assist.up.style.display = check ? "none" : el.scrollTop > 0 ? "block" : "none";
-        assist.down.style.display = check ? "none" : el.scrollTop + el.clientHeight < el.scrollHeight - 1 ? "block" : "none";
-        assistHeight = h;
-      }
-    };
-    const scroll = (dir) => {
-      const frame = () => {
-        const now = performance.now(),
-          dt = now - last;
-        last = now;
-        const d = (pxPerSecond * dt) / 1000;
-        if (dir === "left") el.scrollLeft = Math.max(0, el.scrollLeft - d);
-        if (dir === "right") el.scrollLeft = Math.min(el.scrollWidth - el.clientWidth, el.scrollLeft + d);
-        if (dir === "up") el.scrollTop = Math.max(0, el.scrollTop - d);
-        if (dir === "down") el.scrollTop = Math.min(el.scrollHeight - el.clientHeight, el.scrollTop + d);
-        scrollId = requestAnimationFrame(frame);
-      };
-      last = performance.now();
-      frame();
-    };
-    const stop = () => (cancelAnimationFrame(scrollId), (scrollId = null));
-    const addAssist = (dir) => {
-      const div = tmg.createEl("div", { className: assistClassName }, { scrollDirection: dir }, { display: "none" });
-      ["pointerenter", "dragenter"].forEach((e) => div.addEventListener(e, () => scroll(dir)));
-      ["pointerleave", "pointerup", "pointercancel", "dragleave", "dragend"].forEach((e) => div.addEventListener(e, stop));
-      (dir === "left" || dir === "up" ? parent.insertBefore : parent.append).call(parent, div, el);
-      assist[dir] = div;
-    };
-    if (horizontal) ["left", "right"].forEach(addAssist);
-    if (vertical) ["up", "down"].forEach(addAssist);
-    el.addEventListener("scroll", update);
-    tmg._SCROLLER_R_OBSERVER.observe(el);
-    tmg._SCROLLER_M_OBSERVER.observe(el, { childList: true, subtree: true, characterData: true });
-    tmg._SCROLLERS.set(el, {
-      update,
-      destroy() {
-        stop();
-        el.removeEventListener("scroll", update);
-        tmg._SCROLLER_R_OBSERVER.unobserve(el);
-        tmg._SCROLLERS.delete(el);
-        Object.values(assist).forEach((a) => a.remove());
-      },
-    });
-    update();
-    return tmg._SCROLLERS.get(el);
-  },
-  removeScrollAssist: (el) => tmg._SCROLLERS.get(el)?.destroy(),
+  initVScrollerator: initVScrollerator,
+  initScrollAssist: initScrollAssist,
+  removeScrollAssist: removeScrollAssist,
   parseKeyCombo(combo) {
     const parts = combo.toLowerCase().split("+");
     return { ctrlKey: parts.includes("ctrl"), shiftKey: parts.includes("shift"), altKey: parts.includes("alt"), metaKey: parts.includes("meta") || parts.includes("cmd"), key: parts.find((p) => !["ctrl", "shift", "alt", "meta", "cmd"].includes(p)) || "" };
@@ -3892,7 +3116,7 @@ var tmg = {
   Player: tmg_Media_Player, // THE TMG MEDIA PLAYER BUILDER CLASS
   Controllers: [], // REFERENCES TO ALL THE DEPLOYED TMG MEDIA CONTROLLERS
 };
-const { isStrictObj, mergeObjs, getTrailPaths, getTrailRecords, parseEvOpts, inAny, getAny, setAny, deleteAny, deepClone, inert, nuke } = tmg;
+
 if (typeof window !== "undefined") {
   window.tmg = tmg;
   tmg.DEFAULT_VIDEO_BUILD = {
@@ -4120,12 +3344,12 @@ if (typeof window !== "undefined") {
     tracks: [],
     settings: { time: { start: 0, previews: false } },
   }; // for a playlist
-  window.TMG_VIDEO_ALT_IMG_SRC ??= "/TMG_MEDIA_PROTOTYPE/assets/icons/movie-tape.png";
-  window.TMG_VIDEO_CSS_SRC ??= "/TMG_MEDIA_PROTOTYPE/prototype-3/prototype-3-video.css";
-  window.T007_TOAST_CSS_SRC ??= "/T007_TOOLS/T007_toast_library/T007_toast.css";
-  window.T007_TOAST_JS_SRC ??= "/T007_TOOLS/T007_toast_library/T007_toast.js";
-  window.T007_INPUT_CSS_SRC ??= "/T007_TOOLS/T007_input_library/T007_input.css";
-  window.T007_INPUT_JS_SRC ??= "/T007_TOOLS/T007_input_library/T007_input.js";
+  window.TMG_VIDEO_ALT_IMG_SRC ??= "/tmg-media-player/assets/icons/movie-tape.png";
+  window.TMG_VIDEO_CSS_SRC ??= "/tmg-media-player/src/beta/index-video.css";
+  window.T007_TOAST_JS_SRC ??= `https://cdn.jsdelivr.net/npm/@t007/toast@latest`;
+  window.T007_TOAST_CSS_SRC ??= `https://cdn.jsdelivr.net/npm/@t007/toast@latest/dist/index.min.css`;
+  window.T007_INPUT_JS_SRC ??= `https://cdn.jsdelivr.net/npm/@t007/input@latest`;
+  window.T007_INPUT_CSS_SRC ??= `https://cdn.jsdelivr.net/npm/@t007/input@latest/dist/index.min.css`;
   (tmg.loadResource(TMG_VIDEO_CSS_SRC), tmg.loadResource(T007_TOAST_JS_SRC, "script", { module: true }), tmg.loadResource(T007_INPUT_JS_SRC, "script"));
   tmg.init();
   console.log("%cTMG Media Player Available", "color: darkturquoise");

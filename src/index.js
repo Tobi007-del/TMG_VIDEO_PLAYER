@@ -1,5 +1,9 @@
-import Toast, { Toaster } from "./T007_toast.js";
-import { Confirm } from "./T007_dialog.js";
+import "@t007/toast/style.css";
+import "@t007/dialog/style.css";
+
+import toast, { toaster } from "@t007/toast";
+import { confirm } from "@t007/dialog";
+
 // global variables
 window._lsik = "TVP_visitor_info"; // localStorage info key
 window.canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype;
@@ -18,10 +22,10 @@ window.DB = {
         if (!db.objectStoreNames.contains("subtitles")) db.createObjectStore("subtitles");
       };
       req.onsuccess = () => {
-        req.result.onversionchange = () => (req.result.close(), Toast.info(`TVP updated in another ${installed ? "window" : "tab"}. Reloading...`), location.reload());
+        req.result.onversionchange = () => (req.result.close(), toast.info(`TVP updated in another ${installed ? "window" : "tab"}. Reloading...`), location.reload());
         res((this._db = req.result));
       };
-      req.onblocked = () => Toast.warn(`Please close other ${installed ? "windows" : "tabs"} of TVP to apply updates`);
+      req.onblocked = () => toast.warn(`Please close other ${installed ? "windows" : "tabs"} of TVP to apply updates`);
     });
   },
   get vault() {
@@ -144,7 +148,7 @@ const installButton = document.getElementById("install"),
     ],
   },
   vi = JSON.parse(localStorage[_lsik] || `{ "visitorId": "${crypto?.randomUUID?.() || tmg.uid()}", "visitCount": 0 }`),
-  sToast = Toaster({ tag: "tvp-restore", autoClose: false, closeButton: false, dragToClose: false }), // yeah, my lib supports toasters that store defaults in bulk, eg. for loading toast reset perks. restore toasts will sha stay put when needed
+  sToast = toaster({ tag: "tvp-restore", autoClose: false, closeButton: false, dragToClose: false }), // yeah, my lib supports toasters that store defaults in bulk, eg. for loading toast reset perks. restore toasts will sha stay put when needed
   scroller = tmg.initVScrollerator({ lineHeight: 80, margin: 80, car: document.body }),
   queue = new tmg.AsyncQueue(),
   nums = { bytes: 0, files: 0, time: 0 },
@@ -167,12 +171,12 @@ const installButton = document.getElementById("install"),
 (async function registerServiceWorker() {
   if (crossOriginIsolated) console.log("✅ TVP isolation active: SharedArrayBuffer is ready for FFmpeg.");
   else console.warn("⚠️ TVP isolation failed: FFmpeg might not work.");
-  if (!("serviceWorker" in navigator)) return Toast.warn("Offline support is currently unavailable");
+  if (!("serviceWorker" in navigator)) return toast.warn("Offline support is currently unavailable");
   try {
     await navigator.serviceWorker.register("TVP_sw.js");
   } catch (err) {
-    Toast.error("Offline caching failed due to " + err.message);
-    Toast("Don’t worry, your local videos still play fine", { vibrate: true, icon: "🎬" });
+    toast.error("Offline caching failed due to " + err.message);
+    toast("Don’t worry, your local videos still play fine", { vibrate: true, icon: "🎬" });
   }
 })();
 (async function launchOpenedFiles() {
@@ -183,7 +187,7 @@ const installButton = document.getElementById("install"),
     const allFiles = await getHandlesFiles(launchParams.files),
       videoFiles = allFiles.filter((file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
       rejectedCount = allFiles.length - videoFiles.length;
-    if (rejectedCount > 0) Toast.warn(`You opened ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
+    if (rejectedCount > 0) toast.warn(`You opened ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
     handleFiles(videoFiles, null, launchParams.files);
   });
 })();
@@ -192,7 +196,7 @@ const installButton = document.getElementById("install"),
   const { usage, quota } = await navigator.storage.estimate(),
     percent = (usage / quota) * 100;
   console.log(`TVP Storage: ${tmg.formatSize(usage)} used of ${tmg.formatSize(quota)} (${percent.toFixed(2)}%)`);
-  if (usage / quota > 80) Toast.warn(`Storage is ${percent.toFixed(2)}% full, sessions may be forgotten`);
+  if (usage / quota > 80) toast.warn(`Storage is ${percent.toFixed(2)}% full, sessions may be forgotten`);
 })();
 (async function requestPersist() {
   if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist();
@@ -203,7 +207,7 @@ window.addEventListener("load", async () => {
   const session = !nums.files && (await Memory.getSession());
   if (session) sessionTId = sToast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: () => (clearInterval(sessionTInt), sToast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, autoClose: 5000, closeButton: !tmg.ON_MOBILE, dragToClose: true, actions: { Reload: () => location.reload() } })) } });
   if (session) sessionTInt = setInterval(() => sToast.update(sessionTId, { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
-  (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && Toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
+  (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
   document.body.classList.toggle("offline", !navigator.onLine);
   navigator.onLine &&
     fetch("https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", { method: "HEAD", cache: "no-cache" })
@@ -213,7 +217,7 @@ window.addEventListener("load", async () => {
 window.addEventListener("online", () => document.body.classList.remove("offline"));
 window.addEventListener("offline", () => document.body.classList.add("offline"));
 window.addEventListener("beforeinstallprompt", (e) => ((installed = false), (installPrompt = e), (installButton.style.display = "flex")));
-window.addEventListener("appinstalled", () => ((installed = true), (installButton.style.display = "none"), Toast.success("TVP was installed successfully!")));
+window.addEventListener("appinstalled", () => ((installed = true), (installButton.style.display = "none"), toast.success("TVP was installed successfully!")));
 // other listeners
 installButton.addEventListener("click", async () => {
   const res = await installPrompt?.prompt?.();
@@ -235,7 +239,7 @@ clearSettingsButton.addEventListener("click", () => clearSettings(true));
     const allFiles = useHandles ? await getHandlesFiles(handles) : e.target.files,
       videoFiles = Array.prototype.filter.call(allFiles, (file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
       rejectedCount = allFiles.length - videoFiles.length;
-    if (rejectedCount > 0) Toast.warn(`You picked ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
+    if (rejectedCount > 0) toast.warn(`You picked ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
     handleFiles(videoFiles, null, handles);
   }
   !((!recurse ? "showOpenFilePicker" : "showDirectoryPicker") in window) ? input.addEventListener("change", handleInput) : input.addEventListener("click", (e) => handleInput(e, true));
@@ -250,7 +254,7 @@ clearSettingsButton.addEventListener("click", () => clearSettings(true));
       allFiles = useHandles ? await getHandlesFiles(handles) : await getDroppedFiles(e, initUI),
       videoFiles = allFiles.filter((file) => (file.type || tmg.getMimeTypeFromExtension(file.name)).startsWith("video/")),
       rejectedCount = allFiles.length - videoFiles.length;
-    if (rejectedCount > 0) Toast.warn(`You dropped ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
+    if (rejectedCount > 0) toast.warn(`You dropped ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
     handleFiles(videoFiles, null, handles);
     [videosDropBox, foldersDropBox].forEach((el) => el.classList.remove("active"));
   }
@@ -323,17 +327,17 @@ function saveSession() {
 }
 // File utils
 async function clearSettings(prompt = false) {
-  const ok = prompt && (await Confirm("Are you sure you want to clear your settings?", { title: "Clear Settings", confirmText: "Clear" }));
+  const ok = prompt && (await confirm("Are you sure you want to clear your settings?", { title: "Clear Settings", confirmText: "Clear" }));
   if (prompt && !ok) return;
   (Memory.clearSettings(), setColors());
   clearSettingsButton.classList.remove("shown");
   const render = "Settings cleared successfully";
-  Toast.success(clearTId ? clearTId : render, { render, actions: false });
+  toast.success(clearTId ? clearTId : render, { render, actions: false });
 }
 async function clearFiles() {
-  const ok = await Confirm("Are you sure you want to clear all files?", { title: "Clear Files", confirmText: "Clear" });
+  const ok = await confirm("Are you sure you want to clear all files?", { title: "Clear Files", confirmText: "Clear" });
   if (!ok) return;
-  (Toast.dismiss(readyTId), video.pause(), video.removeAttribute("src"), video.removeAttribute("poster"));
+  (toast.dismiss(readyTId), video.pause(), video.removeAttribute("src"), video.removeAttribute("poster"));
   video.onplay = video.onpause = video.ontimeupdate = null;
   video = mP?.detach();
   mP = null;
@@ -347,7 +351,7 @@ async function clearFiles() {
   nums.files = nums.bytes = nums.time = 0;
   (Memory.clearSession(), defaultUI());
   clearSettingsButton.classList.add("shown");
-  clearTId = Toast.success("Cleared all files from your session, Settings too?", { autoClose: 5000, actions: { Clear: () => clearSettings() } });
+  clearTId = toast.success("Cleared all files from your session, Settings too?", { autoClose: 5000, actions: { Clear: () => clearSettings() } });
 }
 async function handleFiles(files, restored = null, handles = null) {
   try {
@@ -399,7 +403,7 @@ async function handleFiles(files, restored = null, handles = null) {
           const f = e.target.files[0];
           if (!f) return;
           const ext = tmg.getExtension(f.name);
-          if (!["srt", "vtt"].includes(ext)) return ((thumbnail.dataset.captionState = "empty"), Toast.warn("Only .srt and .vtt caption files are currently supported"));
+          if (!["srt", "vtt"].includes(ext)) return ((thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported"));
           let txt = await f.text();
           if (ext === "srt") txt = tmg.srtToVtt(txt);
           DB.vault.subtitles.put(new TextEncoder().encode(txt), (thumbnail.dataset.captionId = f.name)); // storing these too for the magic tricks, no need for file pickers, it's light
@@ -510,7 +514,7 @@ async function handleFiles(files, restored = null, handles = null) {
           },
           { once: true }
         );
-        mP = new tmg.Player({ cloneOnDetach: true, playlist, "media.artist": "TMG Video Player", "media.profile": "assets/icons/tmg-icon.jpeg", "media.links.artist": "https://tmg-video-player.vercel.app", "media.links.profile": "https://github.com/Tobi007-del/TMG_MEDIA_PROTOTYPE", "settings.captions.font.size.value": 200, "settings.captions.font.weight.value": 700, "settings.captions.background.opacity.value": 0, "settings.captions.characterEdgeStyle.value": "drop-shadow", "settings.overlay.behavior": "auto" });
+        mP = new tmg.Player({ cloneOnDetach: true, playlist, "media.artist": "TMG Video Player", "media.profile": "assets/icons/tmg-icon.jpeg", "media.links.artist": "https://tmg-video-player.vercel.app", "media.links.profile": "https://github.com/Tobi007-del/tmg-media-player", "settings.captions.font.size.value": 200, "settings.captions.font.weight.value": 700, "settings.captions.background.opacity.value": 0, "settings.captions.characterEdgeStyle.value": "drop-shadow", "settings.overlay.behavior": "auto" });
         mP.configure({ settings: (restored ?? Memory.getState())?.settings ?? {}, lightState: restored?.hasPlayed || restored?.lightState?.disabled ? { disabled: true } : {} }); // recursive mixing in & having anoda taste of backwards compat
         mP.attach(video);
         window.addEventListener("pagehide", saveSession);
@@ -642,7 +646,7 @@ function dispatchPlayerReadyToast(hour = new Date().getHours()) {
   const timeLines = readyLines[hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : hour >= 17 && hour < 21 ? "evening" : "night"] || [],
     combined = [...timeLines, ...readyLines.default, ...timeLines],
     { body, icon } = combined[Math.floor(Math.random() * combined.length)];
-  readyTId = Toast(body, { vibrate: true, icon });
+  readyTId = toast(body, { vibrate: true, icon });
 }
 function syncPlaylist() {
   const map = Object.fromEntries(mP.Controller.config.playlist.map((v) => [v.media.id, v]));

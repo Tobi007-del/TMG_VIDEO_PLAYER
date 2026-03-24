@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.turbo/
+
+# OS/Editor files
+.DS_Store
+.vscode/
+*.log
+.vercel
+.env*.local

@@ -1,0 +1,35 @@
+{
+  "name": "tmg_video_player",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TVP is a simple video player that allows you to play videos from your local device in your web browser.",
+  "author": "Oketade Oluwatobiloba <tobioketade007@gmail.com>",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "vite",
+    "start": "vercel dev --listen 5173",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tobi007-del/TMG_VIDEO_PLAYER.git"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Tobi007-del/TMG_VIDEO_PLAYER/issues"
+  },
+  "homepage": "https://github.com/Tobi007-del/TMG_VIDEO_PLAYER#readme",
+  "devDependencies": {
+    "vite": "^8.0.2"
+  },
+  "dependencies": {
+    "@t007/dialog": "^0.0.6",
+    "@t007/input": "^0.0.6",
+    "@t007/toast": "^0.0.6",
+    "@t007/utils": "^0.0.7",
+    "sia-reactor": "^0.0.7"
+  }
+}
