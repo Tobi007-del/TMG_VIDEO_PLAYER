@@ -4,7 +4,7 @@ import "@t007/input/style.css";
 
 import toast, { toaster } from "@t007/toast";
 import { confirm } from "@t007/dialog";
-import { field } from "@t007/input"
+import { field } from "@t007/input";
 import { inject } from "@vercel/analytics";
 import { injectSpeedInsights } from "@vercel/speed-insights";
 
@@ -743,3 +743,5 @@ function smartFlatSort(files) {
   }
   return sortedFiles;
 }
+
+field({}); // just so input lib is bundled
