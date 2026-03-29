@@ -1,8 +1,6 @@
-import { loadResource, isSameURL, uid, clamp, bindAllMethods, createEl, initVScrollerator, initScrollAssist, removeScrollAssist } from "@t007/utils";
+import { isDef, isIter, isObj, isStrictObj, isArr, loadResource, isSameURL, uid, clamp, bindAllMethods, createEl, initVScrollerator, initScrollAssist, removeScrollAssist } from "@t007/utils";
 import { reactive, TERMINATOR, volatile } from "sia-reactor";
-import { isDef, isIter, isObj, isStrictObj, isArr, setAny, getAny, parseAnyObj, mergeObjs, deepClone } from "sia-reactor/utils";
-import { field } from "@t007/input";
-import "@t007/input/style.css";
+import { setAny, getAny, parseAnyObj, mergeObjs, deepClone } from "sia-reactor/utils";
 
 class tmg_Video_Controller {
   constructor(medium, build) {
@@ -217,14 +215,14 @@ class tmg_Video_Controller {
       ],
       gcolors = options.slice(0, -2).map((opt) => opt.value),
       defs = { brand: this.settings.css.brandColor ?? "#e26e02", theme: this.settings.css.themeColor ?? "#ffffff", bcolors: ["#e26e02", ...gcolors], tcolors: ["#ffffff", ...gcolors] },
-      bField = field?.({ type: "select", label: "Brand Color", helperText: { info: "You should just try changing your brand color for now" }, options: [{ option: "Tastey Orange", value: "#e26e02" }, ...options], value: !defs.bcolors.includes(defs.brand) ? (!this.settings.css.syncWithMedia.brandColor ? "custom" : "auto") : defs.brand }),
-      cBField = field?.({ type: "color" }),
-      tField = field?.({ type: "select", label: "Theme Color", helperText: { info: "You should also try changing your theme color for now" }, options: [{ option: "Pure White", value: "#ffffff" }, ...options], value: !defs.tcolors.includes(defs.theme) ? (!this.settings.css.syncWithMedia.themeColor ? "custom" : "auto") : defs.theme }),
-      cTField = field?.({ type: "color" }),
+      bField = t007.field({ type: "select", label: "Brand Color", helperText: { info: "You should just try changing your brand color for now" }, options: [{ option: "Tastey Orange", value: "#e26e02" }, ...options], value: !defs.bcolors.includes(defs.brand) ? (!this.settings.css.syncWithMedia.brandColor ? "custom" : "auto") : defs.brand }),
+      cBField = t007.field({ type: "color" }),
+      tField = t007.field({ type: "select", label: "Theme Color", helperText: { info: "You should also try changing your theme color for now" }, options: [{ option: "Pure White", value: "#ffffff" }, ...options], value: !defs.tcolors.includes(defs.theme) ? (!this.settings.css.syncWithMedia.themeColor ? "custom" : "auto") : defs.theme }),
+      cTField = t007.field({ type: "color" }),
       bWrapper = tmg.createEl("div"),
       tWrapper = tmg.createEl("div");
-    this.config.on("settings.css.brandColor", ({ target: { value = defs.brand } }) => ((cBField.inputEl.value = value), cBField.style.setProperty("--input-current-color", value)), { immediate: true });
-    this.config.on("settings.css.themeColor", ({ target: { value = defs.theme } }) => ((cTField.inputEl.value = value), cTField.style.setProperty("--input-current-color", value)), { immediate: true });
+    this.config.on("settings.css.brandColor", ({ target: { value: v = defs.brand } }) => ((v = v.toLowerCase()), (cBField.inputEl.value = v), cBField.style.setProperty("--input-current-color", v), (bField.inputEl.value = !defs.bcolors.includes(v) ? (!this.settings.css.syncWithMedia.brandColor ? "custom" : "auto") : v)), { immediate: true });
+    this.config.on("settings.css.themeColor", ({ target: { value: v = defs.theme } }) => ((v = v.toLowerCase()), (cTField.inputEl.value = v), cTField.style.setProperty("--input-current-color", v), (tField.inputEl.value = !defs.tcolors.includes(v) ? (!this.settings.css.syncWithMedia.themeColor ? "custom" : "auto") : v)), { immediate: true });
     this.queryDOM(".tmg-video-settings-bottom-panel").append((bWrapper.append(bField, cBField), bWrapper), (tWrapper.append(tField, cTField), tWrapper));
     const id = { theme: "", brand: "" },
       sync = (cb, req = true, type = "brand") => ((this.settings.css.syncWithMedia[`${type}Color`] = req), cb(req)),
