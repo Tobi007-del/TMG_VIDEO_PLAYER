@@ -23,15 +23,15 @@
   },
   "homepage": "https://github.com/Tobi007-del/TMG_VIDEO_PLAYER#readme",
   "devDependencies": {
-    "vite": "^8.0.2"
+    "vite": "^8.0.1"
   },
   "dependencies": {
-    "@t007/dialog": "^0.0.10",
-    "@t007/input": "^0.0.11",
-    "@t007/toast": "^0.0.11",
-    "@t007/utils": "^0.0.11",
+    "@t007/dialog": "^0.0.15",
+    "@t007/input": "^0.0.16",
+    "@t007/toast": "^0.0.16",
+    "@t007/utils": "^0.0.18",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "sia-reactor": "^0.0.12"
+    "sia-reactor": "^0.0.19"
   }
 }

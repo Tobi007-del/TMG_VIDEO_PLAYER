@@ -5,6 +5,7 @@ import "@t007/input/style.css";
 import toast, { toaster } from "@t007/toast";
 import { confirm } from "@t007/dialog";
 import { field } from "@t007/input";
+import { IndexedDBAdapter } from "sia-reactor/plugins";
 import { inject } from "@vercel/analytics";
 import { injectSpeedInsights } from "@vercel/speed-insights";
 
@@ -14,85 +15,30 @@ import { injectSpeedInsights } from "@vercel/speed-insights";
 window._lsik = "TVP_visitor_info"; // localStorage info key
 window.canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype;
 window.sessionHandles = []; // global handle access of current session handles
-window.DB = {
-  _db: null,
-  onErr: (act, comment = "(likely a Support issue or Private Mode)") => (console.warn(`TVP_DB: ${act} failed ${comment}`), null),
-  async idb() {
+window.DB = new IndexedDBAdapter({
+  dbName: "TVP_Sessions",
+  debug: true,
+  stores: ["handles", "subtitles"], // first is default: "handles"
+  onidb() {
     if (!canSession) throw new Error("TVP Session Persistence is not allowed here"); // to be caught by vault promises and handled gracefully, No IDB for you :(
-    if (this._db) return this._db;
-    return new Promise((res) => {
-      const req = indexedDB.open("TVP_Sessions", 1);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains("handles")) db.createObjectStore("handles");
-        if (!db.objectStoreNames.contains("subtitles")) db.createObjectStore("subtitles");
-      };
-      req.onsuccess = () => {
-        req.result.onversionchange = () => (req.result.close(), toast.info(`TVP updated in another ${installed ? "window" : "tab"}. Reloading...`), location.reload());
-        res((this._db = req.result));
-      };
-      req.onblocked = () => toast.warn(`Please close other ${installed ? "windows" : "tabs"} of TVP to apply updates`);
-    });
   },
-  get vault() {
-    return new Proxy(
-      {},
-      {
-        get: (_, store) => ({
-          get: async (key) => {
-            try {
-              const req = (await this.idb()).transaction(store).objectStore(store).get(key);
-              return new Promise((res) => (req.onsuccess = () => res(req.result)));
-            } catch (e) {
-              return this.onErr(`Get [${store}]`);
-            }
-          },
-          put: async (val, key) => {
-            try {
-              const req = (await this.idb()).transaction(store, "readwrite").objectStore(store).put(val, key);
-              return new Promise((res) => (req.onsuccess = () => res(true)));
-            } catch (e) {
-              return this.onErr(`Put [${store}]`);
-            }
-          },
-          delete: async (key) => {
-            try {
-              const req = (await this.idb()).transaction(store, "readwrite").objectStore(store).delete(key);
-              return new Promise((res) => (req.onsuccess = () => res(true)));
-            } catch (e) {
-              return this.onErr(`Delete [${store}]`);
-            }
-          },
-          clear: async () => {
-            try {
-              const req = (await this.idb()).transaction(store, "readwrite").objectStore(store).clear();
-              return new Promise((res) => (req.onsuccess = () => res(true)));
-            } catch (e) {
-              return this.onErr(`Clear [${store}]`);
-            }
-          },
-        }),
-      }
-    );
-  },
-  async clear(stores = ["handles", "subtitles"]) {
-    for (const store of Array.isArray(stores) ? stores : [stores]) await this.vault[store].clear();
-  },
-};
+  onversionchange: () => (toast.info(`TVP updated in another ${installed ? "window" : "tab"}. Reloading...`), location.reload()),
+  onblocked: () => toast.warn(`Please close other ${installed ? "windows" : "tabs"} of TVP to apply updates`),
+});
 window.Memory = {
-  _expiryDays: 30, // 30 days of no sessions
+  _expiryDays: 60, // 30 days of no sessions
   getState() {
     return JSON.parse(localStorage[_lssk] || "null");
   },
   async getSession() {
     const state = this.getState(),
-      session = await DB.vault.handles.get("last_handles");
+      session = await DB.get("last_handles");
     if (!state?.playlist || !session) return null; // no session handles, no session
     return (Date.now() - session.lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (await this.clearSession(), console.log("TVP cleaned up expired session.")) : { state, handles: session.handles, lastUpdated: session.lastUpdated };
   },
   async save(snapshot) {
     localStorage[_lssk] = JSON.stringify({ settings: snapshot?.settings, playlist: snapshot?.playlist, media: snapshot?.media, hasPlayed: snapshot?.lightState?.disabled, paused: video.paused });
-    sessionHandles.length ? await DB.vault.handles.put({ handles: sessionHandles, lastUpdated: Date.now() }, "last_handles") : await this.clearSession();
+    sessionHandles.length ? await DB.set("last_handles", { handles: sessionHandles, lastUpdated: Date.now() }) : await this.clearSession();
   },
   async clearSession() {
     localStorage[_lssk] = JSON.stringify({ settings: this.getState()?.settings || {} }); // might not wanna clear settings
@@ -412,7 +358,7 @@ async function handleFiles(files, restored = null, handles = null) {
           if (!["srt", "vtt"].includes(ext)) return ((thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported"));
           let txt = await f.text();
           if (ext === "srt") txt = tmg.srtToVtt(txt);
-          DB.vault.subtitles.put(new TextEncoder().encode(txt), (thumbnail.dataset.captionId = f.name)); // storing these too for the magic tricks, no need for file pickers, it's light
+          DB.set((thumbnail.dataset.captionId = f.name), new TextEncoder().encode(txt), "subtitles"); // storing these too for the magic tricks, no need for file pickers, it's light
           const playlistItem = thumbnail.getPlItem(); // storing name as id so it will not be `tmg-` prefixed like our UID's for later logic
           playlistItem.tracks = [{ id: f.name, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
           if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === playlistItem.media?.id) mP.Controller.config.tracks = playlistItem.tracks;
@@ -431,7 +377,7 @@ async function handleFiles(files, restored = null, handles = null) {
           } else if (thumbnail.dataset.captionState === "filled") {
             const playlistItem = thumbnail.getPlItem();
             URL.revokeObjectURL(playlistItem.tracks?.[0]?.src); // no deleting from IDB just yet, KB's for restoration magic tricks
-            if (!thumbnail.dataset.captionId.startsWith("tmg-")) DB.vault.subtitles.delete(thumbnail.dataset.captionId); // delete if not ffmpeg's, we can't guarantee identity when repicked, input ain't slow like ffmpeg
+            if (!thumbnail.dataset.captionId.startsWith("tmg-")) DB.remove(thumbnail.dataset.captionId, "subtitles"); // delete if not ffmpeg's, we can't guarantee identity when repicked, input ain't slow like ffmpeg
             playlistItem.tracks = [];
             if (mP.Controller?.config.playlist[mP.Controller.currentPlaylistIndex].media.id === playlistItem.media?.id) mP.Controller.config.tracks = [];
           } else if (!queue.drop(thumbnail.dataset.captionId)) return; // cancels if waiting and returns if loading since current job is shifted from queue
@@ -448,7 +394,7 @@ async function handleFiles(files, restored = null, handles = null) {
           const playlistItem = thumbnail.getPlItem();
           if (playlistItem.tracks?.[0]?.src?.startsWith("blob:")) URL.revokeObjectURL(playlistItem.tracks[0].src);
           queue.drop(thumbnail.dataset.captionId);
-          DB.vault.subtitles.delete(thumbnail.dataset.captionId);
+          DB.remove(thumbnail.dataset.captionId, "subtitles");
           li.remove();
           const hIdx = sessionHandles.findIndex((h) => h.name === files[i].name);
           if (hIdx !== -1) sessionHandles.splice(hIdx, 1);
@@ -547,7 +493,7 @@ async function deployCaption(file, thumbnail, autocancel = !crossOriginIsolated 
   thumbnail.setAttribute("data-caption-id", id);
   thumbnail.setAttribute("data-caption-state", item?.tracks?.[0] ? "loading" : "waiting");
   // 1. THE VAULT CHECK (Instant)
-  const buffer = await DB.vault.subtitles.get(id);
+  const buffer = await DB.get(id, "subtitles");
   if (buffer) {
     console.log(`✨TVP IDB Vault Hit: Subtitles restored for ${id}`);
     const track = item?.tracks?.[0] ?? { id, kind: "captions", label: "English", srclang: "en", default: true };
@@ -563,7 +509,7 @@ async function deployCaption(file, thumbnail, autocancel = !crossOriginIsolated 
     autocancel,
     () => thumbnail.setAttribute("data-caption-state", "loading")
   );
-  if (res.success) await DB.vault.subtitles.put(res.vttData.buffer, id);
+  if (res.success) await DB.set(id, res.vttData.buffer, "subtitles");
   if (!res.cancelled) thumbnail.setAttribute("data-caption-state", res.success ? "filled" : "empty");
   if (!res.success) return;
   (item = thumbnail.getPlItem()).tracks = [res.track];
