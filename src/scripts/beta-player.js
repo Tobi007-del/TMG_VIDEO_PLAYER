@@ -1,6 +1,8 @@
 import { isDef, isIter, isObj, isArr, loadResource, isSameURL, uid, clamp, bindAllMethods, createEl, initVScrollerator, initScrollAssist, removeScrollAssist } from "@t007/utils";
 import { reactive, TERMINATOR, volatile } from "sia-reactor";
 import { setAny, getAny, parseAnyObj, mergeObjs, deepClone } from "sia-reactor/utils";
+import { TimeTravelPlugin } from "sia-reactor/plugins";
+import { TimeTravelOverlay } from "sia-reactor/adapters/vanilla";
 
 class tmg_Video_Controller {
   constructor(medium, build) {
@@ -2572,6 +2574,16 @@ var tmg = {
   _mutationSet: new WeakSet(),
   _mutationId: null,
   _currentFullscreenController: null,
+  timeTravel() {
+    ((window.TTP = TimeTravelPlugin), (window.TTO = TimeTravelOverlay));
+    for (let i = 0, n = 0, len = tmg.Controllers.length; i < len; i++) {
+      const con = tmg.Controllers[i];
+      if (con.config.__Reactor__.plugins?.has("timeTravel")) continue;
+      con.config.plugIn((window[`TTP${++n}`] = new TTP()));
+      window[`TTO${n}`] = new TTO(window[`TTP${n}`], { title: `TMG Controller ${n} Time` });
+      con.config.watch("settings.css.brandColor", (v) => (window[`TTO${n}`].config.color = v));
+    }
+  },
   breath: (w = window) => new Promise((res) => w.requestAnimationFrame(res)), // The "Single Frame" breathe - GPU Readiness, the loading animation is the build process itself. Sike!!
   deepBreath: (w = window) => new Promise((res) => w.requestAnimationFrame(() => w.requestAnimationFrame(res))), // The "Double Frame" breathe - guaranteed layout completion
   flagMutation: (m, check = true) => !tmg._mutationSet.has(m) && check && tmg._mutationSet.add(m),
