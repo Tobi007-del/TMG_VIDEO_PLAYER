@@ -611,7 +611,7 @@ class tmg_Video_Controller {
     this.config.set("lightState.disabled", (value) => (this.readyState !== 1 ? TERMINATOR : value));
     this.config.on("lightState.disabled", ({ target: { value, object }, root }) => {
       if (value) {
-        if (this.settings.time.start != null) this.actualTimeStart = this.currentTime = this.settings.time.start;
+        if (this.settings.time.start != null) this.actualTimeStart = this.settings.time.value = this.settings.time.start;
         this.videoContainer.classList.remove("tmg-video-light");
         this.video.removeEventListener("play", this.removeLightState);
         this.DOM.controlsContainer.removeEventListener("click", this._handleLightStateClick);
@@ -624,8 +624,8 @@ class tmg_Video_Controller {
       }
     });
     this.config.on("lightState.controls", () => this.queryDOM("[data-control-id]", false, true).forEach((c) => (c.dataset.lightControl = this.isLight(c.dataset.controlId) ? "true" : "false")), { immediate: true });
-    this.config.on("lightState.preview.usePoster", ({ target: { value, object }, root }) => !root.lightState.disabled && (!value || !this.video.poster) && (this.currentTime = object.time));
-    this.config.on("lightState.preview.time", ({ target: { object }, root }) => !root.lightState.disabled && (!object.usePoster || !this.video.poster) && (this.currentTime = object.time));
+    this.config.on("lightState.preview.usePoster", ({ target: { value, object }, root }) => !root.lightState.disabled && (!value || !this.video.poster) && (this.settings.time.value = object.time));
+    this.config.on("lightState.preview.time", ({ target: { object }, root }) => !root.lightState.disabled && (!object.usePoster || !this.video.poster) && (this.settings.time.value = object.time));
   }
   addLightState = () => (this.config.lightState.disabled = false);
   removeLightState = () => {
@@ -1063,15 +1063,6 @@ class tmg_Video_Controller {
   }
   showUIMessage = (message) => message && this.DOM.videoContainerContent.setAttribute("data-message", message);
   removeUIMessage = () => this.DOM.videoContainerContent.removeAttribute("data-message");
-  get duration() {
-    return tmg.safeNum(this.video.duration);
-  }
-  get currentTime() {
-    return tmg.safeNum(this.video.currentTime);
-  }
-  set currentTime(value) {
-    this.video.currentTime = tmg.safeNum(tmg.clamp(this.settings.time.min, value, this.settings.time.max));
-  }
   _handleLoadedError(error) {
     this.loaded = false;
     this.settings.css.currentBufferedPosition = 0;
@@ -1087,7 +1078,7 @@ class tmg_Video_Controller {
   _handleLoadedMetadata() {
     this.loaded = true;
     this.actualTimeStart = this.settings.time.start;
-    if (this.settings.time.start != null && this.config.lightState.disabled) this.currentTime = this.actualTimeStart;
+    if (this.settings.time.start != null && this.config.lightState.disabled) this.settings.time.value = this.actualTimeStart;
     this.pseudoVideo.src = this.video.currentSrc;
     this.pseudoVideo.crossOrigin = this.video.crossOrigin;
     this.pseudoVideo.addEventListener("timeupdate", ({ target: v }) => (v.ontimeupdate = this.syncCanvasPreviews), { once: true }); // anonymous low cost
@@ -1106,7 +1097,7 @@ class tmg_Video_Controller {
     for (let i = 0; i < this.video.buffered.length; i++) if (this.video.buffered.start(this.video.buffered.length - 1 - i) < this.currentTime) return (this.settings.css.currentBufferedPosition = this.video.buffered.end(this.video.buffered.length - 1 - i) / this.duration);
   }
   togglePlay = async (bool) => await this.video[("boolean" === typeof bool ? bool : this.video.paused) ? "play" : "pause"]();
-  replay = () => ((this.currentTime = 0), this.video.play()); // ! - start is 0 and falsy
+  replay = () => ((this.settings.time.value = 0), this.video.play()); // ! - start is 0 and falsy
   previousVideo = () => (this.currentTime >= 3 ? this.replay() : this.config.playlist && this.currentPlaylistIndex > 0 && this.movePlaylistTo(this.currentPlaylistIndex - 1, true));
   nextVideo = () => this.config.playlist && this.currentPlaylistIndex < this.config.playlist.length - 1 && this.movePlaylistTo(this.currentPlaylistIndex + 1, true);
   movePlaylistTo(index, shouldPlay) {
@@ -1190,7 +1181,16 @@ class tmg_Video_Controller {
     tmg.ON_MOBILE && (buffered === "skip" ? this.removeOverlay() : this.delayOverlay());
     this.videoContainer.classList.remove("tmg-video-buffering");
   }
+  get duration() {
+    return tmg.safeNum(this.video.duration);
+  }
+  get currentTime() {
+    return tmg.safeNum(this.video.currentTime);
+  }
   plugTimeSettings() {
+    this.config.watch("settings.time.value", (value) => {
+      this.video.currentTime = tmg.safeNum(tmg.clamp(this.settings.time.min, value, this.settings.time.max));
+    });
     this.config.set("settings.time.previews", (value, _, { target: { oldValue } }) => (tmg.isObj(value) && tmg.isObj(oldValue) ? tmg.mergeObjs(oldValue, value) : value));
     this.config.on("settings.time.previews", ({ type, currentTarget: { value } }) => {
       if (type === "update") return;
@@ -1232,7 +1232,7 @@ class tmg_Video_Controller {
     this.isScrubbing = false;
     const newPos = (this.settings.css.currentPlayedPosition = this.settings.css.currentThumbPosition = this.shouldCancelTimeScrub ? this.lastTimelineThumbPosition : this.settings.css.currentThumbPosition);
     this.DOM.currentTimeElement.textContent = this.toTimeText(newPos * this.duration, true);
-    if (!this.shouldCancelTimeScrub) this.currentTime = newPos * this.duration;
+    if (!this.shouldCancelTimeScrub) this.settings.time.value = newPos * this.duration;
     cancelAnimationFrame(this.scrubbingId);
     this.togglePlay(!this.wasPaused);
     this.videoContainer.classList.remove("tmg-video-scrubbing");
@@ -1268,7 +1268,7 @@ class tmg_Video_Controller {
         if (this.isScrubbing) {
           this.settings.css.currentThumbPosition = p;
           if (this.settings.time.seekSync) this.settings.css.currentPlayedPosition = p;
-          if (this.settings.time.seekSync && this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText((this.currentTime = p * this.duration), true);
+          if (this.settings.time.seekSync && this.DOM.currentTimeElement) this.DOM.currentTimeElement.textContent = this.toTimeText((this.settings.time.value = p * this.duration), true);
           Math.abs(currX - this.lastTimelineThumbPosition * rect.width) < this.settings.controlPanel.timeline.seek.cancel.delta ? this.cancelTimeScrubbing() : this.allowTimeScrubbing();
           this.showOverlay();
         }
@@ -1298,7 +1298,7 @@ class tmg_Video_Controller {
     percent = percent * multiplier;
     const time = sign === "+" ? this.currentTime + percent * this.duration : this.currentTime - percent * this.duration;
     this.gestureNextTime = tmg.clamp(0, time, this.duration);
-    if (this.overTimeline) this.currentTime = this.gestureNextTime;
+    if (this.overTimeline) this.settings.time.value = this.gestureNextTime;
     this.DOM.touchTimelineNotifier.textContent = `${sign}${this.toTimeText(Math.abs(this.gestureNextTime - this.currentTime))} (${this.toTimeText(this.gestureNextTime, true)}) ${multiplier < 1 ? `x${multiplier}` : ""}`;
   }
   _handleTimelineKeyDown(e) {
@@ -1318,7 +1318,7 @@ class tmg_Video_Controller {
   _handleTimeUpdate() {
     const t = { c: this.currentTime, vc: this.video.currentTime, d: this.duration, s: this.settings };
     this.video.paused && this._handleTimeUpdateLoop(false, t.vc, t.s);
-    if (t.c < t.s.time.min || t.c > t.s.time.max) ((this.currentTime = t.s.time.loop ? t.s.time.min : t.c), !t.s.time.loop && this.togglePlay(false));
+    if (t.c < t.s.time.min || t.c > t.s.time.max) ((this.settings.time.value = t.s.time.loop ? t.s.time.min : t.c), !t.s.time.loop && this.togglePlay(false));
     this.DOM.currentTimeElement.textContent = this.toTimeText(t.vc, true);
     if (this.speedCheck && !this.video.paused) this.DOM.playbackRateNotifier?.setAttribute("data-current-time", this.toTimeText(t.vc, true));
     if (this.video.readyState && t.c && this.readyState > 1) {
@@ -1398,7 +1398,7 @@ class tmg_Video_Controller {
     // this.throttle("statsLogging", () => this.log(` STATS FOR NERDS: \n Now: ${now} ms\n Media Time: ${m.mediaTime} s\n Expected Display Time: ${m.expectedDisplayTime} ms\n Presented Frames: ${m.presentedFrames}\n Dropped Frames (detected): ${droppedFrames}\n FPS (real-time): ${fps}\n Processing Duration: ${m.processingDuration} ms\n Capture Time: ${m.captureTime}\n Width: ${m.width}\n Height: ${m.height}\n Painted Frames: ${m.paintedFrames}\n`), 1000, false);
     this.frameCallbackId = this.video.requestVideoFrameCallback?.(this._handleFrameUpdate);
   }
-  moveVideoFrame = (dir = "forwards") => this.video.paused && this.throttle("frameStepping", () => (this.currentTime = tmg.clamp(0, Math.round(this.currentTime * this.pfps) + (dir === "backwards" ? -1 : 1), Math.floor(this.duration * this.pfps)) / this.pfps), this.pframeDelay);
+  moveVideoFrame = (dir = "forwards") => this.video.paused && this.throttle("frameStepping", () => (this.settings.time.value = tmg.clamp(0, Math.round(this.currentTime * this.pfps) + (dir === "backwards" ? -1 : 1), Math.floor(this.duration * this.pfps)) / this.pfps), this.pframeDelay);
   plugPlaybackRateSettings() {
     // currently, playback rate is not completely wired by batched listeners but updates directly on the browser events so watch is used below
     this.config.watch("settings.playbackRate.value", (value, { target: { object } }) => (this.video.playbackRate = this.video.defaultPlaybackRate = tmg.clamp(object.min, value, object.max)));
@@ -2161,7 +2161,7 @@ class tmg_Video_Controller {
     if (this.gestureWheelXCheck) {
       this.gestureWheelXCheck = false;
       this.DOM.touchTimelineNotifier?.classList.remove("tmg-video-control-active");
-      this.currentTime = this.gestureNextTime;
+      this.settings.time.value = this.gestureNextTime;
     }
   }
   _handleGestureTouchStart(e) {
@@ -2235,7 +2235,7 @@ class tmg_Video_Controller {
       this.gestureTouchXCheck = false;
       this.videoContainer.removeEventListener("touchmove", this._handleGestureTouchXMove, { passive: false });
       this.DOM.touchTimelineNotifier?.classList.remove("tmg-video-control-active");
-      if (!this.gestureTouchCanCancel) this.currentTime = this.gestureNextTime;
+      if (!this.gestureTouchCanCancel) this.settings.time.value = this.gestureNextTime;
     }
     if (this.gestureTouchYCheck) {
       this.gestureTouchYCheck = false;
@@ -2411,7 +2411,7 @@ class tmg_Video_Controller {
         return this.toggleSettingsView();
       case "home": // -w
       case "0": // -w
-        return (this.currentTime = 0);
+        return (this.settings.time.value = 0);
       case "1": // -w
       case "2": // -w
       case "3": // -w
@@ -2421,9 +2421,9 @@ class tmg_Video_Controller {
       case "7": // -w
       case "8": // -w
       case "9": // -w
-        return (this.currentTime = (action / 10) * this.duration);
+        return (this.settings.time.value = (action / 10) * this.duration);
       case "end": // -w
-        return (this.currentTime = this.duration);
+        return (this.settings.time.value = this.duration);
     }
   }
   _handlePlayTriggerUp(e) {
