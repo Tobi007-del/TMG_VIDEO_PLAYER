@@ -5,7 +5,7 @@ import "@t007/input/style.css";
 import toast, { toaster } from "@t007/toast";
 import { confirm } from "@t007/dialog";
 import { field } from "@t007/input";
-import { IndexedDBAdapter } from "sia-reactor/plugins";
+import { IndexedDBAdapter } from "sia-reactor/modules";
 import { inject } from "@vercel/analytics";
 import { injectSpeedInsights } from "@vercel/speed-insights";
 

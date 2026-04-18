@@ -1,7 +1,7 @@
 import { isDef, isIter, isObj, isArr, loadResource, isSameURL, uid, clamp, bindAllMethods, createEl, initVScrollerator, initScrollAssist, removeScrollAssist } from "@t007/utils";
 import { reactive, TERMINATOR, volatile } from "sia-reactor";
-import { setAny, getAny, parseAnyObj, mergeObjs, deepClone } from "sia-reactor/utils";
-import { TimeTravelPlugin } from "sia-reactor/plugins";
+import { setAny, getAny, parseAnyObj, fanout, mergeObjs, deepClone } from "sia-reactor/utils";
+import { TimeTravelModule } from "sia-reactor/modules";
 import { TimeTravelOverlay } from "sia-reactor/adapters/vanilla";
 
 class tmg_Video_Controller {
@@ -11,7 +11,7 @@ class tmg_Video_Controller {
     ((this.buildCache = { ...build }), (this.id = build.id), (this.video = medium));
     this.config = reactive(tmg.volatile(build)); // merging the video build into the Video Player Instance
     this.settings = this.config.settings; // alias for devx, for non reassignable common config
-    (this.guardGenericPaths(), this.guardTimeValues(), this.plugSources(), this.plugTracks(), this.plugPlaylist());
+    (this.guardTimeValues(), this.plugSources(), this.plugTracks(), this.plugPlaylist());
     const { src, sources, tracks } = this.config;
     this.log((this.buildCache = { ...this.buildCache, ...(src ? { src } : null), ...(sources?.length ? { sources } : null), tracks })); // adding some info incase user had them burnt into the html
     this.audioSetup = this.loaded = this.isScrubbing = this.buffering = this.inFullscreen = this.inFloatingPlayer = this.overTimeline = this.overVolume = this.overBrightness = this.gestureTouchXCheck = this.gestureTouchYCheck = this.gestureWheelXCheck = this.gestureWheelYCheck = this.shouldSetLastVolume = this.shouldSetLastBrightness = this.speedPointerCheck = this.speedCheck = this.skipPersist = this.shouldCancelTimeScrub = false;
@@ -25,11 +25,10 @@ class tmg_Video_Controller {
     this.mutatingDOMM = true;
     (this.buildContainers(), this.buildPlayerInterface());
     this.plugControlPanelSettings();
-    setTimeout(() => (this.mutatingDOMM = false));
     this.initPlayer();
     this.initSettingsUIManager();
+    setTimeout(() => (this.mutatingDOMM = false));
   }
-  guardGenericPaths = () => ["media", "media.links", "settings.toasts", "settings.toasts.nextVideoPreview", "settings.css", "settings.controlPanel", "lightState", "lightState.preview", "settings.time", "settings.playbackRate", "settings.volume", "settings.brightness"].forEach((p) => this.config.on(p, this.config.cascade));
   plugSources() {
     const { src, sources } = this.config;
     this.config.get("src", () => this.video.src);
@@ -66,16 +65,19 @@ class tmg_Video_Controller {
   }
   plugMedia() {
     this.setImgLoadState({ target: this.DOM.videoProfile });
-    ["media.title", "media.artist", "media.profile"].forEach((e) => this.config.watch(e, (value, { root }) => (root.settings.controlPanel[e.replace("media.", "")] = value)));
+    ["media.title", "media.artist", "media.profile"].forEach((e) => this.config.watch(e, (value) => (this.settings.controlPanel[e.replace("media.", "")] = value), { immediate: "auto" }));
     ["media.links.title", "media.links.artist", "media.links.profile"].forEach((p) =>
-      this.config.on(p, ({ target: { key, value } }) => {
-        const el = key !== "profile" ? this.DOM[`video${tmg.capitalize(key)}`] : this.DOM.videoProfile?.parentElement;
-        el && Object.entries({ href: value, "tab-index": value ? "0" : null, target: value ? "_blank" : null, rel: value ? "noopener noreferrer" : null }).forEach(([attr, val]) => (val ? el.setAttribute(attr, val) : el.removeAttribute(attr)));
-      })
+      this.config.on(
+        p,
+        ({ target: { key, value } }) => {
+          const el = key !== "profile" ? this.DOM[`video${tmg.capitalize(key)}`] : this.DOM.videoProfile?.parentElement;
+          el && Object.entries({ href: value, "tab-index": value ? "0" : null, target: value ? "_blank" : null, rel: value ? "noopener noreferrer" : null }).forEach(([attr, val]) => (val ? el.setAttribute(attr, val) : el.removeAttribute(attr)));
+        },
+        { immediate: true }
+      )
     );
-    this.config.on("media.artwork", ({ currentTarget: { value } }) => this.setPosterState(value?.[0]?.src));
-    this.config.on("media", () => !this.video.paused && this.syncMediaSession());
-    this.config.media = this.config.media;
+    this.config.on("media.artwork", ({ currentTarget: { value } }) => this.setPosterState(value?.[0]?.src), { immediate: true });
+    this.config.on("media", () => !this.video.paused && this.syncMediaSession(), { immediate: true });
   }
   async autoGenerateMedia() {
     const url = this.config.media.artwork?.[0]?.src;
@@ -476,26 +478,33 @@ class tmg_Video_Controller {
     this.zonesArr = [...Object.values(this.zoneWs.top), ...Object.values(this.zoneWs.bottom).map((v) => Object.values(v))].flat().map((w) => w.zone);
     controlsContainer.prepend(...[HTML.pictureinpicturewrapper, HTML.thumbnail, HTML.videobuffer, HTML.captionsContainer].flat().filter(Boolean), notifiersContainer, topWrapper, centerWrapper, bottomWrapper);
     this.pseudoVideoContainer.append(HTML.pictureinpicturewrapper?.cloneNode(true) || "");
-    ["settings.controlPanel.title", "settings.controlPanel.artist", "settings.controlPanel.profile"].forEach((e) => this.config.on(e, ({ target: { key, value } }) => value !== true && (this.DOM[`video${tmg.capitalize(key)}`][key === "profile" ? "src" : "textContent"] = this.DOM[`video${tmg.capitalize(key)}`].dataset["video" + tmg.capitalize(key)] = value || "")));
-    this.config.on("settings.controlPanel.top", ({ value }) => {
-      const t1 = getSplitControls(value);
-      fillSWrapper(topWrapper, [(this.cZoneWs.top.left = getZoneW(t1.left, this.zoneWs.top.left)), (this.cZoneWs.top.center = getZoneW(t1.center, this.zoneWs.top.center)), (this.cZoneWs.top.right = getZoneW(t1.right, this.zoneWs.top.right))]);
-      (fillZone(this.cZoneWs.top.left, t1.left), fillZone(this.cZoneWs.top.center, t1.center), fillZone(this.cZoneWs.top.right, t1.right));
-    });
-    this.config.on("settings.controlPanel.center", ({ value }) => fillZone(this.cZoneWs.center, value));
-    this.config.on("settings.controlPanel.bottom", ({ value }) => {
-      [1, 2, 3].forEach((i) => {
-        const bn = getSplitControls(value[i]);
-        fillSWrapper(bottomWrapper.children[i - 1], [(this.cZoneWs.bottom[i].left = getZoneW(bn.left, this.zoneWs.bottom[i].left)), (this.cZoneWs.bottom[i].center = getZoneW(bn.center, this.zoneWs.bottom[i].center)), (this.cZoneWs.bottom[i].right = getZoneW(bn.right, this.zoneWs.bottom[i].right))]);
-        (fillZone(this.cZoneWs.bottom[i].left, bn.left), fillZone(this.cZoneWs.bottom[i].center, bn.center), fillZone(this.cZoneWs.bottom[i].right, bn.right));
-      });
-    });
-    this.config.on("settings.controlPanel.buffer", ({ value }) => (this.videoContainer.dataset.buffer = value));
-    this.config.on("settings.controlPanel.timeline.thumbIndicator", ({ value }) => (this.videoContainer.dataset.thumbIndicator = value));
-    this.config.on("settings.controlPanel.progressBar", ({ value }) => this.videoContainer.classList.toggle("tmg-video-progress-bar", value));
-    this.config.on("settings.controlPanel.draggable", ({ value }) => this.setDragEventListeners(value ? "add" : "remove"));
-    this.settings.controlPanel = this.settings.controlPanel;
-    (this.config.tick("settings.controlPanel"), this.config.tick(["settings.controlPanel.top", "settings.controlPanel.center", "settings.controlPanel.bottom"])); // needed for DOM retrieval
+    this.config.on(
+      "settings.controlPanel.top",
+      ({ currentTarget: { value } }) => {
+        const t1 = getSplitControls(value);
+        fillSWrapper(topWrapper, [(this.cZoneWs.top.left = getZoneW(t1.left, this.zoneWs.top.left)), (this.cZoneWs.top.center = getZoneW(t1.center, this.zoneWs.top.center)), (this.cZoneWs.top.right = getZoneW(t1.right, this.zoneWs.top.right))]);
+        (fillZone(this.cZoneWs.top.left, t1.left), fillZone(this.cZoneWs.top.center, t1.center), fillZone(this.cZoneWs.top.right, t1.right));
+      },
+      { immediate: true }
+    );
+    this.config.on("settings.controlPanel.center", ({ currentTarget: { value } }) => fillZone(this.cZoneWs.center, value), { immediate: true });
+    this.config.on(
+      "settings.controlPanel.bottom",
+      ({ currentTarget: { value } }) => {
+        [1, 2, 3].forEach((i) => {
+          const bn = getSplitControls(value[i]);
+          fillSWrapper(bottomWrapper.children[i - 1], [(this.cZoneWs.bottom[i].left = getZoneW(bn.left, this.zoneWs.bottom[i].left)), (this.cZoneWs.bottom[i].center = getZoneW(bn.center, this.zoneWs.bottom[i].center)), (this.cZoneWs.bottom[i].right = getZoneW(bn.right, this.zoneWs.bottom[i].right))]);
+          (fillZone(this.cZoneWs.bottom[i].left, bn.left), fillZone(this.cZoneWs.bottom[i].center, bn.center), fillZone(this.cZoneWs.bottom[i].right, bn.right));
+        });
+      },
+      { immediate: true }
+    );
+    this.retrieveDOM();
+    ["settings.controlPanel.title", "settings.controlPanel.artist", "settings.controlPanel.profile"].forEach((e) => this.config.on(e, ({ target: { key, value } }) => value !== true && (this.DOM[`video${tmg.capitalize(key)}`][key === "profile" ? "src" : "textContent"] = this.DOM[`video${tmg.capitalize(key)}`].dataset["video" + tmg.capitalize(key)] = value || ""), { immediate: true }));
+    this.config.on("settings.controlPanel.buffer", ({ value }) => (this.videoContainer.dataset.buffer = value), { immediate: true });
+    this.config.on("settings.controlPanel.timeline.thumbIndicator", ({ value }) => (this.videoContainer.dataset.thumbIndicator = value), { immediate: true });
+    this.config.on("settings.controlPanel.progressBar", ({ value }) => this.videoContainer.classList.toggle("tmg-video-progress-bar", value), { immediate: true });
+    this.config.on("settings.controlPanel.draggable", ({ value }) => this.setDragEventListeners(value ? "add" : "remove"), { immediate: true });
   }
   getUIZoneWCoord(target, zoneW = false) {
     let key;
@@ -594,7 +603,6 @@ class tmg_Video_Controller {
     };
   }
   initPlayer() {
-    this.retrieveDOM();
     (this.observeResize(), this.observeIntersection());
     this.setUpSvgs();
     (this.setVideoEventListeners(), this.setControlsEventListeners());
@@ -1108,7 +1116,7 @@ class tmg_Video_Controller {
     this.canAutoMovePlaylist = true;
   }
   applyPlaylistItem(v, reset = true) {
-    this.config.media = tmg.deepClone(v.media);
+    fanout(this.config.media, tmg.deepClone(v.media), { merge: true, depth: 2 });
     ["min", "max", "start", "end", "previews"].forEach((prop) => (this.settings.time[prop] = v.settings.time[prop]));
     this.config.tracks = tmg.deepClone(v.tracks ?? []);
     if (reset) this.config.src = v.src || "";
@@ -1146,7 +1154,7 @@ class tmg_Video_Controller {
     nVP?.toggleAttribute("poster", v.media?.artwork?.[0]?.src);
     v.sources?.length && tmg.addSources(v.sources, nVP);
     ["loadedmetadata", "loaded", "durationchange"].forEach((e) => nVP?.addEventListener(e, ({ target: p }) => (p.nextElementSibling.textContent = this.toTimeText(p.duration))));
-    this.settings.toasts.nextVideoPreview = this.settings.toasts.nextVideoPreview; // force UI update
+    fanout(this.settings.toasts.nextVideoPreview, this.settings.toasts.nextVideoPreview); // force UI update
     nVP?.previousElementSibling?.addEventListener("click", () => (cleanUp(true), this.nextVideo()), true); // all admittedly a terse func, auto next shouldn't be deep
   }
   _handlePlay() {
@@ -1188,25 +1196,32 @@ class tmg_Video_Controller {
     return tmg.safeNum(this.video.currentTime);
   }
   plugTimeSettings() {
-    this.config.watch("settings.time.value", (value) => {
-      this.video.currentTime = tmg.safeNum(tmg.clamp(this.settings.time.min, value, this.settings.time.max));
-    });
+    this.config.watch(
+      "settings.time.value",
+      (value) => {
+        this.video.currentTime = tmg.safeNum(tmg.clamp(this.settings.time.min, value, this.settings.time.max));
+      },
+      { immediate: true }
+    );
     this.config.set("settings.time.previews", (value, _, { target: { oldValue } }) => (tmg.isObj(value) && tmg.isObj(oldValue) ? tmg.mergeObjs(oldValue, value) : value));
-    this.config.on("settings.time.previews", ({ type, currentTarget: { value } }) => {
-      if (type === "update") return;
-      const manual = value && value?.address && (value?.spf || (value?.cols && value?.rows));
-      this.settings.css.altImgUrl = `url(${TMG_VIDEO_ALT_IMG_SRC})`;
-      this.videoContainer.classList.toggle("tmg-video-no-previews", !value);
-      this.videoContainer.dataset.previewType = value ? (manual ? (value?.cols && value?.rows ? "sprite" : "image") : "canvas") : "none";
-      if (value?.cols && value?.rows && value?.address) this.settings.css.currentPreviewUrl = this.settings.css.currentThumbnailUrl = `url(${value.address})`;
-      else this.settings.css.currentPreviewPosition = this.settings.css.currentThumbnailPosition = "center";
-      if (!value || manual) return;
-      ((this.previewContext ??= this.DOM.previewCanvas?.getContext("2d")), (this.thumbnailContext ??= this.DOM.thumbnailCanvas?.getContext("2d")));
-      !this.loaded && (this.setCanvasFallback(this.DOM.previewCanvas, this.previewContext), this.setCanvasFallback(this.DOM.thumbnailCanvas, this.thumbnailContext), (this.pseudoVideo.ontimeupdate = null));
-    });
+    this.config.on(
+      "settings.time.previews",
+      ({ type, currentTarget: { value } }) => {
+        if (type === "update") return;
+        const manual = value && value?.address && (value?.spf || (value?.cols && value?.rows));
+        this.settings.css.altImgUrl = `url(${TMG_VIDEO_ALT_IMG_SRC})`;
+        this.videoContainer.classList.toggle("tmg-video-no-previews", !value);
+        this.videoContainer.dataset.previewType = value ? (manual ? (value?.cols && value?.rows ? "sprite" : "image") : "canvas") : "none";
+        if (value?.cols && value?.rows && value?.address) this.settings.css.currentPreviewUrl = this.settings.css.currentThumbnailUrl = `url(${value.address})`;
+        else this.settings.css.currentPreviewPosition = this.settings.css.currentThumbnailPosition = "center";
+        if (!value || manual) return;
+        ((this.previewContext ??= this.DOM.previewCanvas?.getContext("2d")), (this.thumbnailContext ??= this.DOM.thumbnailCanvas?.getContext("2d")));
+        !this.loaded && (this.setCanvasFallback(this.DOM.previewCanvas, this.previewContext), this.setCanvasFallback(this.DOM.thumbnailCanvas, this.thumbnailContext), (this.pseudoVideo.ontimeupdate = null));
+      },
+      { immediate: true }
+    );
     this.config.on("settings.css.currentThumbnailWidth", ({ value }) => (this.DOM.thumbnailCanvas.width = parseFloat(value)));
     this.config.on("settings.css.currentThumbnailHeight", ({ value }) => (this.DOM.thumbnailCanvas.height = parseFloat(value)));
-    this.settings.time = this.settings.time;
   }
   guardTimeValues = () => ["lightState.preview.time", "settings.time.min", "settings.time.max", "settings.time.start", "settings.time.end", "settings.toasts.nextVideoPreview.time"].forEach((p) => this.config.get(p, this.toTimeVal));
   toTimeText = (time = this.video.currentTime, useMode = false, showMs = false) => (!useMode || this.settings.time.mode !== "remaining" ? tmg.formatMediaTime({ time, format: this.settings.time.format, elapsed: true, showMs }) : `${tmg.formatMediaTime({ time: this.video.duration - time, format: this.settings.time.format, elapsed: false, showMs })}`); // DRY quick util
@@ -1404,7 +1419,7 @@ class tmg_Video_Controller {
     this.config.watch("settings.playbackRate.value", (value, { target: { object } }) => (this.video.playbackRate = this.video.defaultPlaybackRate = tmg.clamp(object.min, value, object.max)));
     this.config.watch("settings.playbackRate.min", (min, { target: { object } }) => object.value < min && (object.value = min));
     this.config.watch("settings.playbackRate.max", (max, { target: { object } }) => object.value > max && (object.value = max));
-    this.settings.playbackRate = { value: this.video.playbackRate, ...this.settings.playbackRate };
+    fanout(this.settings.playbackRate, { value: this.video.playbackRate, ...this.settings.playbackRate });
     this.config.get("settings.playbackRate.value", () => this.video.playbackRate, true);
   }
   rotatePlaybackRate(dir = "forwards") {
@@ -1683,7 +1698,7 @@ class tmg_Video_Controller {
       this.settings.css.volumeSliderPercent = Math.round((100 / max) * 100);
       this.settings.css.maxVolumeRatio = max / 100;
     });
-    this.settings.volume = { ...this.settings.volume, value: this.shouldMute ? 0 : this.lastVolume };
+    fanout(this.settings.volume, { ...this.settings.volume, value: this.shouldMute ? 0 : this.lastVolume });
     this.config.get("settings.volume.value", (value) => (this._tmgGainNode ? Math.round(((this._tmgGainNode.gain?.value ?? 2) / 2) * 100) : value), true);
   }
   toggleMute = (option) => {
@@ -1785,7 +1800,7 @@ class tmg_Video_Controller {
       this.settings.css.brightnessSliderPercent = Math.round((100 / max) * 100);
       this.settings.css.maxBrightnessRatio = max / 100;
     });
-    this.settings.brightness = { ...this.settings.brightness, value: this.lastBrightness };
+    fanout(this.settings.brightness, { ...this.settings.brightness, value: this.lastBrightness });
     this.config.get("settings.brightness.value", () => Number(this.settings.css.brightness ?? 100), true);
   }
   toggleDark = (option) => {
@@ -2574,13 +2589,14 @@ var tmg = {
   _mutationSet: new WeakSet(),
   _mutationId: null,
   _currentFullscreenController: null,
+  TimeTravelModule: TimeTravelModule,
+  TimeTravelOverlay: TimeTravelOverlay,
   timeTravel() {
-    ((window.TTP = TimeTravelPlugin), (window.TTO = TimeTravelOverlay));
     for (let i = 0, n = 0, len = tmg.Controllers.length; i < len; i++) {
       const con = tmg.Controllers[i];
-      if (con.config.__Reactor__.plugins?.has("timeTravel")) continue;
-      con.config.plugIn((window[`TTP${++n}`] = new TTP()));
-      window[`TTO${n}`] = new TTO(window[`TTP${n}`], { title: `TMG Controller ${n} Time` });
+      if (con.config.__Reactor__.modules?.has(window[`TTM${n + 1}`])) continue;
+      con.config.use((window[`TTM${++n}`] = new TimeTravelModule()));
+      window[`TTO${n}`] = new TimeTravelOverlay(window[`TTM${n}`], { title: `TMG Controller ${n} Time` });
       con.config.watch("settings.css.brandColor", (v) => (window[`TTO${n}`].config.color = v));
     }
   },
@@ -2854,6 +2870,8 @@ var tmg = {
   setAny: setAny,
   getAny: getAny,
   bindAllMethods: bindAllMethods,
+  reactive: reactive,
+  TERMINATOR: TERMINATOR,
   volatile: volatile,
   safeNum: (number, fallback = 0) => (tmg.isValidNum(number) ? number : fallback),
   parseIfPercent: (percent, amount, autocap = 0.25) => {
