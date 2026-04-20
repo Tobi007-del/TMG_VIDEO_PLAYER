@@ -3,7 +3,7 @@ const whiteList = [location.origin, "https://fonts.googleapis.com", "https://cdn
 // prettier-ignore
 const preCachedResources = [
   "/", "index.html", "manifest.json",
-  "assets/images/lone-tree.jpg", "assets/icons/movie-tape.png", "assets/icons/tmg-icon.jpeg",  "assets/icons/tmg-icon.png",
+  "favicon.ico", "assets/images/lone-tree.jpg", "assets/icons/movie-tape.png", "assets/icons/tmg-icon.jpeg",  "assets/icons/tmg-icon.png",
   "assets/ffmpeg/ffmpeg.min.js", "assets/ffmpeg/ffmpeg-core.js", "assets/ffmpeg/ffmpeg-core.wasm", "assets/ffmpeg/ffmpeg-core.worker.js",
   "assets/css/beta-player-video.css"
 ];

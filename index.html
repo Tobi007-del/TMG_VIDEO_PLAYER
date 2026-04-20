@@ -26,7 +26,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/tmg-icon.png" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="apple-touch-icon" sizes="32x32" href="assets/icons/tmg-icon.png" />
     <link rel="preload" href="assets/images/lone-tree.jpg" type="image/jpg" as="image" />
     <link rel="stylesheet" href="src/styles/index.css" />
@@ -183,7 +183,15 @@
       <div class="attribution">
         <details>
           <summary>Coded by <a href="https://github.com/Tobi007-del" target="_blank" rel="noopener noreferrer">Tobi007</a>.</summary>
-          <p>The main idea here is for you to test out the custom controls of the video player while enjoying a movie or two. This is actually just an early prototype but the video controls here has been in development for a while but needs some field testing so do well to give feedback, report bugs, request features or just criticize by sending me a mail.</p>
+          <p>
+            The main idea here is for you to test out the custom controls of the video player while enjoying a movie or two. This is actually just an early prototype but the video controls here has been in development for a while but needs some field testing so do well to give feedback, report bugs, request features or just criticize by sending me a mail.
+            <button type="button" id="beta-time-travel" onclick="__betaTimeTravel()" style="display: inline">Time travel?</button>
+            <script>
+              function __betaTimeTravel() {
+                window.tmg?.Controllers?.length && (window.tmg.timeTravel(), document.getElementById("beta-time-travel")?.remove());
+              }
+            </script>
+          </p>
         </details>
       </div>
     </div>

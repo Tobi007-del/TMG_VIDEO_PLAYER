@@ -2591,13 +2591,14 @@ var tmg = {
   _currentFullscreenController: null,
   TimeTravelModule: TimeTravelModule,
   TimeTravelOverlay: TimeTravelOverlay,
-  timeTravel() {
+  async timeTravel() {
+    await tmg.loadResource(`https://cdn.jsdelivr.net/npm/sia-reactor/dist/styles/time-travel-overlay.min.css`);
     for (let i = 0, n = 0, len = tmg.Controllers.length; i < len; i++) {
       const con = tmg.Controllers[i];
       if (con.config.__Reactor__.modules?.has(window[`TTM${n + 1}`])) continue;
       con.config.use((window[`TTM${++n}`] = new TimeTravelModule()));
       window[`TTO${n}`] = new TimeTravelOverlay(window[`TTM${n}`], { title: `TMG Controller ${n} Time` });
-      con.config.watch("settings.css.brandColor", (v) => (window[`TTO${n}`].config.color = v));
+      con.config.watch("settings.css.brandColor", (v) => (window[`TTO${n}`].config.color = v), { immediate: true });
     }
   },
   breath: (w = window) => new Promise((res) => w.requestAnimationFrame(res)), // The "Single Frame" breathe - GPU Readiness, the loading animation is the build process itself. Sike!!
