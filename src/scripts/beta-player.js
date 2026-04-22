@@ -1675,11 +1675,11 @@ class tmg_Video_Controller {
     this.config.on("settings.volume.value", ({ value }) => {
       const v = tmg.clamp(this.shouldMute ? 0 : this.settings.volume.min, value, this.settings.volume.max);
       if (this._tmgGainNode) this._tmgGainNode.gain.setTargetAtTime((v / 100) * 2, tmg.AUDIO_CONTEXT.currentTime, 0.02);
-      this.video.muted = this.video.defaultMuted = this.settings.volume.muted = v === 0;
+      if (v > 0) this.video.muted = this.video.defaultMuted = this.settings.volume.muted = false;
       this._handleVolumeChange(v);
     }); // S.I.A not fully implemented ready
     this.config.on("settings.volume.muted", ({ oldValue, value: muted }) => {
-      if (oldValue === muted) return;
+      if (oldValue === muted && !!this.settings.volume.value) return;
       if (muted) {
         if (this.settings.volume.value) ((this.lastVolume = this.settings.volume.value), (this.shouldSetLastVolume = true));
         this.shouldMute = true;
@@ -1703,8 +1703,30 @@ class tmg_Video_Controller {
   }
   toggleMute = (option) => {
     if (option === "auto" && this.shouldSetLastVolume && !this.lastVolume) this.lastVolume = this.settings.volume.skip;
-    this.settings.volume.muted = !this.settings.volume.muted;
+    this.settings.volume.muted = !(this.settings.volume.muted || !this.settings.volume.value);
   };
+  changeVolume(value) {
+    const sign = value >= 0 ? "+" : "-";
+    value = Math.abs(value);
+    let volume = this.shouldSetLastVolume ? this.lastVolume : this.settings.volume.value;
+    switch (sign) {
+      case "-":
+        if (volume > this.settings.volume.min) volume -= volume % value ? volume % value : value;
+        if (volume === 0) {
+          this.notify("volumemuted");
+          break;
+        }
+        this.notify("volumedown");
+        break;
+      default:
+        if (volume < this.settings.volume.max) volume += volume % value ? value - (volume % value) : value;
+        this.notify("volumeup");
+    }
+    if (this.shouldSetLastVolume) {
+      this.DOM.volumeNotifierContent.textContent = volume + "%";
+      this.lastVolume = volume;
+    } else this.settings.volume.value = volume;
+  }
   _handleVolumeSliderInput({ target: { value: volume } }, delay = true) {
     ((this.shouldMute = this.shouldSetLastVolume = false), (this.settings.volume.value = volume));
     if (volume > 5) this.sliderAptVolume = volume;
@@ -1737,28 +1759,6 @@ class tmg_Video_Controller {
     } else this.settings.css.currentVolumeSliderPosition = vPercent;
   }
   _handleNativeVolumeChange = () => ((this.video.volume = 1), this.settings.volume.muted !== this.video.muted && this.toggleMute()); // tough choice, took over; browser :)
-  changeVolume(value) {
-    const sign = value >= 0 ? "+" : "-";
-    value = Math.abs(value);
-    let volume = this.shouldSetLastVolume ? this.lastVolume : this.settings.volume.value;
-    switch (sign) {
-      case "-":
-        if (volume > this.settings.volume.min) volume -= volume % value ? volume % value : value;
-        if (volume === 0) {
-          this.notify("volumemuted");
-          break;
-        }
-        this.notify("volumedown");
-        break;
-      default:
-        if (volume < this.settings.volume.max) volume += volume % value ? value - (volume % value) : value;
-        this.notify("volumeup");
-    }
-    if (this.shouldSetLastVolume) {
-      this.DOM.volumeNotifierContent.textContent = volume + "%";
-      this.lastVolume = volume;
-    } else this.settings.volume.value = volume;
-  }
   _handleVolumeContainerMouseMove = () => ((this.overVolume = this.DOM.volumeSlider?.matches(":hover")), this.startVolumeActive());
   _handleVolumeContainerMouseLeave = () => ((this.overVolume = false), this.stopVolumeActive());
   startVolumeActive = () => (this.DOM.volumeSlider?.classList.add("tmg-video-control-active"), this.delayVolumeActive());
@@ -1775,13 +1775,13 @@ class tmg_Video_Controller {
   plugBrightnessSettings() {
     this.lastBrightness = tmg.clamp(this.settings.brightness.min, this.settings.brightness.value ?? this.settings.css.brightness ?? 100, this.settings.brightness.max);
     this.config.on("settings.brightness.value", ({ value }) => {
-      const v = tmg.clamp(this.shouldDark ? 0 : this.settings.brightness.min, value, this.settings.brightness.max);
-      this.settings.css.brightness = v;
-      this.settings.brightness.dark = v === 0;
-      this._handleBrightnessChange(v);
+      const b = tmg.clamp(this.shouldDark ? 0 : this.settings.brightness.min, value, this.settings.brightness.max);
+      this.settings.css.brightness = b;
+      if (b > 0) this.settings.brightness.dark = false;
+      this._handleBrightnessChange(b);
     });
     this.config.on("settings.brightness.dark", ({ oldValue, value: dark }) => {
-      if (oldValue === dark) return;
+      if (oldValue === dark && !!this.settings.brightness.value) return;
       if (dark) {
         if (this.settings.brightness.value) ((this.lastBrightness = this.settings.brightness.value), (this.shouldSetLastBrightness = true));
         this.shouldDark = true;
@@ -1805,7 +1805,7 @@ class tmg_Video_Controller {
   }
   toggleDark = (option) => {
     if (option === "auto" && this.shouldSetLastBrightness && !this.lastBrightness) this.lastBrightness = this.settings.brightness.skip;
-    this.settings.brightness.dark = !this.settings.brightness.dark;
+    this.settings.brightness.dark = !(this.settings.brightness.dark || !this.settings.brightness.value);
   };
   _handleBrightnessSliderInput({ target: { value: brightness } }, delay = true) {
     ((this.shouldDark = this.shouldSetLastBrightness = false), (this.settings.brightness.value = brightness));
@@ -2596,7 +2596,7 @@ var tmg = {
     for (let i = 0, n = 0, len = tmg.Controllers.length; i < len; i++) {
       const con = tmg.Controllers[i];
       if (con.config.__Reactor__.modules?.has(window[`TTM${n + 1}`])) continue;
-      con.config.use((window[`TTM${++n}`] = new TimeTravelModule()));
+      con.config.use((window[`TTM${++n}`] = new TimeTravelModule({ blacklist: ["settings.css.syncWithMedia"] })));
       window[`TTO${n}`] = new TimeTravelOverlay(window[`TTM${n}`], { title: `TMG Controller ${n} Time` });
       con.config.watch("settings.css.brandColor", (v) => (window[`TTO${n}`].config.color = v), { immediate: true });
     }
