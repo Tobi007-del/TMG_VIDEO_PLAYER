@@ -656,7 +656,7 @@ class tmg_Video_Controller {
       fullscreenorientation: () => !this.isUIActive("fullscreen") && this.setControlState(this.DOM.fullscreenOrientationBtn, { hidden: true }),
       captions: () => this.setControlState(this.DOM.captionsBtn, { disabled: !this.video.textTracks[this.textTrackIndex] }),
       playbackrate: () => this.DOM.playbackRateBtn && (this.DOM.playbackRateBtn.textContent = `${this.settings.playbackRate.value}x`),
-      pictureinpicture: () => this.setControlState(this.DOM.pictureInPictureBtn, { hidden: !this.settings.modes.pictureInPicture }),
+      pictureinpicture: () => this.setControlState(this.DOM.pictureInPictureBtn, { hidden: this.settings.modes.pictureInPicture.disabled }),
       theater: () => this.setControlState(this.DOM.theaterBtn, { hidden: !this.settings.modes.theater }),
       fullscreen: () => this.setControlState(this.DOM.fullscreenBtn, { hidden: this.settings.modes.fullscreen.disabled }),
       playlist: () => {
@@ -813,11 +813,11 @@ class tmg_Video_Controller {
   }
   observeResize() {
     this._handleMediaParentResize();
-    tmg.initScrollAssist(this.DOM.videoTitle, { pxPerSecond: 60 });
-    tmg.initScrollAssist(this.DOM.videoArtist, { pxPerSecond: 30 });
+    tmg.initScrollAssist(this.DOM.videoTitle, { pxPerSecond: 60, assistClassName: "tmg-video-controls-scroll-assist" });
+    tmg.initScrollAssist(this.DOM.videoArtist, { pxPerSecond: 30, assistClassName: "tmg-video-controls-scroll-assist" });
     this.zonesArr.forEach((el) => {
       this._handleControlsView(el);
-      tmg.initScrollAssist(el, { pxPerSecond: 60 });
+      tmg.initScrollAssist(el, { pxPerSecond: 60, assistClassName: "tmg-video-controls-scroll-assist" });
       el && tmg.resizeObserver.observe(el);
       el?.addEventListener("scroll", this._handleDirtyScroll, { passive: true });
     });
@@ -1348,7 +1348,7 @@ class tmg_Video_Controller {
   _handleTimeUpdateLoop(optimize = true, vc = this.video.currentTime, s = this.settings) {
     if (optimize && !this.isIntersecting) return;
     if (!this.isScrubbing) s.css.currentPlayedPosition = s.css.currentThumbPosition = tmg.safeNum(vc / tmg.safeNum(this.video.duration, 60)); // progress fallback, shouldn't take more than a min for duration to be available
-    if (!s.captions.disabled) this._handleCaptionsKaraoke();
+    if (!s.captions.visible) this._handleCaptionsKaraoke();
   }
   toggleTimeMode() {
     this.settings.time.mode = this.settings.time.mode !== "elapsed" ? "elapsed" : "remaining";
@@ -1429,7 +1429,7 @@ class tmg_Video_Controller {
       i = steps.reduce((cIdx, s, idx) => (Math.abs(s - rate) < Math.abs(steps[cIdx] - rate) ? idx : cIdx), 0);
     this.settings.playbackRate.value = steps[dir === "backwards" ? (i - 1 + steps.length) % steps.length : (i + 1) % steps.length];
   }
-  changePlaybackRate(value) {
+  setPlaybackRate(value) {
     const sign = value >= 0 ? "+" : "-";
     value = Math.abs(value);
     const rate = this.settings.playbackRate.value;
@@ -1497,7 +1497,7 @@ class tmg_Video_Controller {
       if (track.mode === "showing" || track.default) this.textTrackIndex = i;
       track.mode = "hidden";
     });
-    this.videoContainer.classList.toggle("tmg-video-captions", this.video.textTracks.length && !this.settings.captions.disabled);
+    this.videoContainer.classList.toggle("tmg-video-captions", this.video.textTracks.length && !this.settings.captions.visible);
     this.videoContainer.dataset.trackKind = this.video.textTracks[this.textTrackIndex]?.kind || "captions";
     this.setControlsState("captions");
     this._handleCueChange(this.video.textTracks[this.textTrackIndex]?.activeCues?.[0]);
@@ -1509,7 +1509,7 @@ class tmg_Video_Controller {
     this.settings.css.captionsCharacterEdgeStyle = this.settings.captions.characterEdgeStyle.value;
     this.settings.css.captionsTextAlignment = this.settings.captions.textAlignment.value;
     (this.settings.css.currentCaptionsX, this.settings.css.currentCaptionsY); // reading to trigger CSS caching just incase
-    this.config.on("settings.captions.disabled", ({ value }) => {
+    this.config.on("settings.captions.visible", ({ value }) => {
       ((this.settings.css.currentCaptionsX = this.CSSCache.currentCaptionsX), (this.settings.css.currentCaptionsY = this.CSSCache.currentCaptionsY));
       if (!this.video.textTracks[this.textTrackIndex]) return;
       !value ? this.videoContainer.classList.add("tmg-video-captions") : this.videoContainer.classList.remove("tmg-video-captions", "tmg-video-captions-preview");
@@ -1521,7 +1521,7 @@ class tmg_Video_Controller {
   }
   toggleCaptions = () => {
     if (!this.video.textTracks[this.textTrackIndex]) return this.previewCaptions("No captions available for this video");
-    this.settings.captions.disabled = !this.settings.captions.disabled;
+    this.settings.captions.visible = !this.settings.captions.visible;
   };
   previewCaptions(preview = `${tmg.capitalize(this.videoContainer.dataset.trackKind)} look like this`, flush = this.DOM.captionsContainer.textContent.replace(/\s/g, "") === this.lastCaptionsPreview?.replace(/\s/g, "")) {
     const shouldPreview = flush || !this.isUIActive("captions") || !this.DOM.captionsContainer.textContent;
@@ -1602,7 +1602,7 @@ class tmg_Video_Controller {
       (el.toggleAttribute("data-past", isPast), el.toggleAttribute("data-future", !isPast));
     }
   }
-  changeCaptionsFontSize(value) {
+  setCaptionsFontSize(value) {
     const sign = value >= 0 ? "+" : "-";
     value = Math.abs(value);
     const size = Number(this.settings.css.captionsFontSize);
@@ -1705,7 +1705,7 @@ class tmg_Video_Controller {
     if (option === "auto" && this.shouldSetLastVolume && !this.lastVolume) this.lastVolume = this.settings.volume.skip;
     this.settings.volume.muted = !(this.settings.volume.muted || !this.settings.volume.value);
   };
-  changeVolume(value) {
+  setVolume(value) {
     const sign = value >= 0 ? "+" : "-";
     value = Math.abs(value);
     let volume = this.shouldSetLastVolume ? this.lastVolume : this.settings.volume.value;
@@ -1838,7 +1838,7 @@ class tmg_Video_Controller {
       }
     } else this.settings.css.currentBrightnessSliderPosition = bPercent;
   }
-  changeBrightness(value) {
+  setBrightness(value) {
     const sign = value >= 0 ? "+" : "-";
     value = Math.abs(value);
     let brightness = this.shouldSetLastBrightness ? this.lastBrightness : this.settings.brightness.value;
@@ -1888,7 +1888,7 @@ class tmg_Video_Controller {
   plugModesSettings() {
     this.config.on("settings.modes.fullscreen.disabled", ({ value }) => value && this.isUIActive("fullscreen") && this.toggleFullscreenMode());
     this.config.on("settings.modes.theater", ({ value }) => !value && this.isUIActive("theater") && this.toggleTheaterMode());
-    this.config.on("settings.modes.pictureInPicture", ({ value }) => !value && (this.isUIActive("pictureInPicture") || this.isUIActive("floatingPlayer")) && this.togglePictureInPictureMode());
+    this.config.on("settings.modes.pictureInPicture.disabled", ({ value }) => value && (this.isUIActive("pictureInPicture") || this.isUIActive("floatingPlayer")) && this.togglePictureInPictureMode());
     this.config.on("settings.modes.miniplayer.disabled", ({ value }) => value && this.toggleMiniplayerMode(false));
   }
   toggleTheaterMode = () => {
@@ -2355,21 +2355,21 @@ class tmg_Video_Controller {
           case "objectFit":
             return this.rotateObjectFit();
           case "volumeUp":
-            return this.changeVolume(this.settings.keys.mods.volume[mod] ?? this.settings.volume.skip);
+            return this.setVolume(this.settings.keys.mods.volume[mod] ?? this.settings.volume.skip);
           case "volumeDown":
-            return this.changeVolume(-(this.settings.keys.mods.volume[mod] ?? this.settings.volume.skip));
+            return this.setVolume(-(this.settings.keys.mods.volume[mod] ?? this.settings.volume.skip));
           case "brightnessUp":
-            return this.changeBrightness(this.settings.keys.mods.brightness[mod] ?? this.settings.brightness.skip);
+            return this.setBrightness(this.settings.keys.mods.brightness[mod] ?? this.settings.brightness.skip);
           case "brightnessDown":
-            return this.changeBrightness(-(this.settings.keys.mods.brightness[mod] ?? this.settings.brightness.skip));
+            return this.setBrightness(-(this.settings.keys.mods.brightness[mod] ?? this.settings.brightness.skip));
           case "playbackRateUp":
-            return this.changePlaybackRate(this.settings.keys.mods.playbackRate[mod] ?? this.settings.playbackRate.skip);
+            return this.setPlaybackRate(this.settings.keys.mods.playbackRate[mod] ?? this.settings.playbackRate.skip);
           case "playbackRateDown":
-            return this.changePlaybackRate(-(this.settings.keys.mods.playbackRate[mod] ?? this.settings.playbackRate.skip));
+            return this.setPlaybackRate(-(this.settings.keys.mods.playbackRate[mod] ?? this.settings.playbackRate.skip));
           case "captionsFontSizeUp":
-            return this.changeCaptionsFontSize(this.settings.keys.mods.captionsFontSize[mod] ?? this.settings.captions.font.size.skip);
+            return this.setCaptionsFontSize(this.settings.keys.mods.captionsFontSize[mod] ?? this.settings.captions.font.size.skip);
           case "captionsFontSizeDown":
-            return this.changeCaptionsFontSize(-(this.settings.keys.mods.captionsFontSize[mod] ?? this.settings.captions.font.size.skip));
+            return this.setCaptionsFontSize(-(this.settings.keys.mods.captionsFontSize[mod] ?? this.settings.captions.font.size.skip));
           case "captionsFontWeight":
           case "captionsFontVariant":
           case "captionsFontFamily":
@@ -2384,9 +2384,9 @@ class tmg_Video_Controller {
             (this.isUIActive("pictureInPicture") || this.isUIActive("floatingPlayer")) && this.togglePictureInPictureMode();
             break;
           case "arrowup": // -w
-            return this.changeVolume(this.settings.keys.mods.volume[mod] ?? 5);
+            return this.setVolume(this.settings.keys.mods.volume[mod] ?? 5);
           case "arrowdown": // -w
-            return this.changeVolume(-(this.settings.keys.mods.volume[mod] ?? 5));
+            return this.setVolume(-(this.settings.keys.mods.volume[mod] ?? 5));
           case "arrowleft": // -w
             this.deactivateSkipPersist();
             return (this.skip(-(this.settings.keys.mods.skip[mod] ?? 5)), this.notify("bwd"));
@@ -2571,7 +2571,7 @@ class tmg_Media_Player {
     this.#medium.muted = s.volume.muted ??= this.#medium.muted;
     this.#medium.loop = s.time.loop ??= this.#medium.loop;
     this.#medium.volume = 1; // controller takes over, chill; browser :)
-    Object.entries(s.modes).forEach(([k, v]) => (s.modes[k] = v && (tmg[`supports${tmg.capitalize(k)}`]?.() ?? true) ? v : false));
+    Object.entries(s.modes).forEach(([k, v]) => tmg.isObj(s.modes[k]) && (s.modes[k].disabled = !v.disabled && (tmg[`supports${tmg.capitalize(k)}`]?.() ?? true) ? false : true));
     await Promise.all([tmg.loadResource(TMG_VIDEO_CSS_SRC), tmg.loadResource(T007_TOAST_JS_SRC, "script", { module: true }), tmg.loadResource(T007_INPUT_JS_SRC, "script")]);
     console.time(`TMG Controller ${tmg.Controllers.indexOf(this.build.id) + 1} INIT`);
     tmg.Controllers[tmg.Controllers.indexOf(this.build.id)] = this.Controller = new tmg.Controller(this.#medium, this.#build);
@@ -2954,15 +2954,13 @@ var tmg = {
         const i = tmg.createEl("img", { src, crossOrigin: "anonymous", onload: () => res(i), onerror: () => rej(new Error(`Image load error: ${src}`)) });
       });
     if (src?.canvas) src = src.canvas;
-    const c = document.createElement("canvas"),
-      x = c.getContext("2d"),
-      s = Math.min(64, src.width, src.height);
-    c.width = c.height = s;
-    src?.width && src?.height && x.drawImage(src, 0, 0, s, s);
-    const d = src && x.getImageData(0, 0, s, s).data,
+    const s = Math.min(64, src.width, src.height),
+      c = tmg.createEl("canvas", { width: s, height: s }),
+      x = c.getContext("2d");
+    const d = src?.width && src?.height ? (x.drawImage(src, 0, 0, s, s), x.getImageData(0, 0, s, s).data) : null,
       ct = {}, // count
       pt = {}; // per totaljust
-    for (let i = 0; i < d?.length; i += 4) {
+    for (let i = 0; i < +d?.length; i += 4) {
       if (d[i + 3] < 128) continue;
       const r = d[i] & 0xf0,
         g = d[i + 1] & 0xf0,
@@ -3159,7 +3157,7 @@ if (typeof window !== "undefined") {
       css: { syncWithMedia: {} },
       brightness: { min: 0, max: 150, value: 100, skip: 5 },
       captions: {
-        disabled: false,
+        visible: false,
         allowVideoOverride: true,
         font: {
           family: {
