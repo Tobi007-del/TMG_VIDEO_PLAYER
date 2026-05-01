@@ -349,7 +349,7 @@ class tmg_Video_Controller {
       <ul style="padding-left: 20px; line-height: 1.6; margin-bottom: 25px;">
         <li><strong>Build Your Own Player:</strong> Don't like our layout? <strong>Click and drag</strong> almost any button on the bottom control bar to physically rearrange the interface exactly how you want it.</li>
         <li><strong>Draggable Subtitles:</strong> Subtitles blocking a crucial part of the scene? Just grab the text box and drag it anywhere else on the screen.</li>
-        <li><strong>The Chameleon Engine:</strong> Head to settings and set your Brand/Theme colors to "Auto". TVP will actively analyze the video frames and extract dominant colors to paint the UI dynamically.</li>
+        <li><strong>The Chameleon Engine:</strong> Head to settings and set your Brand/Theme colors to "Video Derived". TVP will actively analyze the video frames and extract dominant colors to paint the UI dynamically.</li>
       </ul>
       <h3 style="margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid currentColor; padding-bottom: 5px; opacity: 0.85;">⌨️ Keyboard Ninja Status</h3>
       <ul style="padding-left: 20px; line-height: 1.6; margin-bottom: 25px;">
@@ -1130,7 +1130,7 @@ class tmg_Video_Controller {
     const mssg = this.settings.errorMessages?.[this.video.error?.code ?? (error && 5)] || (typeof error === "string" && error) || error?.message || this.video.error?.message || (error && "An unknown error occurred with the video :(");
     if (this.readyState < 3) return this.deactivate(mssg);
     if (t007.dialog?.isActive?.(`${this.id}-error-dialog`)) return; // Prevent spamming dialogs
-    const res = await t007.confirm(mssg, { id: `${this.id}-error-dialog`, rootElement: this.videoContainer, confirmText: "Try Again", cancelText: "Dismiss" });
+    const res = await t007.confirm(mssg, { id: `${this.id}-error-dialog`, rootElement: this.DOM.videoContainerContent, confirmText: "Try Again", cancelText: "Dismiss" });
     if (res === true) {
       const time = this.currentTime;
       this.video.load(), (this.video.currentTime = time), this.togglePlay(true);
