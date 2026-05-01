@@ -2,12 +2,9 @@
 
 ### Table of contents
 
-- [Project Developer](#project-developer)
-- [Brief Description](#brief-description)
-- [Visual Previews](#visual-previews)
-- [More Info!](#more-info)
-  - [Built With](#built-with)
-  - [Links](#quick-links)
+- [TVP](#tvp)
+  - [Project Developer](#project-developer)
+  - [Brief Description](#brief-description)
 
 ## Project Developer
 
@@ -34,7 +31,7 @@ _Mobile view of the Video Player_
 ![Desktop Preview of the Video Player in Fullscreen](./assets/images/player_desktop_fullscreen_preview.png)
 _Desktop view of the Video Player in Fullscreen_
 
-![Mobile Preview of the Video Player in FullScreen](./assets/images/player_mobile_fullscreen_preview.png)
+![Mobile Preview of the Video Player in Fullscreen](./assets/images/player_mobile_fullscreen_preview.png)
 _Mobile view of the Video Player in Fullscreen_
 
 ![Desktop Preview of the Video Player in Theater](./assets/images/player_theater_preview.png)

@@ -5,6 +5,7 @@ import "@t007/input/style.css";
 import toast, { toaster } from "@t007/toast";
 import { confirm } from "@t007/dialog";
 import { field } from "@t007/input";
+import { initVScrollerator } from "@t007/utils/hooks/vanilla";
 import { IndexedDBAdapter } from "sia-reactor/modules";
 import { inject } from "@vercel/analytics";
 import { injectSpeedInsights } from "@vercel/speed-insights";
@@ -53,9 +54,6 @@ window.Memory = {
 let installed = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true,
   installPrompt = null, // beforeinstallprompt event object
   sessionTInt, // session toast interval for updating last updated time every minute
-  sessionTId, // session toast id
-  readyTId, // ready toast id
-  clearTId, // clear toast id
   mP = null, // media player
   video = document.getElementById("video"),
   placeholderItem = null;
@@ -100,8 +98,8 @@ const installButton = document.getElementById("install"),
     ],
   },
   vi = JSON.parse(localStorage[_lsik] || `{ "visitorId": "${crypto?.randomUUID?.() || tmg.uid()}", "visitCount": 0 }`),
-  sToast = toaster({ tag: "tvp-restore", autoClose: false, closeButton: false, dragToClose: false }), // yeah, my lib supports toasters that store defaults in bulk, eg. for loading toast reset perks. restore toasts will sha stay put when needed
-  scroller = tmg.initVScrollerator({ lineHeight: 80, margin: 80, car: document.body }),
+  stoast = toaster({ autoClose: false, closeButton: false, dragToClose: false }), // yeah, my lib supports toasters that store defaults in bulk, eg. for loading toast reset perks. restore toasts will sha stay put when needed
+  scroller = initVScrollerator({ lineHeight: 80, margin: 80, car: document.body }),
   queue = new tmg.AsyncQueue(),
   nums = { bytes: 0, files: 0, time: 0 },
   { createFFmpeg, fetchFile } = FFmpeg,
@@ -114,9 +112,9 @@ const installButton = document.getElementById("install"),
   vi.lastVisited = vi.lastVisit ? formatVisit(vi.lastVisit, " ago") : "Just now";
   try {
     const response = await fetch("../api/log-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...vi, screenW: screen.width, screenH: screen.height, platform: navigator.platform, touchScreen: navigator.maxTouchPoints > 0, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }) });
-    console.log("TVP logged visitor info: ", await response.json());
+    // console.log("TVP logged visitor info: ", await response.json());
   } catch (err) {
-    console.error("TVP couldn't log info: ", err);
+    // console.error("TVP couldn't log info: ", err);
   }
   localStorage[_lsik] = JSON.stringify({ ...vi, lastVisit: new Date().toISOString() });
 })();
@@ -157,8 +155,8 @@ const installButton = document.getElementById("install"),
 // window listeners
 window.addEventListener("load", async () => {
   const session = !nums.files && (await Memory.getSession());
-  if (session) sessionTId = sToast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: () => (clearInterval(sessionTInt), sToast.info(sessionTId, { render: "You can reload the page to see this prompt again", icon: true, autoClose: 5000, closeButton: !tmg.ON_MOBILE, dragToClose: true, actions: { Reload: () => location.reload() } })) } });
-  if (session) sessionTInt = setInterval(() => sToast.update(sessionTId, { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
+  if (session) stoast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { id: "session", icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: () => (clearInterval(sessionTInt), stoast.info("You can reload the page to see this prompt again", { id: "session", icon: true, autoClose: 5000, closeButton: !tmg.ON_MOBILE, dragToClose: true, actions: { Reload: () => location.reload() } })) } });
+  if (session) sessionTInt = setInterval(() => stoast.update("session", { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
   (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
   document.body.classList.toggle("offline", !navigator.onLine);
   navigator.onLine &&
@@ -252,26 +250,26 @@ async function restoreSession({ handles }) {
   const state = Memory.getState(),
     files = [],
     sureHandles = [];
-  (sToast.info(sessionTId, { render: "Restoring your ongoing session now", icon: true, actions: false }), await tmg.deepBreath()); // take a deep breath browser, it's comming in hot. adding delays between toasts for better UX
+  (stoast.info("Restoring your ongoing session now", { id: "session", icon: true, actions: false }), await tmg.deepBreath()); // take a deep breath browser, it's comming in hot. adding delays between toasts for better UX
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
     try {
       const resp = await new Promise(async (res, rej) => {
         if ((await handle.queryPermission({ mode: "read" })) === "granted") return res("User not needed"); // it's practically instant so no loading toast
         (function request() {
-          sToast.info(sessionTId, { render: `We need permission to restore ${name}`, actions: { OK: async () => ((await handle.requestPermission({ mode: "read" })) === "granted" ? res() : sToast.warn(sessionTId, { render: `Grant permissions to restore ${handle.name}`, actions: { Retry: request, Skip: () => rej("User denied") } })), DENY: () => rej("User denied") } });
+          stoast.info(`We need permission to restore ${name}`, { id: "session", actions: { OK: async () => ((await handle.requestPermission({ mode: "read" })) === "granted" ? res() : stoast.warn(`Grant permissions to restore ${handle.name}`, { id: "session", actions: { Retry: request, Skip: () => rej("User denied") } })), DENY: () => rej("User denied") } });
         })();
       });
       const file = handle.kind === "file" ? await handle.getFile() : await getHandlesFiles([handle]);
       (tmg.isArr(file) ? files.push(...file.filter((file) => file.type.startsWith("video/"))) : files.push(file), sureHandles.push(handle));
-      (sToast.success(sessionTId, { render: `Restored ${name} successfully`, actions: false }), await (resp === "User not needed" ? tmg.deepBreath() : tmg.mockAsync(200))); // perceive the success without slowing down the flow at all
+      (stoast.success(`Restored ${name} successfully`, { id: "session", actions: false }), await (resp === "User not needed" ? tmg.deepBreath() : tmg.mockAsync(200))); // perceive the success without slowing down the flow at all
     } catch (err) {
       console.error(`TVP skipped handle "${name}":`, err);
-      (sToast.error(sessionTId, { render: `Skipped ${name}, something went wrong`, actions: false }), await (err === "User denied" ? tmg.deepBreath() : tmg.mockAsync(800))); // perceive the failure without slowing down the flow
+      (stoast.error(`Skipped ${name}, something went wrong`, { id: "session", actions: false }), await (err === "User denied" ? tmg.deepBreath() : tmg.mockAsync(800))); // perceive the failure without slowing down the flow
     }
   }
-  if (sureHandles.length) (sToast.success(sessionTId, { render: "Your ongoing session has been restored :)", actions: false }), await tmg.deepBreath());
-  else return sToast.error(sessionTId, { render: "Your ongoing session was not restored :(", actions: { Reload: () => location.reload(), Dismiss: () => sToast.dismiss(sessionTId) } });
+  if (sureHandles.length) (stoast.success("Your ongoing session has been restored :)", { id: "session", actions: false }), await tmg.deepBreath());
+  else return stoast.error("Your ongoing session was not restored :(", { id: "session", actions: { Reload: () => location.reload(), Dismiss: () => stoast.dismiss("session") } });
   handleFiles(files, state, sureHandles);
 }
 function saveSession() {
@@ -283,13 +281,12 @@ async function clearSettings(prompt = false) {
   if (prompt && !ok) return;
   (Memory.clearSettings(), setColors());
   clearSettingsButton.classList.remove("shown");
-  const render = "Settings cleared successfully";
-  toast.success(clearTId ? clearTId : render, { render, actions: false });
+  toast.success("Settings cleared successfully", { id: "settings", actions: false });
 }
 async function clearFiles() {
   const ok = await confirm("Are you sure you want to clear all files?", { title: "Clear Files", confirmText: "Clear" });
   if (!ok) return;
-  (toast.dismiss(readyTId), video.pause(), video.removeAttribute("src"), video.removeAttribute("poster"));
+  (toast.dismiss("ready"), video.pause(), video.removeAttribute("src"), video.removeAttribute("poster"));
   video.onplay = video.onpause = video.ontimeupdate = null;
   video = mP?.detach();
   mP = null;
@@ -303,12 +300,12 @@ async function clearFiles() {
   nums.files = nums.bytes = nums.time = 0;
   (Memory.clearSession(), defaultUI());
   clearSettingsButton.classList.add("shown");
-  clearTId = toast.success("Cleared all files from your session, Settings too?", { autoClose: 5000, actions: { Clear: () => clearSettings() } });
+  toast.success("Cleared all files from your session, Settings too?", { id: "settings", autoClose: 5000, actions: { Clear: () => clearSettings() } });
 }
 async function handleFiles(files, restored = null, handles = null) {
   try {
     if (!files?.length && !nums.files) return defaultUI();
-    (sToast.dismiss(sessionTId), initUI());
+    (stoast.dismiss("session"), initUI());
     if (handles?.length) sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))];
     for (const file of (files = !restored ? smartFlatSort(files) : playlistSort(files, restored.playlist))) (nums.files++, (nums.bytes += file.size)); // providing some available metrics to the user
     (updateUI(), await tmg.deepBreath()); // browser breathe small first, UI; u still update nah
@@ -598,7 +595,7 @@ function dispatchPlayerReadyToast(hour = new Date().getHours()) {
   const timeLines = readyLines[hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : hour >= 17 && hour < 21 ? "evening" : "night"] || [],
     combined = [...timeLines, ...readyLines.default, ...timeLines],
     { body, icon } = combined[Math.floor(Math.random() * combined.length)];
-  readyTId = toast(body, { vibrate: true, icon });
+  toast(body, { id: "ready", vibrate: true, icon });
 }
 function syncPlaylist() {
   const map = Object.fromEntries(mP.Controller.config.playlist.map((v) => [v.media.id, v]));
