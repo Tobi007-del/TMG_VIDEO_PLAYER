@@ -340,7 +340,7 @@ class tmg_Video_Controller {
       </div>
       <h3 style="margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid currentColor; padding-bottom: 5px; opacity: 0.85;">🎛️ The Smart Canvas (Touch & Mouse)</h3>
       <ul style="padding-left: 20px; line-height: 1.6; margin-bottom: 25px;">
-        <li><strong>Hyper-Speed on Demand:</strong> Click and hold the left or right side of the video screen to instantly fast-forward. Release to snap right back to normal speed.</li>
+        <li><strong>Hyper-Speed on Demand:</strong> Click and hold the right side of the video screen or the play key (<strong>Spacebar</strong>) to fast-forward, left side or <strong>Alt</strong> + play key rewinds.</li>
         <li><strong>Smart Scrubbing:</strong> Don't hunt for the tiny progress bar. Just swipe horizontally across the middle of the screen to scrub smoothly through time.</li>
         <li><strong>Invisible Sliders:</strong> Swipe vertically on the <em>right edge</em> for Volume, and the <em>left edge</em> for Brightness.</li>
         <li><strong>Precision Taps:</strong> Double-tap the edges to skip forward or backward. Double tap the center to toggle Fullscreen (or Play/Pause on mobile).</li>
@@ -366,7 +366,7 @@ class tmg_Video_Controller {
       </ul>
       <div style="text-align: center; margin-top: 30px; padding: 15px; border-radius: 8px; background: rgba(128, 128, 128, 0.1);">
         <p style="margin: 0 0 10px 0;"><strong>Enjoy the engine.</strong> We're still in active development, but we're already miles ahead. Welcome to the bleeding edge.</p>
-        <p style="margin: 0; font-size: 0.85rem; opacity: 0.8;">🧪 <strong>Beta Tester?</strong> Check the bottom of the page to find the hidden button to travel through linear time, or <a href="mailto:tobioketade007@gmail.com" style="color: inherit; text-decoration: underline;">drop me an email</a> to collaborate!</p>
+        <p style="margin: 0; opacity: 0.8;">🧪 <strong>Beta Tester?</strong> Check the bottom of the page to find the hidden button to travel through linear time, or <a href="mailto:tobioketade007@gmail.com" style="color: inherit; text-decoration: underline;">drop me an email</a> to collaborate!</p>
         </div>
       </div>
     `;
