@@ -183,7 +183,7 @@
 :where(:root, .tmg-media-container) {
   --tmg-video-settings-view-transition-time: var(--tmg-video-slow-transition-time);
   --tmg-video-settings-content-padding: var(--tmg-video-current-safe-inset-x);
-  --tmg-video-settings-background-color: rgba(0, 0, 0, 0.75);
+  --tmg-video-settings-background-color: var(--tmg-video-curtain-color);
   --tmg-video-settings-text-color: var(--tmg-video-theme-accent-color);
   --tmg-video-settings-border-color: hsl(from var(--tmg-video-theme-inverse-accent-color) h s l / 0.75);
 }
@@ -486,7 +486,8 @@
 .tmg-video-top-controls-wrapper,
 .tmg-video-bottom-controls-wrapper,
 .tmg-video-touch-vb-notifier,
-.tmg-video-picture-in-picture-wrapper p {
+.tmg-video-picture-in-picture-wrapper p,
+.tmg-video-settings-content * {
   text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.5);
 }
 :is(.tmg-video-top-controls-wrapper, .tmg-video-bottom-controls-wrapper, .tmg-video-touch-vb-notifier) svg,
@@ -909,8 +910,8 @@ body:where(:has(.tmg-video-floating-player)) {
   z-index: 1;
   background-color: var(--tmg-video-settings-background-color);
   transform: rotateY(180deg);
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--tmg-video-settings-view-transition-time) var(--tmg-video-bounce-timing);
