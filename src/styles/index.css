@@ -113,7 +113,7 @@ body .tmg-media-container {
 
 *::selection {
   color: currentColor;
-  background-color: var(--tvp-brand-color);
+  background-color: rgb(from var(--tvp-brand-color) r g b/0.25);
 }
 
 html {
@@ -126,15 +126,7 @@ body {
   margin: 0;
   padding: 0;
   padding-bottom: 30px;
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   overflow-x: hidden;
 }
 
@@ -145,17 +137,11 @@ body::before {
   width: 100%;
   height: 100lvh;
   z-index: -1;
-  background:
-    linear-gradient(var(--tvp-theme-shadow-color), var(--tvp-theme-shadow-color)),
-    center/cover url("/assets/images/lone-tree.jpg"),
-    var(--tvp-theme-dark-color);
+  background: linear-gradient(var(--tvp-theme-shadow-color), var(--tvp-theme-shadow-color)), center/cover url("/assets/images/lone-tree.jpg"), var(--tvp-theme-dark-color);
 }
 
 body.light::before {
-  background:
-    conic-gradient(from var(--turn) at 50% -10%, var(--tvp-theme-shadow-color) 10deg, var(--tvp-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--tvp-theme-shadow-2-color), var(--tvp-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--tvp-theme-shadow-color) 350deg),
-    center/cover url("/assets/images/lone-tree.jpg"),
-    var(--tvp-theme-dark-color);
+  background: conic-gradient(from var(--turn) at 50% -10%, var(--tvp-theme-shadow-color) 10deg, var(--tvp-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--tvp-theme-shadow-2-color), var(--tvp-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--tvp-theme-shadow-color) 350deg), center/cover url("/assets/images/lone-tree.jpg"), var(--tvp-theme-dark-color);
   animation: rotateLight 30s linear infinite;
 }
 
@@ -256,9 +242,7 @@ body:not(:has(#video.stall)) #clear-settings-button,
   border-width: var(--loader-width);
   border-color: var(--tvp-brand-color) var(--tvp-theme-accent-2-color) var(--tvp-brand-color) var(--tvp-brand-color);
   rotate: 0;
-  animation:
-    spin 600ms linear infinite,
-    switch 600ms infinite ease forwards;
+  animation: spin 600ms linear infinite, switch 600ms infinite ease forwards;
 }
 
 @media (max-width: 780px) {
@@ -470,9 +454,7 @@ body:not(:has(#video.stall)) #clear-settings-button,
   color: var(--tvp-theme-accent-color);
   box-shadow: 0 2px 5px rgb(from var(--tvp-theme-inverse-color) r g b/ 0.25); /* 🧪 subtle lift */
   border: 1px solid var(--tvp-theme-accent-2-color);
-  transition:
-    transform 250ms ease,
-    box-shadow 250ms ease;
+  transition: transform 250ms ease, box-shadow 250ms ease;
 }
 
 #install {
@@ -491,8 +473,8 @@ body:not(:has(#video.stall)) #clear-settings-button,
 
 #content-header > p,
 #files-header,
-#no-files-text,
-summary {
+#file-picker span:has(output) *,
+:is(#file-list, .attribution) * {
   text-shadow: 0.5px 0.5px 2px var(--tvp-theme-shadow-color);
 }
 

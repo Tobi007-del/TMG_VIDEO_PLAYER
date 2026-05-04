@@ -10,7 +10,7 @@ import { IndexedDBAdapter } from "sia-reactor/modules";
 import { inject } from "@vercel/analytics";
 import { injectSpeedInsights } from "@vercel/speed-insights";
 
-(inject(), injectSpeedInsights()); // Realtime Vercel Analytics
+inject(), injectSpeedInsights(); // Realtime Vercel Analytics
 
 // global variables
 window._lsik = "TVP_visitor_info"; // localStorage info key
@@ -43,7 +43,7 @@ window.Memory = {
   },
   async clearSession() {
     localStorage[_lssk] = JSON.stringify({ settings: this.getState()?.settings || {} }); // might not wanna clear settings
-    ((sessionHandles = []), await DB.clear());
+    (sessionHandles = []), await DB.clear();
   },
   clearSettings() {
     const { playlist, media, hasPlayed, paused } = this.getState();
@@ -171,7 +171,7 @@ window.addEventListener("appinstalled", () => ((installed = true), (installButto
 // other listeners
 installButton.addEventListener("click", async () => {
   const res = await installPrompt?.prompt?.();
-  if (res.outcome === "accepted") ((installButton.style.display = "none"), (installPrompt = null));
+  if (res.outcome === "accepted") (installButton.style.display = "none"), (installPrompt = null);
 });
 document.getElementById("clear-files-button").addEventListener("click", clearFiles);
 clearSettingsButton.addEventListener("click", () => clearSettings(true));
@@ -250,7 +250,7 @@ async function restoreSession({ handles }) {
   const state = Memory.getState(),
     files = [],
     sureHandles = [];
-  (stoast.info("Restoring your ongoing session now", { id: "session", icon: true, actions: false }), await tmg.deepBreath()); // take a deep breath browser, it's comming in hot. adding delays between toasts for better UX
+  stoast.info("Restoring your ongoing session now", { id: "session", icon: true, actions: false }), await tmg.deepBreath(); // take a deep breath browser, it's comming in hot. adding delays between toasts for better UX
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
     try {
@@ -261,14 +261,14 @@ async function restoreSession({ handles }) {
         })();
       });
       const file = handle.kind === "file" ? await handle.getFile() : await getHandlesFiles([handle]);
-      (tmg.isArr(file) ? files.push(...file.filter((file) => file.type.startsWith("video/"))) : files.push(file), sureHandles.push(handle));
-      (stoast.success(`Restored ${name} successfully`, { id: "session", actions: false }), await (resp === "User not needed" ? tmg.deepBreath() : tmg.mockAsync(200))); // perceive the success without slowing down the flow at all
+      tmg.isArr(file) ? files.push(...file.filter((file) => file.type.startsWith("video/"))) : files.push(file), sureHandles.push(handle);
+      stoast.success(`Restored ${name} successfully`, { id: "session", actions: false }), await (resp === "User not needed" ? tmg.deepBreath() : tmg.mockAsync(200)); // perceive the success without slowing down the flow at all
     } catch (err) {
       console.error(`TVP skipped handle "${name}":`, err);
-      (stoast.error(`Skipped ${name}, something went wrong`, { id: "session", actions: false }), await (err === "User denied" ? tmg.deepBreath() : tmg.mockAsync(800))); // perceive the failure without slowing down the flow
+      stoast.error(`Skipped ${name}, something went wrong`, { id: "session", actions: false }), await (err === "User denied" ? tmg.deepBreath() : tmg.mockAsync(800)); // perceive the failure without slowing down the flow
     }
   }
-  if (sureHandles.length) (stoast.success("Your ongoing session has been restored :)", { id: "session", actions: false }), await tmg.deepBreath());
+  if (sureHandles.length) stoast.success("Your ongoing session has been restored :)", { id: "session", actions: false }), await tmg.deepBreath();
   else return stoast.error("Your ongoing session was not restored :(", { id: "session", actions: { Reload: () => location.reload(), Dismiss: () => stoast.dismiss("session") } });
   handleFiles(files, state, sureHandles);
 }
@@ -279,14 +279,14 @@ function saveSession() {
 async function clearSettings(prompt = false) {
   const ok = prompt && (await confirm("Are you sure you want to clear your settings?", { title: "Clear Settings", confirmText: "Clear" }));
   if (prompt && !ok) return;
-  (Memory.clearSettings(), setColors());
+  Memory.clearSettings(), setColors();
   clearSettingsButton.classList.remove("shown");
   toast.success("Settings cleared successfully", { id: "settings", actions: false });
 }
 async function clearFiles() {
   const ok = await confirm("Are you sure you want to clear all files?", { title: "Clear Files", confirmText: "Clear" });
   if (!ok) return;
-  (toast.dismiss("ready"), video.pause(), video.removeAttribute("src"), video.removeAttribute("poster"));
+  toast.dismiss("ready"), video.pause(), video.removeAttribute("src"), video.removeAttribute("poster");
   video.onplay = video.onpause = video.ontimeupdate = null;
   video = mP?.detach();
   mP = null;
@@ -298,17 +298,17 @@ async function clearFiles() {
     queue.drop(vid.dataset.captionId);
   });
   nums.files = nums.bytes = nums.time = 0;
-  (Memory.clearSession(), defaultUI());
+  Memory.clearSession(), defaultUI();
   clearSettingsButton.classList.add("shown");
   toast.success("Cleared all files from your session, Settings too?", { id: "settings", autoClose: 5000, actions: { Clear: () => clearSettings() } });
 }
 async function handleFiles(files, restored = null, handles = null) {
   try {
     if (!files?.length && !nums.files) return defaultUI();
-    (stoast.dismiss("session"), initUI());
+    stoast.dismiss("session"), initUI();
     if (handles?.length) sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))];
-    for (const file of (files = !restored ? smartFlatSort(files) : playlistSort(files, restored.playlist))) (nums.files++, (nums.bytes += file.size)); // providing some available metrics to the user
-    (updateUI(), await tmg.deepBreath()); // browser breathe small first, UI; u still update nah
+    for (const file of (files = !restored ? smartFlatSort(files) : playlistSort(files, restored.playlist))) nums.files++, (nums.bytes += file.size); // providing some available metrics to the user
+    updateUI(), await tmg.deepBreath(); // browser breathe small first, UI; u still update nah
     const stateMap = new Map(restored?.playlist?.map((v) => [v.media.title, v]) || []), // Pre-map for O(1) lookups
       list = fileList.appendChild(document.getElementById("media-list") || tmg.createEl("ul", { id: "media-list" })), // building the media list
       thumbnails = [];
@@ -316,7 +316,7 @@ async function handleFiles(files, restored = null, handles = null) {
       const ffName = tmg.noExtension(files[i].name), // file formatted name
         state = stateMap.get(ffName);
       if ((restored && !state) || !!Array.prototype.find.call(containers, (c) => c.lastElementChild.ffName === ffName)) {
-        (nums.files--, (nums.bytes -= files[i].size), thumbnails.push(null));
+        nums.files--, (nums.bytes -= files[i].size), thumbnails.push(null);
         continue; // prevents duplicates & skips files incase user deleted file but not directory handle
       }
       const li = tmg.createEl("li", { className: "content-line" }, { fileName: files[i].name });
@@ -352,7 +352,7 @@ async function handleFiles(files, restored = null, handles = null) {
           const f = e.target.files[0];
           if (!f) return;
           const ext = tmg.getExtension(f.name);
-          if (!["srt", "vtt"].includes(ext)) return ((thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported"));
+          if (!["srt", "vtt"].includes(ext)) return (thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported");
           let txt = await f.text();
           if (ext === "srt") txt = tmg.srtToVtt(txt);
           DB.set((thumbnail.dataset.captionId = f.name), new TextEncoder().encode(txt), "subtitles"); // storing these too for the magic tricks, no need for file pickers, it's light
@@ -398,7 +398,7 @@ async function handleFiles(files, restored = null, handles = null) {
           saveSession();
           if (nums.files <= 1) return clearFiles();
           else syncPlaylist();
-          (nums.files--, (nums.bytes -= files[i].size), (nums.time -= tmg.safeNum(thumbnail.duration)));
+          nums.files--, (nums.bytes -= files[i].size), (nums.time -= tmg.safeNum(thumbnail.duration));
           updateUI();
         },
       });
@@ -411,7 +411,7 @@ async function handleFiles(files, restored = null, handles = null) {
             initialScrollY = document.body.scrollTop;
           li.parentElement.insertBefore((placeholderItem = tmg.createEl("div", { className: "drag-placeholder" }, {}, { cssText: `height:${li.offsetHeight}px;width:${li.offsetWidth}px;` })), li.nextElementSibling);
           li.classList.add("dragging");
-          li.style.top = `${(li.top = tmg.clamp(0, e.clientY - initialOffsetY, list.offsetHeight - li.offsetHeight))}px`;
+          li.style.top = `${(li.top = tmg.clamp(0, e.clientY - initialOffsetY - li.offsetHeight / 2, list.offsetHeight - li.offsetHeight))}px`;
           ["pointermove", "pointerup", "pointercancel"].forEach((e, i) => document.addEventListener(e, !i ? onPointerMove : onPointerUp));
           function onPointerMove(e) {
             e.preventDefault();
@@ -427,7 +427,7 @@ async function handleFiles(files, restored = null, handles = null) {
             mP.Controller?.cancelRAFLoop("listItemDragging");
             scroller.reset();
             li.classList.remove("dragging");
-            (placeholderItem.parentElement.replaceChild(li, placeholderItem), (placeholderItem = null));
+            placeholderItem.parentElement.replaceChild(li, placeholderItem), (placeholderItem = null);
             syncPlaylist();
             ["pointermove", "pointerup", "pointercancel"].forEach((e, i) => document.removeEventListener(e, !i ? onPointerMove : onPointerUp));
           }
@@ -435,7 +435,7 @@ async function handleFiles(files, restored = null, handles = null) {
         { passive: false }
       );
       li.append(thumbnailContainer, tmg.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${files[i].name}</span></p><p class="file-size"><span>Size: </span><span>${tmg.formatSize(files[i].size)}</span></p><p class="file-duration"><span>Duration: </span><span>${restored ? "Rei" : "I"}nitializing...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
-      (list.append(li), await tmg.breath()); // scroll step feel, also avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
+      list.append(li), await tmg.breath(); // scroll step feel, also avoided fragment, need to prevent global file(name) duplicates, depends on containers "live" Nodelist, eighter this hack or some storage overhead, fragment might be unnecessary sef and unorthodox
     }
     const playlist = [];
     const deployVideos = (files) => {
@@ -445,7 +445,7 @@ async function handleFiles(files, restored = null, handles = null) {
           state = stateMap.get(thumbnails[i].ffName),
           item = state ?? { media: { id: tmg.uid(), title: thumbnails[i].ffName }, "settings.time.previews": true, "settings.time.start": 0 };
         playlist.push(((item.src = url), item));
-        ((thumbnails[i].src = url), (thumbnails[i].mediaId = item.media.id));
+        (thumbnails[i].src = url), (thumbnails[i].mediaId = item.media.id);
         thumbnails[i].getPlItem = () => (thumbnails[i].playlistItem = mP?.Controller?.config?.playlist?.find((v) => v.media.id === item.media.id) ?? thumbnails[i].playlistItem ?? {});
         thumbnails[i].getPlIndex = () => mP?.Controller?.config?.playlist?.findIndex((v) => v.media.id === item.media.id);
       }
@@ -481,7 +481,7 @@ async function handleFiles(files, restored = null, handles = null) {
     nums.files && (await Promise.all(files.map(async (_, i) => thumbnails[i] && (await deployCaption(files[i], thumbnails[i], undefined, stateMap.get(tmg.noExtension(files[i].name)))))));
     if (!nums.files) return defaultUI();
   } catch (error) {
-    (console.error("TVP files handling failed:", error), errorUI(error));
+    console.error("TVP files handling failed:", error), errorUI(error);
   }
 }
 // Caption utils
