@@ -1526,7 +1526,7 @@ body:not(:has(.tmg-video-container.tmg-video-miniplayer)) .tmg-pseudo-video-cont
   border-bottom-right-radius: inherit;
 }
 .tmg-video-top-controls-wrapper:not(:has(.tmg-video-title:not(:empty), .tmg-video-artist:not(:empty), [data-displayed="true"])) ~ .tmg-video-top-curtain,
-.tmg-video-bottom-controls-wrapper:not(:has([data-displayed="true"])) ~ .tmg-video-bottom-curtain {
+.tmg-video-bottom-controls-wrapper:not(:has(.tmg-video-title:not(:empty), .tmg-video-artist:not(:empty), [data-displayed="true"])) ~ .tmg-video-bottom-curtain {
   display: none;
 }
 .tmg-video-cover-curtain {

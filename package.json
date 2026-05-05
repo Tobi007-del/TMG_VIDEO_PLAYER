@@ -26,11 +26,11 @@
     "vite": "^8.0.1"
   },
   "dependencies": {
-    "@t007/dialog": "^0.0.28",
+    "sia-reactor": "^0.0.33",
+    "@t007/utils": "^0.0.31",
     "@t007/input": "^0.0.29",
     "@t007/toast": "^0.0.29",
-    "@t007/utils": "^0.0.31",
-    "sia-reactor": "^0.0.33",
+    "@t007/dialog": "^0.0.28",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0"
   }
