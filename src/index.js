@@ -616,7 +616,7 @@ function parseRomanNum(roman, valid = /^[IVXLCDM]+$/i.test(roman), ROMAN = { I: 
       return acc + (curr < next ? -curr : curr); // Subtractive notation: if current is less than next (e.g., I before V → 4); Otherwise, just add normally
     }, 0); // Start accumulator at 0
 }
-function smartFlatSort(files, debug = true, stripExt = tmg.noExtension, log = debug ? (title, ...body) => console.log(`[Sorter][${title}]`, ...body) : NOOP, bCache = new Map(), kCache = new Map(), groups = new Map()) {
+function smartFlatSort(files, debug = false, stripExt = tmg.noExtension, log = debug ? (title, ...body) => console.log(`[Sorter][${title}]`, ...body) : NOOP, bCache = new Map(), kCache = new Map(), groups = new Map()) {
   debug && console.time("[Sorter]"), log("Init", `Sorting ${files.length} items...`);
   // Extracts the main series title + optional season
   function getNamePrefix(name, base = stripExt(name), match = base.match(/(.*?)(?:(?:s|season)[\s\-]?)(\d+).*?(?:(?:e|ep|episode)[\s\-]?)(\d+)?/i)) {
