@@ -9,6 +9,7 @@ import { initVScrollerator } from "@t007/utils/hooks/vanilla";
 import { IndexedDBAdapter } from "sia-reactor/modules";
 import { inject } from "@vercel/analytics";
 import { injectSpeedInsights } from "@vercel/speed-insights";
+import { NOOP } from "sia-reactor";
 
 inject(), injectSpeedInsights(); // Realtime Vercel Analytics
 
@@ -514,7 +515,7 @@ async function deployCaption(file, thumbnail, autocancel = !crossOriginIsolated 
 }
 async function extractCaptions(file, id) {
   const outputName = `cue${id}.vtt`,
-    inputName = `video${id}${file.name.slice(file.name.lastIndexOf("."))}`;
+    inputName = `video${id}${tmg.getExtension(file.name)}`;
   try {
     console.log(`🎥 TVP processing file with FFmpeg: '${file.name}'`);
     if (!ffmpeg.isLoaded()) await ffmpeg.load();
@@ -604,87 +605,53 @@ function syncPlaylist() {
 function playlistSort(files, playlist) {
   return Array.from(playlist, (item) => files.find((f) => f.name.startsWith(item.media.title))).filter(Boolean);
 }
-function smartFlatSort(files) {
+function parseRomanNum(roman, valid = /^[IVXLCDM]+$/i.test(roman), ROMAN = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 }) {
+  if (!valid) return 0; // ← Invalid input
+  return roman
+    .toUpperCase() // Ensure consistent uppercase (e.g., 'iv' becomes 'IV')
+    .split("") // Turn into array of characters: 'XIV' → ['X','I','V']
+    .reduce((acc, val, i, arr) => {
+      const curr = ROMAN[val] || 0, // Current character's value
+        next = ROMAN[arr[i + 1]] || 0; // Look ahead to the next character (if any)
+      return acc + (curr < next ? -curr : curr); // Subtractive notation: if current is less than next (e.g., I before V → 4); Otherwise, just add normally
+    }, 0); // Start accumulator at 0
+}
+function smartFlatSort(files, debug = true, stripExt = tmg.noExtension, log = debug ? (title, ...body) => console.log(`[Sorter][${title}]`, ...body) : NOOP, bCache = new Map(), kCache = new Map(), groups = new Map()) {
+  debug && console.time("[Sorter]"), log("Init", `Sorting ${files.length} items...`);
   // Extracts the main series title + optional season
-  function getTitlePrefix(name) {
-    const match = name.match(/(.*?)(s\d{1,2})(e\d{1,2})?/i);
-    if (match) {
-      return (
-        match[1]
-          .replace(/[^a-z0-9]+/gi, " ")
-          .trim()
-          .toLowerCase() +
-        " " +
-        match[2].toLowerCase()
-      );
-    }
-    return name
-      .replace(/(episode\s?\d+|ep\s?\d+|e\d+|part\s?\d+)/gi, "")
-      .replace(/[^a-z0-9]+/gi, " ")
-      .trim()
-      .toLowerCase();
-  }
-  function romanToInt(roman) {
-    // Map of Roman numeral characters to their integer values
-    const ROMAN = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
-    const valid = /^[IVXLCDM]+$/i.test(roman);
-    if (!valid) return 0; // ← Invalid input
-    return roman
-      .toUpperCase() // Ensure consistent uppercase (e.g., 'iv' becomes 'IV')
-      .split("") // Turn into array of characters: 'XIV' → ['X','I','V']
-      .reduce((acc, val, i, arr) => {
-        const curr = ROMAN[val] || 0; // Current character's value
-        const next = ROMAN[arr[i + 1]] || 0; // Look ahead to the next character (if any)
-        // Subtractive notation: if current is less than next (e.g., I before V → 4); Otherwise, just add normally
-        return acc + (curr < next ? -curr : curr);
-      }, 0); // Start accumulator at 0
+  function getNamePrefix(name, base = stripExt(name), match = base.match(/(.*?)(?:(?:s|season)[\s\-]?)(\d+).*?(?:(?:e|ep|episode)[\s\-]?)(\d+)?/i)) {
+    // prettier-ignore
+    return bCache.set(name, base), (match ? (match[1].replace(/[^a-z0-9]+/gi, " ").trim().toLowerCase() + " s" + match[2].padStart(2, "0")) : base.replace(/(?:(?:e|ep|episode|part)[\s\-]?)\d+/gi, "").replace(/[^a-z0-9]+/gi, " ").trim().toLowerCase()) || "unknown";
   }
   // Extract episode key: season, episode number(s), or special flags
-  function extractEpisodeKey(name) {
-    name = name.toLowerCase(); // Normalize the name to lowercase for consistent matching
-    // Match formats like "S02E05-E06" (multi-episode, we only care about the first one)
-    const multiEp = name.match(/s(\d{1,2})e(\d{1,2})[-_. ]?e?(\d{1,2})/);
-    if (multiEp) return [parseInt(multiEp[1]), parseInt(multiEp[2])];
-    // Match standard format like "S01E01", "s5e3"
-    const standard = name.match(/s(\d{1,2})e(\d{1,2})/);
-    if (standard) return [parseInt(standard[1]), parseInt(standard[2])];
-    // Match "1x01", "5x12" — alternate style used by some encoders or fansubs
-    const alt = name.match(/(\d{1,2})x(\d{1,2})/);
-    if (alt) return [parseInt(alt[1]), parseInt(alt[2])];
-    // Match special episodes in format "S00E05"
-    const special = name.match(/s00e(\d{1,2})/);
-    if (special) return [0, parseInt(special[1])]; // Special episodes get season 0
+  function extractEpisodeKey(name, base = bCache.get(name).toLowerCase()) {
     // Match lazy formats like "S02 - Episode 3", "S3 ep4", "S5E 7" (not strict SxxEyy)
-    const looseCombo = name.match(/s(\d{1,2}).*?(?:ep|e|episode)[\s\-]?(\d{1,3})/);
-    if (looseCombo) return [parseInt(looseCombo[1]), parseInt(looseCombo[2])];
+    const combo = base.match(/(?:(?:s|season)[\s\-]?)(\d+).*?(?:(?:e|ep|episode)[\s\-]?)(\d+)/);
+    if (combo) return [parseInt(combo[1]), parseInt(combo[2])];
+    // Match "1x01", "5x12" — alternate style used by some encoders or fansubs
+    const alt = base.match(/(\d+)x(\d+)/);
+    if (alt) return [parseInt(alt[1]), parseInt(alt[2])];
     // Match Roman numerals like "Season IV Episode IX"
-    const roman = name.match(/season\s+([ivxlcdm]+).*?(?:ep|e|episode)?\s*([ivxlcdm]+)/i);
-    if (roman) return [romanToInt(roman[1]), romanToInt(roman[2])];
-    // Match fallback single-episode formats like "Ep12", "Episode 5", "E7" without season info
-    const loose = name.match(/(?:ep|episode|e)(\d{1,3})/);
+    const roman = base.match(/(?:(?:s|season)[\s\-]?)([ivxlcdm]+).*?(?:(?:e|ep|episode)[\s\-]?)([ivxlcdm]+)/i);
+    if (roman) return [parseRomanNum(roman[1], true), parseRomanNum(roman[2], true)];
+    // Match fallback single-episode formats like "Ep12", "Episode 5", "E7", "Part 2" without season info
+    const loose = base.match(/(?:(?:e|ep|episode|part)[\s\-]?)(\d+)/);
     if (loose) return [999, parseInt(loose[1])]; // Put these at the end with fake season 999
     // Totally unmatchable junk (e.g. "Behind the Scenes", "Bonus Feature")
     return [Infinity, Infinity]; // Hard fallback — gets sorted dead last
   }
-  function sortByEpisode(a, b) {
-    const ak = extractEpisodeKey(a.name);
-    const bk = extractEpisodeKey(b.name);
-    if (ak[0] !== bk[0]) return ak[0] - bk[0]; // season
-    return ak[1] - bk[1]; // episode
-  }
-  const groups = new Map();
   for (const file of files) {
-    const key = getTitlePrefix(file.name);
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(file);
+    const key = getNamePrefix(file.name);
+    let group = groups.get(key);
+    log("Prefix", `"${file.name}" -> "${key}"`), (group ?? (groups.set(key, (group = [])), group)).push(file);
   }
-  const sortedGroups = [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
-  const sortedFiles = [];
-  for (const [, group] of sortedGroups) {
-    group.sort(sortByEpisode);
-    sortedFiles.push(...group);
-  }
-  return sortedFiles;
+  const sortedFiles = [],
+    byGroup = ([a], [b], diff = a === "unknown" ? 1 : b === "unknown" ? -1 : a.localeCompare(b)) => (log("Group Compare", `[${a}] vs [${b}] = ${diff > 0 ? "B first" : diff < 0 ? "A first" : "Tie"}`), diff), // Sort groups alphabetically by their prefix
+    getKey = (name, key = kCache.get(name)) => (key ? key : (kCache.set(name, (key = extractEpisodeKey(name))), key)),
+    byEpisode = (a, b, ak = getKey(a.name), bk = getKey(b.name), diff = ak[0] !== bk[0] ? ak[0] - bk[0] : ak[1] - bk[1]) => (log("Episode Compare", `[${ak}] vs [${bk}] = ${diff > 0 ? "B first" : diff < 0 ? "A first" : "Tie"}  ("${a.name}" / "${b.name}")`), diff), // season | episode
+    sortedGroups = (log("Groups", `Identified ${groups.size} group(s)`, groups), [...groups.entries()].sort(byGroup)); // Sort groups alphabetically by their prefix
+  for (const [, group] of sortedGroups) group.sort(byEpisode), sortedFiles.push(...group);
+  return log("Done", sortedFiles), debug && console.timeEnd("[Sorter]"), sortedFiles;
 }
 
 field({}); // just so input lib is bundled
