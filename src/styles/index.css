@@ -118,7 +118,7 @@ body .tmg-media-container {
 
 html {
   background-color: var(--tvp-theme-dark-color);
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 body {

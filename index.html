@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -211,8 +211,7 @@
     </script>
     <script>
       window.TMG_VIDEO_ALT_IMG_SRC = "/assets/icons/movie-tape.png";
-      window.TMG_VIDEO_CSS_SRC = "assets/css/beta-player-video.css";
-      window.T007_INPUT_JS_SRC = window.T007_INPUT_CSS_SRC = window.T007_TOAST_JS_SRC = window.T007_TOAST_CSS_SRC = window.T007_DIALOG_JS_SRC = window.T007_DIALOG_CSS_SRC = Symbol.for("T007_VIRTUAL_RESOURCE");
+      window.TMG_VIDEO_CSS_SRC = window.T007_INPUT_JS_SRC = window.T007_INPUT_CSS_SRC = window.T007_TOAST_JS_SRC = window.T007_TOAST_CSS_SRC = window.T007_DIALOG_JS_SRC = window.T007_DIALOG_CSS_SRC = Symbol.for("T007_VIRTUAL_RESOURCE");
     </script>
     <script type="module" src="src/scripts/beta-player.js"></script>
     <script type="module" src="src/index.js"></script>
@@ -229,14 +228,11 @@
         star.style.animation = "";
       };
       for (const star of document.getElementsByClassName("magic-star")) {
-        setTimeout(
-          () => {
-            animate(star);
-            // setInterval(animate, 1000, star);
-            setTimeout(animate, 1000, star);
-          },
-          index++ * (interval / 3)
-        );
+        setTimeout(() => {
+          animate(star);
+          // setInterval(animate, 1000, star);
+          setTimeout(animate, 1000, star);
+        }, index++ * (interval / 3));
       }
     </script>
   </body>

@@ -1,6 +1,7 @@
 import "@t007/toast/style.css";
 import "@t007/dialog/style.css";
 import "@t007/input/style.css";
+import "./styles/beta-player-video.css";
 
 import toast, { toaster } from "@t007/toast";
 import { confirm } from "@t007/dialog";
@@ -459,7 +460,7 @@ async function handleFiles(files, restored = null, handles = null) {
             should && mP.Controller?.movePlaylistTo(i, !restored.paused);
             should && thumbnails[i]?.closest("li")?.classList.add("playing");
             should && thumbnails[i]?.parentElement?.classList.toggle("paused", video.paused);
-            mP.Controller.config.on("*", () => mP.Controller?.throttle("TVP_session_save", saveSession, 2500), { immediate: true });
+            mP.Controller.config.on("*", () => mP.Controller?.throttle("TVP_session_save", saveSession, 2500, false), { immediate: true });
             readyUI();
           },
           { once: true }

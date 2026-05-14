@@ -1,7 +1,7 @@
-import { isDef, isIter, isObj, isArr, loadResource, isSameURL, uid, clamp, bindAllMethods, createEl, getActiveEl, remToPx, parseCSSSize, parseCSSTime, parseKeyCombo, stringifyKeyEvent, cleanKeyCombo, matchKeys, formatKeyForDisplay, mockAsync, formatSize } from "@t007/utils";
+import { isDef, isIter, isObj, isArr, loadResource, isSameURL, uid, clamp, bindAllMethods, createEl, getActiveEl, remToPx, parseCSSSize, parseCSSTime, parseKeyCombo, stringifyKeyEvent, cleanKeyCombo, matchKeys, formatKeyForDisplay, mockAsync, formatSize, isInteractive } from "@t007/utils";
 import { rippleHandler, initScrollAssist, removeScrollAssist } from "@t007/utils/hooks/vanilla";
 import { reactive, TERMINATOR, volatile } from "sia-reactor";
-import { setAny, getAny, parseAnyObj, fanout, mergeObjs, deepClone } from "sia-reactor/utils";
+import { setPath, getPath, parsePathObj, fanout, mergeObjs, deepClone } from "sia-reactor/utils";
 import { IndexedDBAdapter, PersistModule, TimeTravelModule } from "sia-reactor/modules";
 import { TimeTravelOverlay } from "sia-reactor/adapters/vanilla";
 
@@ -47,7 +47,7 @@ class tmg_Video_Controller {
   }
   plugPlaylist() {
     this.config.get("playlist", (value) => (value?.length ? value : null));
-    this.config.set("playlist", (value) => value?.map((v) => tmg.mergeObjs(tmg.DEFAULT_VIDEO_ITEM_BUILD, tmg.parseAnyObj(v))));
+    this.config.set("playlist", (value) => value?.map((v) => tmg.mergeObjs(tmg.DEFAULT_VIDEO_ITEM_BUILD, tmg.parsePathObj(v))));
     this.config.on(
       "playlist",
       ({ root }) => {
@@ -226,8 +226,8 @@ class tmg_Video_Controller {
       cTField = t007.field({ type: "color" }),
       bWrapper = tmg.createEl("div"),
       tWrapper = tmg.createEl("div");
-    this.config.watch("settings.css.brandColor", (v = defs.brand) => ((v = v.toLowerCase()), (cBField.inputEl.value = v), cBField.style.setProperty("--input-current-color", v), (bField.inputEl.value = !defs.bcolors.includes(v) ? (!this.settings.css.syncWithMedia.brandColor ? "custom" : "auto") : v)), { immediate: true });
-    this.config.watch("settings.css.themeColor", (v = defs.theme) => ((v = v.toLowerCase()), (cTField.inputEl.value = v), cTField.style.setProperty("--input-current-color", v), (tField.inputEl.value = !defs.tcolors.includes(v) ? (!this.settings.css.syncWithMedia.themeColor ? "custom" : "auto") : v)), { immediate: true });
+    this.config.watch("settings.css.brandColor", (v = defs.brand) => ((v = v.toLowerCase()), (cBField.inputEl.value = v), cBField.style.setProperty("--input-color", v), (bField.inputEl.value = !defs.bcolors.includes(v) ? (!this.settings.css.syncWithMedia.brandColor ? "custom" : "auto") : v)), { immediate: true });
+    this.config.watch("settings.css.themeColor", (v = defs.theme) => ((v = v.toLowerCase()), (cTField.inputEl.value = v), cTField.style.setProperty("--input-color", v), (tField.inputEl.value = !defs.tcolors.includes(v) ? (!this.settings.css.syncWithMedia.themeColor ? "custom" : "auto") : v)), { immediate: true });
     this.queryDOM(".tmg-video-settings-bottom-panel").append((bWrapper.append(bField, cBField), bWrapper), (tWrapper.append(tField, cTField), tWrapper));
     const id = { theme: "", brand: "" },
       sync = (cb, req = true, type = "brand") => ((this.settings.css.syncWithMedia[`${type}Color`] = req), cb(req)),
@@ -246,8 +246,7 @@ class tmg_Video_Controller {
               Yes = () => (sync(cb, true), assert({ actions: { No } }));
             sync(cb, val === "auto"), val === "auto" && (id.brand = this.toast?.("Should the brand color change anytime a video loads?", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Yes, No }, onDismiss: () => (id.brand = "") }));
           },
-          30,
-          false
+          150
         );
       },
       onTColorChange = ({ target: { value: val } }) => {
@@ -264,7 +263,7 @@ class tmg_Video_Controller {
               Yes = () => (sync(cb, true, "theme"), assert({ actions: { No } }, "theme"));
             sync(cb, val === "auto", "theme"), val === "auto" && (id.theme = this.toast?.("Should the theme color change anytime a video loads?", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Yes, No }, onDismiss: () => (id.theme = "") }));
           },
-          30
+          150
         );
       };
     bField.inputEl.addEventListener("input", onBColorChange);
@@ -381,7 +380,7 @@ class tmg_Video_Controller {
         className: "tmg-video-picture-in-picture-wrapper",
         innerHTML: `<button type="button" class="tmg-video-picture-in-picture-icon-wrapper"><svg class="tmg-video-picture-in-picture-icon" viewBox="0 0 73 73"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g transform="translate(2, 2)" fill-rule="nonzero" stroke-width="2" class="tmg-video-pip-icon-background"><rect x="-1" y="-1" width="71" height="71" rx="14"></rect></g><g transform="translate(15, 15)" fill-rule="nonzero"><g><polygon class="tmg-video-pip-icon-content-background" points="0 0 0 36 36 36 36 0"></polygon><rect class="tmg-video-pip-icon-content-backdrop" x="4.2890625" y="4.2890625" width="27.421875" height="13.2679687"></rect><g transform="translate(4.289063, 27.492187)"><rect x="0" y="0" width="3.1640625" height="2.109375" class="tmg-video-pip-icon-timeline-progress"></rect><rect x="7.3828125" y="0" width="20.0390625" height="2.109375" class="tmg-video-pip-icon-timeline-base"></rect></g><circle class="tmg-video-pip-icon-thumb-indicator" cx="9.5625" cy="28.546875" r="3.1640625"></circle><polygon class="tmg-video-pip-icon-content" points="31.7109375 17.5569609 31.7109375 23.2734375 4.2890625 23.2734375 4.2890625 17.5569609 13.78125 8.06477344 20.109375 14.3928984 24.328125 10.1741484"></polygon></g><g transform="translate(21, 26)"><polygon class="tmg-video-pip-icon-content-background" points="0 0 0 17.7727273 23 17.7727273 23 0"></polygon><rect class="tmg-video-pip-icon-content-backdrop" x="2.74023438" y="2.74023438" width="17.5195312" height="8.47675781"></rect><polygon class="tmg-video-pip-icon-content"points="20.2597656 11.2169473 20.2597656 14.8691406 2.74023438 14.8691406 2.74023438 11.2169473 8.8046875 5.15249414 12.8476562 9.19546289 15.5429687 6.50015039"></polygon></g></g></g></svg></button><p>Playing in picture-in-picture</p>`,
       }),
-      meta: tmg.createEl("div", { className: "tmg-video-meta-wrapper-cover", innerHTML: `<a class="tmg-video-profile-link"><img alt="Profile" class="tmg-video-profile"></a><div class="tmg-video-meta-text-wrapper-cover"><div class="tmg-video-title-wrapper"><a class="tmg-video-title"></a></div><div class="tmg-video-artist-wrapper"><a class="tmg-video-artist"></a></div></div>` }, { draggableControl: "", dragId: "wrapper", controlId: "meta" }),
+      meta: tmg.createEl("div", { className: "tmg-video-meta-wrapper", innerHTML: `<a class="tmg-video-profile-link"><img alt="Profile" class="tmg-video-profile"></a><div class="tmg-video-meta-text-wrapper-cover"><div class="tmg-video-title-wrapper"><a class="tmg-video-title"></a></div><div class="tmg-video-artist-wrapper"><a class="tmg-video-artist"></a></div></div>` }, { draggableControl: "", dragId: "wrapper", controlId: "meta" }),
       videobuffer: tmg.createEl("div", { className: "tmg-video-buffer", innerHTML: `<div class="tmg-video-buffer-accent"></div><div class="tmg-video-buffer-eclipse"><div class="tmg-video-buffer-left"><div class="tmg-video-buffer-circle"></div></div><div class="tmg-video-buffer-right"><div class="tmg-video-buffer-circle"></div></div></div>` }),
       thumbnail: _batch(tmg.createEl("div", { className: "tmg-video-thumbnail" }), tmg.createEl("canvas", { className: "tmg-video-thumbnail" })),
       captionsContainer: tmg.createEl("div", { className: "tmg-video-captions-container" }, { part: "region" }),
@@ -448,11 +447,11 @@ class tmg_Video_Controller {
       ),
       fullscreenlock: tmg.createEl("button", { className: "tmg-video-fullscreen-locked-btn", innerHTML: `<svg class="tmg-video-fullscreen-locked-icon" viewBox="0 0 512 512" data-control-title="Lock Screen" style="scale: 0.825;"><path d="M390.234 171.594v-37.375c.016-36.969-15.078-70.719-39.328-94.906A133.88 133.88 0 0 0 256 0a133.88 133.88 0 0 0-94.906 39.313c-24.25 24.188-39.344 57.938-39.313 94.906v37.375H24.906V512h462.188V171.594zm-210.343-37.375c.016-21.094 8.469-39.938 22.297-53.813C216.047 66.594 234.891 58.125 256 58.125s39.953 8.469 53.813 22.281c13.828 13.875 22.281 32.719 22.297 53.813v37.375H179.891zm-96.86 95.5h345.938v224.156H83.031z"/><path d="M297.859 321.844c0-23.125-18.75-41.875-41.859-41.875-23.125 0-41.859 18.75-41.859 41.875 0 17.031 10.219 31.625 24.828 38.156l-9.25 60.094h52.562L273.016 360c14.609-6.531 24.843-21.125 24.843-38.156"/></svg>` }, { draggableControl: "", controlId: "fullscreenlock" }),
       bigprev: tmg.createEl("button", { className: "tmg-video-big-prev-btn", innerHTML: `<svg viewBox="0 0 25 25" class="tmg-video-prev-icon" data-control-title="Previous video${k["prev"]}"><rect x="4" y="5.14" width="2.5" height="14" transform="translate(2.1,0)"/><path d="M17,5.14V19.14L6,12.14L17,5.14Z" transform="translate(2.5,0)" /></svg>` }, { draggableControl: "", dragId: "big", controlId: "bigprev" }),
-      bigplaypause: tmg.createEl("button", { className: "tmg-video-big-play-pause-btn", innerHTML: `<svg viewBox="0 0 25 25" class="tmg-video-play-icon" data-control-title="Play${k["playPause"]}"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg viewBox="0 0 25 25" class="tmg-video-pause-icon" data-control-title="Pause${k["playPause"]}"><path d="M14,19H18V5H14M6,19H10V5H6V19Z" /></svg><svg class="tmg-video-replay-icon" viewBox="0 -960 960 960" data-control-title="Replay${k["playPause"]}" ><path d="M480-80q-75 0-140.5-28.5t-114-77q-48.5-48.5-77-114T120-440h80q0 117 81.5 198.5T480-160q117 0 198.5-81.5T760-440q0-117-81.5-198.5T480-720h-6l62 62-56 58-160-160 160-160 56 58-62 62h6q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-440q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-80Z"/></svg>` }, { draggableControl: "", dragId: "big", controlId: "bigplaypause" }),
+      bigplaypause: tmg.createEl("button", { className: "tmg-video-big-play-pause-btn", innerHTML: `<svg viewBox="0 0 25 25" class="tmg-video-play-icon" data-control-title="Play${k["playPause"]}"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg viewBox="0 0 25 25" class="tmg-video-pause-icon" data-control-title="Pause${k["playPause"]}"><path d="M14,19H18V5H14M6,19H10V5H6V19Z" /></svg><svg class="tmg-video-replay-icon" viewBox="0 -960 960 960" data-control-title="Replay${k["playPause"]}"><path d="M480-80q-75 0-140.5-28.5t-114-77q-48.5-48.5-77-114T120-440h80q0 117 81.5 198.5T480-160q117 0 198.5-81.5T760-440q0-117-81.5-198.5T480-720h-6l62 62-56 58-160-160 160-160 56 58-62 62h6q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-440q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-80Z"/></svg>` }, { draggableControl: "", dragId: "big", controlId: "bigplaypause" }),
       bignext: tmg.createEl("button", { className: "tmg-video-big-next-btn", innerHTML: `<svg viewBox="0 0 25 25" class="tmg-video-next-icon" data-control-title="Next video${k["next"]}"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" transform="translate(-2.5,0)" /><rect x="19" y="5.14" width="2.5" height="14" transform="translate(-2.5,0)"/></svg>` }, { draggableControl: "", dragId: "big", controlId: "bignext" }),
       timeline: tmg.createEl("div", { className: "tmg-video-timeline-container", tabIndex: 0, role: "slider", "aria-label": "Video timeline", "aria-valuemin": "0", "aria-valuenow": "0", "aria-valuetext": "0 seconds out of 0 seconds", innerHTML: `<div class="tmg-video-timeline"><div class="tmg-video-seek-bars-wrapper"><div class="tmg-video-seek-bar tmg-video-base-seek-bar"></div><div class="tmg-video-seek-bar tmg-video-buffered-seek-bar"></div><div class="tmg-video-seek-bar tmg-video-preview-seek-bar"></div><div class="tmg-video-seek-bar tmg-video-played-seek-bar"></div></div><div class="tmg-video-thumb-indicator"></div><div class="tmg-video-preview-container"><div class="tmg-video-preview"></div><canvas class="tmg-video-preview"></canvas></div></div>` }, { controlId: "timeline" }),
       prev: tmg.createEl("button", { className: "tmg-video-prev-btn", innerHTML: `<svg viewBox="0 0 25 25" class="tmg-video-prev-icon" data-control-title="Previous video${k["prev"]}"><rect x="4" y="5.14" width="2.5" height="14" transform="translate(2.1,0)"/><path d="M17,5.14V19.14L6,12.14L17,5.14Z" transform="translate(2.5,0)" /></svg>` }, { draggableControl: "", controlId: "prev" }),
-      playpause: tmg.createEl("button", { className: "tmg-video-play-pause-btn", innerHTML: `<svg viewBox="0 0 25 25" class="tmg-video-play-icon" data-control-title="Play${k["playPause"]}" style="scale: 1.25;"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg viewBox="0 0 25 25" class="tmg-video-pause-icon" data-control-title="Pause${k["playPause"]}" style="scale: 1.25;"><path d="M14,19H18V5H14M6,19H10V5H6V19Z" /></svg><svg class="tmg-video-replay-icon" viewBox="0 -960 960 960" data-control-title="Replay${k["playPause"]}"><path d="M480-80q-75 0-140.5-28.5t-114-77q-48.5-48.5-77-114T120-440h80q0 117 81.5 198.5T480-160q117 0 198.5-81.5T760-440q0-117-81.5-198.5T480-720h-6l62 62-56 58-160-160 160-160 56 58-62 62h6q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-440q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-80Z"/></svg>` }, { draggableControl: "", controlId: "playpause" }),
+      playpause: tmg.createEl("button", { className: "tmg-video-play-pause-btn", innerHTML: `<svg viewBox="0 0 25 25" class="tmg-video-play-icon" data-control-title="Play${k["playPause"]}"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg viewBox="0 0 25 25" class="tmg-video-pause-icon" data-control-title="Pause${k["playPause"]}"><path d="M14,19H18V5H14M6,19H10V5H6V19Z" /></svg><svg class="tmg-video-replay-icon" viewBox="0 -960 960 960" data-control-title="Replay${k["playPause"]}"><path d="M480-80q-75 0-140.5-28.5t-114-77q-48.5-48.5-77-114T120-440h80q0 117 81.5 198.5T480-160q117 0 198.5-81.5T760-440q0-117-81.5-198.5T480-720h-6l62 62-56 58-160-160 160-160 56 58-62 62h6q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-440q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-80Z"/></svg>` }, { draggableControl: "", controlId: "playpause" }),
       next: tmg.createEl("button", { className: "tmg-video-next-btn", innerHTML: `<svg viewBox="0 0 25 25" class="tmg-video-next-icon" data-control-title="Next video${k["next"]}"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" transform="translate(-2.5,0)" /><rect x="19" y="5.14" width="2.5" height="14" transform="translate(-2.5,0)"/></svg>` }, { draggableControl: "", controlId: "next" }),
       volume: tmg.createEl(
         "div",
@@ -517,15 +516,16 @@ class tmg_Video_Controller {
     (this.zoneWs = { top: {}, center: {}, bottom: { 1: {}, 2: {}, 3: {} } }), (this.cZoneWs = { top: {}, center: [], bottom: { 1: {}, 2: {}, 3: {} } });
     const topWrapper = tmg.createEl("div", { className: "tmg-video-top-controls-wrapper tmg-video-apt-controls-wrapper" }, { dropZone: "", dragId: "wrapper" });
     (this.zoneWs.top.left = buildWSkel("left", false)), (this.zoneWs.top.center = buildWSkel("center", false)), (this.zoneWs.top.right = buildWSkel("right", true));
-    const centerWrapper = tmg.createEl("div", { className: "tmg-video-big-controls-wrapper" }, { dropZone: "", dragId: "big" });
-    this.zoneWs.center = this.cZoneWs.center = { zone: centerWrapper };
+    const centerWrapper = tmg.createEl("div", { className: "tmg-video-big-controls-wrapper" }, { dropZone: "", dragId: "big" }),
+      centerWrapperCover = tmg.createEl("div", { className: "tmg-video-big-controls-wrapper-cover" });
+    this.zoneWs.center = this.cZoneWs.center = { zone: centerWrapper, cover: (centerWrapperCover.append(centerWrapper), centerWrapperCover) };
     const bottomWrapper = tmg.createEl("div", { className: "tmg-video-bottom-controls-wrapper" });
     [1, 2, 3].forEach((i) => {
       bottomWrapper.append(tmg.createEl("div", { className: `tmg-video-bottom-sub-controls-wrapper tmg-video-bottom-${i}-sub-controls-wrapper tmg-video-apt-controls-wrapper` }, { dropZone: "", dragId: "wrapper" }));
       (this.zoneWs.bottom[i].left = buildWSkel("left", false)), (this.zoneWs.bottom[i].center = buildWSkel("center", false)), (this.zoneWs.bottom[i].right = buildWSkel("right", true));
     });
     this.zonesArr = [...Object.values(this.zoneWs.top), ...Object.values(this.zoneWs.bottom).map((v) => Object.values(v))].flat().map((w) => w.zone);
-    controlsContainer.prepend(...[HTML.pictureinpicturewrapper, HTML.thumbnail, HTML.videobuffer, HTML.captionsContainer].flat().filter(Boolean), notifiersContainer, topWrapper, centerWrapper, bottomWrapper);
+    controlsContainer.prepend(...[HTML.pictureinpicturewrapper, HTML.thumbnail, HTML.videobuffer, HTML.captionsContainer].flat().filter(Boolean), notifiersContainer, topWrapper, centerWrapperCover, bottomWrapper);
     this.pseudoVideoContainer.append(HTML.pictureinpicturewrapper?.cloneNode(true) || "");
     this.config.on(
       "settings.controlPanel.top",
@@ -560,7 +560,7 @@ class tmg_Video_Controller {
     const pos = { 0: "left", 1: "center", 2: "right" }[[...target.parentElement.children].indexOf(target)],
       cws = this.queryDOM(".tmg-video-top-controls-wrapper, .tmg-video-bottom-sub-controls-wrapper", false, true);
     cws.forEach((w, i) => w.contains(target) && (key = { 0: "top.", 1: "bottom.1.", 2: "bottom.2.", 3: "bottom.3." }[i]));
-    return zoneW ? { coord: key + pos, zoneW: tmg.getAny(this.zoneWs, key + pos) } : key + pos;
+    return zoneW ? { coord: key + pos, zoneW: tmg.getPath(this.zoneWs, key + pos) } : key + pos;
   }
   syncControlPanelToUI() {
     const id = (el) => el.dataset.controlId,
@@ -870,21 +870,18 @@ class tmg_Video_Controller {
     this._handleMediaParentResize();
     initScrollAssist(this.DOM.videoTitle, { pxPerSecond: 60, assistClassName: "tmg-video-controls-scroll-assist" });
     initScrollAssist(this.DOM.videoArtist, { pxPerSecond: 30, assistClassName: "tmg-video-controls-scroll-assist" });
-    this.zonesArr.forEach((el) => {
+    [...this.zonesArr, this.zoneWs.center.zone].forEach((el) => {
       this._handleControlsView(el);
-      initScrollAssist(el, { pxPerSecond: 60, assistClassName: "tmg-video-controls-scroll-assist" });
+      initScrollAssist(el, { pxPerSecond: el.dataset.dragId === "big" ? 120 : 60, assistClassName: "tmg-video-controls-scroll-assist" });
       el && tmg.resizeObserver.observe(el);
       el?.addEventListener("scroll", this._handleDirtyScroll, { passive: true });
     });
     [this.videoContainer, this.pseudoVideoContainer].forEach((el) => tmg.resizeObserver.observe(el));
   }
   unobserveResize() {
-    initScrollAssist(this.DOM.videoTitle, { pxPerSecond: 60, assistClassName: "tmg-video-controls-scroll-assist" });
-    initScrollAssist(this.DOM.videoArtist, { pxPerSecond: 30, assistClassName: "tmg-video-controls-scroll-assist" });
-    this.zonesArr.forEach((el) => {
-      initScrollAssist(el, { pxPerSecond: 60, assistClassName: "tmg-video-controls-scroll-assist" });
-      el && tmg.resizeObserver.unobserve(el);
-    });
+    removeScrollAssist(this.DOM.videoTitle);
+    removeScrollAssist(this.DOM.videoArtist);
+    [...this.zonesArr, this.zoneWs.center.zone].forEach((el) => (removeScrollAssist(el), el && tmg.resizeObserver.unobserve(el)));
     [this.videoContainer, this.pseudoVideoContainer].forEach((el) => tmg.resizeObserver.unobserve(el));
   }
   observeIntersection() {
@@ -1022,7 +1019,7 @@ class tmg_Video_Controller {
     this.mutatingDOMM = true;
     (this.pseudoVideo.id = this.video.id), (this.video.id = "");
     this.pseudoVideo.className += " " + this.video.className.replace(/tmg-media|tmg-video/g, "");
-    this.pseudoVideoContainer.className += " " + this.videoContainer.className.replace(/tmg-media-container|tmg-pseudo-video-container/g, "");
+    this.pseudoVideoContainer.className += " " + this.videoContainer.className.replace(/tmg-media-container|tmg-video-container/g, "");
     this.videoContainer.parentElement?.insertBefore(this.pseudoVideoContainer, this.videoContainer);
     document.body.append(this.videoContainer);
     setTimeout(() => (this.mutatingDOMM = false));
@@ -1672,7 +1669,7 @@ class tmg_Video_Controller {
   rotateCaptionsProp(steps, prop, numeric = true) {
     const curr = this.settings.css[tmg.camelize(prop.replace(".value", ""), /\./)],
       i = Math.max(0, numeric ? steps.reduce((cIdx, s, idx) => (Math.abs(s - curr) < Math.abs(steps[cIdx] - curr) ? idx : cIdx), 0) : steps.indexOf(curr));
-    tmg.setAny(this.settings, prop, steps[(i + 1) % steps.length]);
+    tmg.setPath(this.settings, prop, steps[(i + 1) % steps.length]);
     this.config.stall(this.previewCaptions);
   }
   rotateCaptionsFontFamily = () => this.rotateCaptionsProp(tmg.parseUIObj(this.settings.captions).font.family.values, "captions.font.family.value", false);
@@ -2007,7 +2004,7 @@ class tmg_Video_Controller {
     await tmg.breath(this.floatingWindow); // paint the bg incase the stylesheet logic takes a while
     const cssTexts = [],
       parse = (src) => ("string" === typeof src ? src : null),
-      whitelist = [parse(window.T007_TOAST_CSS_SRC), parse(window.T007_INPUT_CSS_SRC), parse(window.TMG_VIDEO_CSS_SRC) ?? "/tmg-media-player/src/beta/index-video.css"].filter(Boolean); // video CSS too experimental; needs a link :)
+      whitelist = [parse(window.T007_TOAST_CSS_SRC), parse(window.T007_INPUT_CSS_SRC), parse(window.T007_DIALOG_CSS_SRC), parse(window.TMG_VIDEO_CSS_SRC)].filter(Boolean); // video CSS too experimental; needs a link :)
     for (const sheet of document.styleSheets) {
       try {
         if (!whitelist.some((src) => tmg.isSameURL(src, sheet.href))) for (const cssRule of sheet.cssRules) if (cssRule.selectorText?.includes(":root") || cssRule.cssText.includes("tmg") || cssRule.cssText.includes("t007")) cssTexts.push(cssRule.cssText);
@@ -2057,7 +2054,7 @@ class tmg_Video_Controller {
     }
   }
   _handleMiniplayerDragStart({ target, clientX, clientY, targetTouches }) {
-    if (!this.isUIActive("miniplayer") || target.scrollWidth > target.clientWidth || [this.DOM.topControlsWrapper, tmg.inBoolArrOpt(this.settings.controlPanel.draggable, "big") ? this.DOM.bigControlsWrapper : null, this.DOM.bottomControlsWrapper, this.DOM.captionsContainer].some((w) => w?.contains?.(target)) || target.closest("[class$='toast-container']")) return;
+    if (!this.isUIActive("miniplayer") || target.scrollWidth > target.clientWidth || isInteractive(target) || [this.DOM.topControlsWrapper, this.DOM.bottomControlsWrapper, this.DOM.captionsContainer].some((w) => w?.contains?.(target)) || target.closest("[class$='toast-container']")) return;
     const { left, bottom } = getComputedStyle(this.videoContainer);
     (this.lastMiniplayerPosX = parseFloat(left)), (this.lastMiniplayerPosY = parseFloat(bottom));
     (this.lastMiniplayerPtrX = clientX ?? targetTouches[0].clientX), (this.lastMiniplayerPtrY = clientY ?? targetTouches[0].clientY);
@@ -2511,7 +2508,7 @@ class tmg_Video_Controller {
   }
   _handleDragStart(e) {
     const { target: t, dataTransfer } = e;
-    if (t.dataset.draggableControl !== "true" || !t?.tagName) return;
+    if (!t?.tagName || t.dataset.draggableControl !== "true") return;
     if (t.matches(":has(input:is(:hover, :active))")) return e.preventDefault();
     dataTransfer.effectAllowed = "move";
     this.dragging = t;
@@ -2519,17 +2516,17 @@ class tmg_Video_Controller {
     this.dragSafeTimeoutId = setTimeout(() => t.classList.remove("tmg-video-control-dragging"), 1000); // for mobile browsers supporting the API but not living up
     if (t.dataset.dragId !== "wrapper" || t.parentElement?.dataset.dragId !== "wrapper") return;
     const { coord, zoneW } = this.getUIZoneWCoord(t, true);
-    tmg.setAny(this.cZoneWs, coord, zoneW);
+    tmg.setPath(this.cZoneWs, coord, zoneW);
     this.dragReplaced = { target: t.parentElement, child: zoneW.cover };
   }
   _handleDrag = () => (this.delayOverlay(), clearTimeout(this.dragSafeTimeoutId));
   _handleDragEnd({ target: t }) {
     t.classList.remove("tmg-video-control-dragging");
     this.dragReplaced = this.dragging = null;
-    if (t.dataset.dragId === "wrapper" && t.parentElement?.dataset.dragId === "wrapper") tmg.setAny(this.cZoneWs, this.getUIZoneWCoord(t), t);
+    if (t.dataset.dragId === "wrapper" && t.parentElement?.dataset.dragId === "wrapper") tmg.setPath(this.cZoneWs, this.getUIZoneWCoord(t), t);
     this.syncControlPanelToUI();
   }
-  noDropOff = (t, drop = this.dragging) => t.dataset.dropZone !== "true" || !drop?.tagName || t.dataset.dragId !== drop.dataset.dragId;
+  noDropOff = (t, drop = this.dragging) => t.dataset.dropZone !== "true" || !drop?.tagName || (t.dataset.dragId !== drop.dataset.dragId && (t.dataset.dragId === "wrapper" || drop.dataset.dragId === "wrapper"));
   _handleDragEnter = ({ target: t }) => !this.noDropOff(t) && this.dragging && t.classList.add("tmg-video-dragover");
   _handleDragOver(e) {
     const { target: t, clientX: x, dataTransfer } = e;
@@ -2575,7 +2572,7 @@ class tmg_Media_Player {
   queryBuild = () => (!this.#active ? true : (console.error("TMG has already deployed the custom controls of your build configuration"), console.warn("Consider setting your build configuration before attaching your media element"), false));
   configure(customBuild) {
     if (!this.queryBuild() || !tmg.isObj(customBuild)) return;
-    this.#build = tmg.mergeObjs(this.#build, tmg.parseAnyObj(customBuild));
+    this.#build = tmg.mergeObjs(this.#build, tmg.parsePathObj(customBuild));
     Object.entries(this.#build.settings.keys.shortcuts).forEach(([k, v]) => (this.#build.settings.keys.shortcuts[k] = tmg.cleanKeyCombo(v)));
     ["blocks", "overrides"].forEach((k) => (this.#build.settings.keys[k] = tmg.cleanKeyCombo(this.#build.settings.keys[k])));
   }
@@ -2614,7 +2611,7 @@ class tmg_Media_Player {
   }
   async #deployController() {
     if (this.#active || !this.#medium.isConnected) return;
-    if (this.#build.playlist?.[0]) this.configure(tmg.mergeObjs(tmg.DEFAULT_VIDEO_ITEM_BUILD, tmg.parseAnyObj(this.#build.playlist[0])));
+    if (this.#build.playlist?.[0]) this.configure(tmg.mergeObjs(tmg.DEFAULT_VIDEO_ITEM_BUILD, tmg.parsePathObj(this.#build.playlist[0])));
     if (!(this.#medium instanceof HTMLVideoElement)) return console.error(`TMG could not deploy custom controls on the '${this.#medium.tagName}' element as it is not supported`), console.warn("TMG only supports the 'VIDEO' element currently");
     this.#medium.tmgcontrols = this.#active = !(this.#medium.controls = false);
     this.#medium.classList.add("tmg-video", "tmg-media");
@@ -2635,7 +2632,7 @@ class tmg_Media_Player {
 
 var tmg = {
   ON_MOBILE: /Mobi|Android|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent),
-  ALLOWED_CONTROLS: ["removeMiniplayer", "expandMiniplayer", "bigPrev", "bigPlayPause", "bigNext", "capture", "fullscreenOrientation", "fullscreenLock", "prev", "playPause", "next", "brightness", "volume", "timeAndDuration", "spacer", "playbackRate", "captions", "settings", "objectFit", "pictureInPicture", "theater", "fullscreen"],
+  ALLOWED_CONTROLS: ["removeminiplayer", "expandminiplayer", "bigprev", "bigplaypause", "bignext", "capture", "fullscreenorientation", "fullscreenLock", "prev", "playPause", "next", "brightness", "volume", "timeAndDuration", "spacer", "playbackRate", "captions", "settings", "objectFit", "pictureInPicture", "theater", "fullscreen"],
   NOTIFIER_EVENTS: ["videoplay", "videopause", "videoprev", "videonext", "playbackrateup", "playbackratedown", "volumeup", "volumedown", "volumemuted", "brightnessup", "brightnessdown", "brightnessdark", "objectfitcontain", "objectfitcover", "objectfitfill", "captions", "capture", "theater", "fullscreen", "fwd", "bwd"],
   WHITE_LISTED_KEYS: [" ", "Enter", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].map((k) => k.toLowerCase()),
   IS_DOC_TRANSIENT: false,
@@ -2922,10 +2919,10 @@ var tmg = {
       if (/^\d+$/.test(value)) return Number(value);
       return value;
     })();
-    tmg.setAny(target, path, parsedValue, "--", (p) => tmg.camelize(p));
+    tmg.setPath(target, path, parsedValue, "--", (p) => tmg.camelize(p));
   },
-  setAny: setAny,
-  getAny: getAny,
+  setPath: setPath,
+  getPath: getPath,
   bindAllMethods: bindAllMethods,
   reactive: reactive,
   TERMINATOR: TERMINATOR,
@@ -2951,7 +2948,7 @@ var tmg = {
     }
     return result;
   },
-  parseAnyObj: parseAnyObj,
+  parsePathObj: parsePathObj,
   parsePanelBottomObj(obj = [], arr = false) {
     if (!tmg.isObj(obj) && !tmg.isArr(obj)) return false;
     const [third = [], second = [], first = []] = tmg.isObj(obj) ? Object.values(obj).reverse() : tmg.isArr(obj[0]) ? obj.toReversed() : [obj];
@@ -3311,7 +3308,7 @@ if (typeof window !== "undefined") {
         buffer: "spinner",
         timeline: { thumbIndicator: true, seek: { relative: !tmg.ON_MOBILE, cancel: { delta: 15, timeout: 2000 } } },
         progressBar: tmg.ON_MOBILE,
-        draggable: ["", "wrapper"],
+        draggable: ["", "big", "wrapper"],
       },
       errorMessages: { 1: "The video playback was aborted :(", 2: "The video failed due to a network error :(", 3: "The video could not be decoded :(", 4: "The video source is not supported :(" },
       fastPlay: { playbackRate: 2, key: true, pointer: { type: "all", threshold: 800, inset: 20 }, reset: true, rewind: true },
