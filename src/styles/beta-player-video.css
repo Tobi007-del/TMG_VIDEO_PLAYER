@@ -2476,7 +2476,8 @@ div.tmg-video-thumbnail {
   opacity: 1;
 }
 .tmg-video-container.tmg-video-light :is([data-control-id]:not([data-light-control="true"]), .tmg-video-settings, .tmg-video-cover-curtain, .tmg-video-captions-container),
-.tmg-video-container:is(.tmg-video-light, .tmg-video-stall) :is(.tmg-video-play-notifier, .tmg-video-pause-notifier, .tmg-video-buffer, .tmg-video-big-play-pause-btn svg) {
+.tmg-video-container:is(.tmg-video-light, .tmg-video-stall) :is(.tmg-video-play-notifier, .tmg-video-pause-notifier, .tmg-video-buffer, .tmg-video-big-play-pause-btn svg),
+.tmg-video-container.tmg-video-stall .tmg-video-big-controls-wrapper > * {
   display: none;
 }
 .tmg-video-container:is(.tmg-video-light, .tmg-video-stall) :is(.tmg-video-big-controls-wrapper-cover, .tmg-video-big-play-pause-btn .tmg-video-play-icon),
