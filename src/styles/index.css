@@ -42,12 +42,14 @@
   --t007-dialog-background: rgb(from var(--tvp-theme-inverse-color) calc(r + 20) calc(g + 20) calc(b + 20));
   --t007-dialog-box-shadow: 2px 2px 6px rgb(from var(--tvp-theme-inverse-color) r g b / 0.5), -2px -2px 6px rgb(from var(--tvp-theme-inverse-color) r g b / 0.5);
   --t007-dialog-message-color: var(--tvp-theme-color);
-  --t007-confirm-button-color: var(--tvp-theme-accent-2-color);
-  --t007-cancel-button-color: var(--tvp-brand-color);
+  --t007-dialog-confirm-button-color: var(--tvp-theme-accent-2-color);
+  --t007-dialog-cancel-button-color: var(--tvp-brand-color);
 }
 body .tmg-media-container {
-  --tmg-video-current-miniplayer-x: calc((var(--tmg-video-current-container-width) / 2) + 7.5px);
-  --tmg-video-current-miniplayer-y: calc((var(--tmg-video-current-container-height) / 2) + 7.5px);
+  --tmg-media-brand-color: var(--tvp-brand-color);
+  --tmg-media-theme-color: var(--tvp-theme-color);
+  --tmg-media-current-miniplayer-x: calc((var(--tmg-media-current-container-width) / 2) + 7.5px);
+  --tmg-media-current-miniplayer-y: calc((var(--tmg-media-current-container-height) / 2) + 7.5px);
 }
 
 @keyframes rotateLight {

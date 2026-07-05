@@ -126,6 +126,7 @@
         </div>
         <div id="video-player-container">
           <video id="video" class="stall"></video>
+          <!-- tmg--light-state--disabled="true" tmg--settings--overlay--behavior="persistent" -->
         </div>
         <div id="content-helper-wrapper">
           <div id="file-picker">
@@ -183,15 +184,7 @@
       <div class="attribution">
         <details>
           <summary>Coded by <a href="https://github.com/Tobi007-del" target="_blank" rel="noopener noreferrer">Tobi007</a>.</summary>
-          <p>
-            The main idea here is for you to test out the custom controls of the video player while enjoying a movie or two. This is actually just an early prototype but the video controls here has been in development for a while but needs some field testing so do well to give feedback, report bugs, request features or just criticize by sending me a mail.
-            <button type="button" id="beta-time-travel" onclick="__betaTimeTravel()" style="display: inline">Time travel?</button>
-            <script>
-              function __betaTimeTravel() {
-                window.tmg?.Controllers?.length && (window.tmg.timeTravel(), document.getElementById("beta-time-travel")?.remove());
-              }
-            </script>
-          </p>
+          <p>The main idea here is for you to test out the custom controls of the video player while enjoying a movie or two. This is actually just an early prototype but the video controls here has been in development for a while but needs some field testing so do well to give feedback, report bugs, request features or just criticize by sending me a mail.</p>
         </details>
       </div>
     </div>
@@ -201,19 +194,26 @@
       document.body.classList.toggle("no-folders-pick", !("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker" in window && /Mobi|Android|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent))); // dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data
       document.body.classList.toggle("no-videos-pick", !("files" in HTMLInputElement.prototype));
       window._lssk = "TVP_last_session_state"; // localStorage session key
-      window.setColors = (brand = "#e26e02", theme = "#ffffff") => {
-        brand && document.documentElement.style.setProperty("--tvp-brand-color", brand);
-        theme && document.documentElement.style.setProperty("--tvp-theme-color", theme);
-      }; // now to stop stored settings colors from flashing
-      const settings = JSON.parse(localStorage[_lssk] || "{}").settings;
+      window.setColors = (brand = "#e26e02", theme = "#ffffff") => (brand && document.documentElement.style.setProperty("--tvp-brand-color", brand), theme && document.documentElement.style.setProperty("--tvp-theme-color", theme));
+      // now to stop stored settings colors from flashing
+      const settings = JSON.parse(localStorage[_lssk] || "{}").config?.settings;
       settings && setColors(settings.css.brandColor, settings.css.themeColor);
       document.getElementById("clear-settings-button").classList.toggle("shown", !!settings);
     </script>
     <script>
-      window.TMG_VIDEO_ALT_IMG_SRC = "/assets/icons/movie-tape.png";
-      window.TMG_VIDEO_CSS_SRC = window.T007_INPUT_JS_SRC = window.T007_INPUT_CSS_SRC = window.T007_TOAST_JS_SRC = window.T007_TOAST_CSS_SRC = window.T007_DIALOG_JS_SRC = window.T007_DIALOG_CSS_SRC = Symbol.for("T007_VIRTUAL_RESOURCE");
+      window.TMG_MEDIA_ALT_IMG_SRC = "/assets/icons/movie-tape.png";
+      window.TMG_MEDIA_CSS_SRC = window.T007_INPUT_JS_SRC = window.T007_INPUT_CSS_SRC = window.T007_TOAST_JS_SRC = window.T007_TOAST_CSS_SRC = window.T007_DIALOG_JS_SRC = window.T007_DIALOG_CSS_SRC = Symbol.for("T007_VIRTUAL_RESOURCE");
     </script>
-    <script type="module" src="src/scripts/beta-player.js"></script>
+    <script type="module">
+      import "@t007/toast";
+      import "@t007/dialog";
+      import "@t007/input";
+      import "@t007/toast/style.css";
+      import "@t007/dialog/style.css";
+      import "@t007/input/style.css";
+      import "tmg-media-player/style.css";
+      import "sia-reactor/styles/time-travel-console.css";
+    </script>
     <script type="module" src="src/index.js"></script>
     <script src="assets/ffmpeg/ffmpeg.min.js"></script>
     <script>
@@ -230,8 +230,7 @@
       for (const star of document.getElementsByClassName("magic-star")) {
         setTimeout(() => {
           animate(star);
-          // setInterval(animate, 1000, star);
-          setTimeout(animate, 1000, star);
+          setTimeout(animate, 1000, star); // setInterval(animate, 1000, star);
         }, index++ * (interval / 3));
       }
     </script>
