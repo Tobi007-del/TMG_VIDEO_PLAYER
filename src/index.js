@@ -5,9 +5,9 @@ import { initVScrollerator } from "@t007/utils/hooks/vanilla";
 import { IndexedDBAdapter, LocalStorageAdapter } from "sia-reactor/modules";
 import { inject } from "@vercel/analytics";
 import { injectSpeedInsights } from "@vercel/speed-insights";
-import { parsePathObj } from "sia-reactor/utils";
+import { parsePathObj, setPath } from "sia-reactor/utils";
 
-(inject(), injectSpeedInsights()); // Realtime Vercel Analytics
+(inject({ mode: import.meta.env.PROD ? "production" : "development" }), injectSpeedInsights()); // Realtime Vercel Analytics
 
 // ===========================================================================
 // GLOBAL CONTEXT & SYSTEM VARS
@@ -42,12 +42,16 @@ window.Memory = {
   async getSession() {
     const state = this.getState(),
       session = await DB.get("last_handles");
-    if (!state?.config.playlist?.content || !session) return null;
+    if (!state?.config.playlist.content) return null;
+    const hasRemote = state.config.playlist.content.some((i) => !i.media.intent.src.startsWith("blob:"));
+    if (!session && !hasRemote) return null;
     console.log("🎞 TVP found an ongoing session:", state, session);
-    return (Date.now() - session.lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (await this.clearSession(), console.log("🎞 TVP cleaned up expired session.")) : { state, handles: session.handles, lastUpdated: session.lastUpdated };
+    const lastUpdated = session?.lastUpdated || Date.now();
+    return (Date.now() - lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (await this.clearSession(), console.log("🎞 TVP cleaned up expired session.")) : { state, handles: session?.handles || [], lastUpdated };
   },
   async saveHandles() {
-    sessionHandles.length ? await DB.set("last_handles", { handles: sessionHandles, lastUpdated: Date.now() }) : await this.clearSession();
+    const state = this.getState();
+    sessionHandles.length || state?.config.playlist.content?.some((i) => !i.media.intent.src.startsWith("blob:")) ? await DB.set("last_handles", { handles: sessionHandles, lastUpdated: Date.now() }) : await this.clearSession();
   },
   async clearSession() {
     this.adapter.set(window._lssk, { config: { settings: this.getState()?.config.settings || {} } }); // might not wanna clear settings
@@ -59,7 +63,6 @@ window.Memory = {
   },
 };
 
-window.tmg = tmg;
 window.MP = null;
 
 // ===========================================================================
@@ -113,7 +116,7 @@ const readyLines = {
   ],
 };
 const primaryLang = "eng",
-  whitelist = ["eng", "spa", "fra", "jpn"],
+  // whitelist = ["eng", "spa", "fra", "jpn"],
   langNames = new Intl.DisplayNames(["en"], { type: "language" }),
   vi = JSON.parse(localStorage[_lsik] || `{ "visitorId": "${crypto?.randomUUID?.() || tmg.utils.uid()}", "visitCount": 0 }`),
   stoast = toaster({ autoClose: false, closeButton: false, dragToClose: false }),
@@ -131,9 +134,7 @@ const primaryLang = "eng",
 const prevGet = window.Memory.adapter.get.bind(window.Memory.adapter);
 window.Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
-  if (state?.playlist && !state.config)
-    (toast.info("Migrating your saved session to the latest version...", { icon: "⚙️" }), this.set(this.config.key, (state = { config: { playlist: { content: state.playlist || [] }, lightState: { disabled: state.hasPlayed } }, media: { state: { paused: state.paused } } }))); // settings shape has changed too much
-  else if (state?.config?.playlist && Array.isArray(state.config.playlist)) ((state.config.playlist = { content: state.config.playlist }), this.set(this.config.key, state));
+  if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) ((state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" }));
   return state;
 }; // V1 -> V2 MIGRATION LAYER
 
@@ -167,9 +168,9 @@ window.Memory.adapter.get = function (key, reviver) {
     if (!launchParams?.files?.length) return;
     initUI();
     const allFiles = await getHandlesFiles(launchParams.files),
-      videoFiles = allFiles.filter((file) => (file.type || tmg.utils.getMimeTypeFromExtension(file.name)).startsWith("video/")),
+      videoFiles = allFiles.filter((file) => (file.type || tmg.utils.getMimeTypeFromExtension(file.name)).match(/^(video|audio)\//)),
       rejectedCount = allFiles.length - videoFiles.length;
-    if (rejectedCount > 0) toast.warn(`You opened ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
+    if (rejectedCount > 0) toast.warn(`You opened ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only media files are supported`);
     handleFiles(videoFiles, null, launchParams.files);
   });
 })();
@@ -233,9 +234,9 @@ clearSettingsButton.addEventListener("click", () => clearSettings(true));
     if (useHandles && !handles?.length) return defaultUI();
     console.log("📁 TVP Handle Kind:", handles?.[0]?.kind, "Full Object:", handles?.[0]);
     const allFiles = useHandles ? await getHandlesFiles(handles) : e.target.files,
-      videoFiles = Array.prototype.filter.call(allFiles, (file) => (file.type || tmg.utils.getMimeTypeFromExtension(file.name)).startsWith("video/")),
+      videoFiles = Array.prototype.filter.call(allFiles, (file) => (file.type || tmg.utils.getMimeTypeFromExtension(file.name)).match(/^(video|audio)\//)),
       rejectedCount = allFiles.length - videoFiles.length;
-    if (rejectedCount > 0) toast.warn(`You picked ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
+    if (rejectedCount > 0) toast.warn(`You picked ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only media files are supported`);
     handleFiles(videoFiles, null, handles);
   }
   !((!recurse ? "showOpenFilePicker" : "showDirectoryPicker") in window) ? input.addEventListener("change", handleInput) : input.addEventListener("click", (e) => handleInput(e, true));
@@ -249,9 +250,9 @@ clearSettingsButton.addEventListener("click", () => clearSettings(true));
     e.preventDefault();
     const handles = useHandles ? await getDroppedHandles(e, initUI) : null,
       allFiles = useHandles ? await getHandlesFiles(handles) : await getDroppedFiles(e, initUI),
-      videoFiles = allFiles.filter((file) => (file.type || tmg.utils.getMimeTypeFromExtension(file.name)).startsWith("video/")),
+      videoFiles = allFiles.filter((file) => (file.type || tmg.utils.getMimeTypeFromExtension(file.name)).match(/^(video|audio)\//)),
       rejectedCount = allFiles.length - videoFiles.length;
-    if (rejectedCount > 0) toast.warn(`You dropped ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only video files are supported`);
+    if (rejectedCount > 0) toast.warn(`You dropped ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only media files are supported`);
     handleFiles(videoFiles, null, handles);
     [videosDropBox, foldersDropBox].forEach((el) => el.classList.remove("active"));
   }
@@ -321,7 +322,7 @@ async function restoreSession({ handles }) {
         })();
       });
       const file = handle.kind === "file" ? await handle.getFile() : await getHandlesFiles([handle]);
-      tmg.utils.isArr(file) ? files.push(...file.filter((file) => file.type.startsWith("video/"))) : files.push(file);
+      tmg.utils.isArr(file) ? files.push(...file.filter((file) => file.type.match(/^(video|audio)\//))) : files.push(file);
       sureHandles.push(handle);
       stoast.success(`Restored ${name} successfully`, { id: "session", actions: false });
       await (resp === "User not needed" ? tmg.utils.deepBreath() : tmg.utils.mockAsync(200));
@@ -372,7 +373,8 @@ async function clearFiles(skipPrompt = false) {
 
 async function handleFiles(files, restored = null, handles = null) {
   try {
-    if (!files?.length && !nums.files) return defaultUI();
+    const remoteItems = restored?.config.playlist.content?.filter((item) => !item.media.intent.src.startsWith("blob:")) || [];
+    if (!files?.length && !remoteItems.length && !nums.files) return defaultUI();
     (stoast.dismiss("session"), initUI());
 
     if (handles?.length) ((sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))]), Memory.saveHandles());
@@ -384,7 +386,7 @@ async function handleFiles(files, restored = null, handles = null) {
       thumbnails = [];
 
     const buildListItem = (file, state, remoteItem) => {
-      const name = file ? file.name : remoteItem.media.settings.metadata.title || "External URL",
+      const name = file ? file.name : remoteItem.media.settings.metadata.title || "Unknown",
         ffName = file ? tmg.utils.noExtension(file.name) : remoteItem.media.settings.metadata.title,
         isRemote = !file;
       const li = tmg.utils.createEl("li", { className: "content-line" }, { fileName: name });
@@ -405,8 +407,8 @@ async function handleFiles(files, restored = null, handles = null) {
             if (restored || isRemote) thumbnail.parentElement?.style.setProperty("--video-progress-position", tmg.utils.safeNum((state?.settings?.time?.start || 0) / target.duration));
           },
           onerror: ({ target }) => {
-            li.classList.add("error");
-            if (tmg.utils.safeNum(target.duration)) return;
+            !isRemote && li.classList.add("error");
+            if (tmg.utils.safeNum(target.duration) || isRemote) return;
             li.querySelector(".file-duration span:last-child").classList.add("failed");
             li.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load";
           },
@@ -417,8 +419,8 @@ async function handleFiles(files, restored = null, handles = null) {
       if (isRemote) {
         thumbnail.src = remoteItem.media.intent.src;
         thumbnail.mediaId = remoteItem.media.settings.metadata.id;
-        thumbnail.getPlItem = (plItem = MP?.controller?.config.playlist.content?.find((v) => v.media.settings.metadata.id === remoteItem.media.settings.metadata.id)) => (thumbnail.plItem = plItem ?? thumbnail.plItem ?? remoteItem);
-        thumbnail.getPlIndex = () => MP?.controller?.config.playlist.content?.findIndex((v) => v.media.settings.metadata.id === remoteItem.media.settings.metadata.id);
+        thumbnail.getPlItem = (plItem = MP?.controller.config.playlist.content.find((v) => v.media.settings.metadata.id === remoteItem.media.settings.metadata.id)) => (thumbnail.plItem = plItem ?? thumbnail.plItem ?? remoteItem);
+        thumbnail.getPlIndex = () => MP?.controller.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === remoteItem.media.settings.metadata.id);
       }
       const thumbnailContainer = tmg.utils.createEl("span", { className: "thumbnail-container", innerHTML: `<button><svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated"><rect x="4" width="3" height="10" fill="white"></rect><rect x="10" width="3" height="10" fill="white"></rect><rect x="16" width="3" height="10" fill="white"></rect></svg></button>`, onclick: () => MP.controller?.plug("playlist")?.moveTo(thumbnail.getPlIndex(), true) }).appendChild(thumbnail).parentElement;
       const captionsInput = tmg.utils.createEl("input", {
@@ -434,7 +436,7 @@ async function handleFiles(files, restored = null, handles = null) {
           DB.set((thumbnail.dataset.trackId = f.name), new TextEncoder().encode(txt), "subtitles");
           const plItem = thumbnail.getPlItem();
           plItem.media.intent.tracks = [{ id: f.name, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
-          if (MP.controller?.config.playlist.content?.[MP.controller.plug("playlist")?.state.currentIndex]?.media.settings.metadata.id === plItem.media?.settings?.metadata?.id) MP.controller.media.intent.tracks = plItem.media.intent.tracks;
+          if (MP.controller?.config.playlist.content[MP.controller.plug("playlist").state.currentIndex]?.media.settings.metadata.id === plItem.media.settings.metadata.id) MP.controller.media.intent.tracks = plItem.media.intent.tracks;
           thumbnail.dataset.captionState = "filled";
         },
         oncancel: () => (thumbnail.dataset.captionState = "empty"),
@@ -449,10 +451,10 @@ async function handleFiles(files, restored = null, handles = null) {
             return captionsBtn.querySelector("input").click();
           } else if (thumbnail.dataset.captionState === "filled") {
             const plItem = thumbnail.getPlItem();
-            plItem?.media?.intent?.tracks?.forEach((t) => t.kind === "captions" && t.src?.startsWith("blob:") && URL.revokeObjectURL(t.src));
+            plItem?.media.intent.tracks?.forEach((t) => t.kind === "captions" && t.src?.startsWith("blob:") && URL.revokeObjectURL(t.src));
             if (!thumbnail.dataset.trackId.startsWith("tmg-")) DB.remove(thumbnail.dataset.trackId, "subtitles");
             if (plItem.media) plItem.media.intent.tracks = plItem.media.intent.tracks.filter((t) => t.kind !== "captions");
-            if (MP.controller?.config.playlist.content?.[MP.controller.plug("playlist")?.state.currentIndex]?.media.settings.metadata.id === plItem.media?.settings?.metadata?.id) MP.controller.media.intent.tracks = plItem.media.intent.tracks;
+            if (MP.controller?.config.playlist.content[MP.controller.plug("playlist").state.currentIndex]?.media.settings.metadata.id === plItem.media.settings.metadata.id) MP.controller.media.intent.tracks = plItem.media.intent.tracks;
           } else if (!queue.drop(thumbnail.dataset.trackId)) return;
           thumbnail.dataset.captionState = "empty";
         },
@@ -462,15 +464,15 @@ async function handleFiles(files, restored = null, handles = null) {
       li.cleanupDB = () => {
         if (!isRemote && thumbnail.src?.startsWith("blob:")) URL.revokeObjectURL(thumbnail.src);
         const plItem = thumbnail.getPlItem();
-        plItem?.media?.intent?.tracks?.forEach((t) => t.src?.startsWith("blob:") && URL.revokeObjectURL(t.src));
-        queue.drop(thumbnail.dataset.trackId);
-        (DB.remove(thumbnail.dataset.trackId, "subtitles"), DB.remove(thumbnail.dataset.trackId + "_chap", "chapters"));
+        plItem?.media.intent.tracks?.forEach((t) => t.src?.startsWith("blob:") && URL.revokeObjectURL(t.src));
+        const tId = thumbnail.dataset.trackId;
+        tId && (queue.drop(tId), DB.remove(tId, "subtitles"), DB.remove(tId + "_chap", "chapters"));
         if (!isRemote) {
           const hIdx = sessionHandles.findIndex((h) => h.name === file.name);
           hIdx !== -1 && (sessionHandles.splice(hIdx, 1), Memory.saveHandles());
           (nums.files--, (nums.bytes -= file.size), (nums.time -= tmg.utils.safeNum(thumbnail.duration)));
         }
-        if (!MP?.controller?.config.playlist.content?.length) return clearFiles(true);
+        if (!MP?.controller.config.playlist.content.length) return clearFiles(true);
         updateUI();
       };
       let placeholderItem;
@@ -507,7 +509,7 @@ async function handleFiles(files, restored = null, handles = null) {
         },
         { passive: false }
       );
-      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${name}</span></p><p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p><p class="file-duration"><span>Duration: </span><span>${restored || isRemote ? "Rei" : "I"}nitializing...</span></p>` }), captionsBtn, deleteBtn, dragHandle);
+      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${name}</span></p>${!isRemote ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${isRemote ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(isRemote ? [] : [captionsBtn]), deleteBtn, dragHandle);
       return { li, thumbnail, container: thumbnailContainer };
     };
 
@@ -522,6 +524,14 @@ async function handleFiles(files, restored = null, handles = null) {
       const item = buildListItem(files[i], state);
       (thumbnails.push(item.thumbnail), list.append(item.li), await tmg.utils.breath());
     }
+    for (const rItem of remoteItems) {
+      if (Array.prototype.find.call(containers, (c) => c.lastElementChild.mediaId === rItem.media.settings.metadata.id)) {
+        thumbnails.push(null);
+        continue;
+      }
+      const item = buildListItem(null, null, rItem);
+      (thumbnails.push(item.thumbnail), list.append(item.li), await tmg.utils.breath());
+    }
 
     const content = [];
     const deployVideos = async (files) => {
@@ -533,36 +543,49 @@ async function handleFiles(files, restored = null, handles = null) {
             media: { intent: {}, settings: { metadata: { id: tmg.utils.uid(), title: thumbnails[i].ffName, artist: "TMG Video Player", profile: "assets/icons/tmg-icon.jpeg", links: { artist: "https://tmg-video-player.vercel.app", profile: "https://github.com/Tobi007-del/tmg-media-player" } } } },
             settings: { time: { start: 0 }, controlPanel: { timeline: { previews: true } } },
           };
+        item._preRenderedLi = thumbnails[i].closest("li");
         ((item.media.intent.src = url), (item.media.intent.tracks = (item.media.intent.tracks || []).filter((t) => !t.src.startsWith("blob:"))), content.push(item));
         const thumb = thumbnails[i];
         thumb.src = url;
         thumb.mediaId = item.media.settings.metadata.id;
-        thumb.getPlItem = (plItem = MP?.controller?.config.playlist.content?.find((v) => v.media.settings.metadata.id === item.media.settings.metadata.id)) => (thumb.plItem = plItem ?? thumb.plItem ?? item);
-        thumb.getPlIndex = () => MP?.controller?.config.playlist.content?.findIndex((v) => v.media.settings.metadata.id === item.media.settings.metadata.id);
+        thumb.getPlItem = (plItem = MP?.controller.config.playlist.content.find((v) => v.media.settings.metadata.id === item.media.settings.metadata.id)) => (thumb.plItem = plItem ?? thumb.plItem ?? item);
+        thumb.getPlIndex = () => MP?.controller.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === item.media.settings.metadata.id);
+      }
+      for (let i = 0; i < remoteItems.length; i++) {
+        const thumbIdx = files.length + i;
+        if (!thumbnails[thumbIdx]) continue;
+        const item = remoteItems[i];
+        item._preRenderedLi = thumbnails[thumbIdx].closest("li");
+        content.push(item);
       }
       if (!MP) {
         const setUpList = (renderList) => {
           MP.controller.config.on("playlist.content", ({ currentTarget: { value: content } }) => {
             if (!content || !document.getElementById("media-list")) return;
-            const validContent = content.filter((item) => item?.media?.settings?.metadata?.id && item?.media?.intent?.src);
+            const validContent = content.filter((item) => item.media.intent.src && (item.media.settings.metadata.id || (setPath(item, "media.settings.metadata.id", tmg.utils.uid()), true)));
             (renderList ??= tmg.utils.createListRenderer({
               container: list,
-              getKey: (item) => item.media?.settings?.metadata?.id,
+              getKey: (item) => item.media.settings.metadata.id,
               createNode: (item) => {
-                const { li, thumbnail } = buildListItem(null, null, item);
-                return (thumbnails.push(thumbnail), li);
+                let li = item._preRenderedLi;
+                if (!li) {
+                  const res = buildListItem(null, null, item);
+                  li = res.li;
+                  thumbnails.push(res.thumbnail);
+                } else delete item._preRenderedLi;
+                return li;
               },
               updateNode: (li, item, index) => {
-                li.classList.toggle("playing", index === MP.controller.plug("playlist")?.state.currentIndex);
+                li.classList.toggle("playing", MP.controller.config.lightState.disabled && index === MP.controller.plug("playlist").state.currentIndex);
                 const nameEl = li.querySelector(".file-name span:last-child");
-                if (nameEl) nameEl.textContent = item.media?.settings?.metadata?.title || li.fileName || "";
+                if (nameEl) nameEl.textContent = item.media.settings.metadata.title || li.dataset.fileName || "";
               },
               initNode: (li, register) => li.querySelector("video")?.mediaId && register(li.querySelector("video").mediaId),
               destroyNode: (li) => {
                 const id = li.querySelector("video")?.mediaId,
                   idx = thumbnails.findIndex((t) => t?.mediaId === id);
                 idx !== -1 && thumbnails.splice(idx, 1);
-                const stillInPlaylist = MP.controller?.config.playlist.content?.some((item) => item?.media?.settings?.metadata?.id === id);
+                const stillInPlaylist = MP.controller?.config.playlist.content.some((item) => item.media.settings.metadata.id === id);
                 if (!stillInPlaylist) li.cleanupDB?.();
               },
             }))(validContent);
@@ -580,9 +603,9 @@ async function handleFiles(files, restored = null, handles = null) {
           { once: true }
         );
         MP = new tmg.Player({
-          lightState: restored?.config?.lightState ?? { disabled: false },
+          lightState: restored?.config.lightState ?? { disabled: false },
           "playlist.content": content,
-          "media.state.paused": restored?.media?.state?.paused ?? true,
+          "media.state.paused": restored?.media.state.paused ?? true,
           "media.settings.metadata": { artist: "TMG Video Player", profile: "assets/icons/tmg-icon.jpeg", links: { artist: "https://tmg-video-player.vercel.app", profile: "https://github.com/Tobi007-del/tmg-media-player" } },
           "settings.controlPanel.timeline.bufferMarks": false,
           "settings.captions.font.size.value": 200,
@@ -654,7 +677,6 @@ async function deployTracks(file, thumbnail, autocancel = !crossOriginIsolated |
           const newTrack = { id: `${id}_${i}`, kind: "captions", label: label || "", srclang: srclang || "", default: i === 0, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })) };
           item.media.intent.tracks = [...(item.media.intent.tracks || []), newTrack];
           if (MP.controller?.config.playlist.content?.[MP.controller.plug("playlist")?.state.currentIndex]?.media.settings.metadata.id === item.media.settings.metadata.id) MP.controller.media.intent.tracks = item.media.intent.tracks;
-          thumbnail.setAttribute("data-caption-state", "filled");
         } else if (p.type === "chapter") {
           await DB.set(id + "_chap", new TextEncoder().encode(p.data), "chapters");
           item.media.intent.tracks?.forEach((t) => t.kind === "chapters" && t.src?.startsWith("blob:") && URL.revokeObjectURL(t.src));
@@ -668,6 +690,7 @@ async function deployTracks(file, thumbnail, autocancel = !crossOriginIsolated |
     () => thumbnail.setAttribute("data-caption-state", "loading")
   );
   if (res.cancelled) return thumbnail.setAttribute("data-caption-state", "empty");
+  thumbnail.setAttribute("data-caption-state", extractedSubs.length ? "filled" : "empty");
 }
 
 async function extractTracks(file, id, onProgress) {
@@ -827,3 +850,6 @@ function getSubMeta(data, counts = {}, name = "English") {
   counts[name] = (counts[name] || 0) + 1;
   return { buffer: data.buffer || data, srclang: data.lang?.slice(0, 2) || "en", label: counts[name] > 1 ? `${name} ${counts[name]}` : name };
 }
+
+import { field } from "@t007/input";
+field({}); // for inclusion
