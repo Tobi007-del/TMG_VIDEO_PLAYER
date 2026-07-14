@@ -63,6 +63,7 @@ window.Memory = {
   },
 };
 
+window.tmg = tmg;
 window.MP = null;
 
 // ===========================================================================
@@ -522,7 +523,7 @@ async function handleFiles(files, restored = null, handles = null) {
         continue;
       }
       const item = buildListItem(files[i], state);
-      (thumbnails.push(item.thumbnail), list.append(item.li), await tmg.utils.breath());
+      (thumbnails.push(item.thumbnail), list.append(item.li), files.length < 500 && (await tmg.utils.breath()));
     }
     for (const rItem of remoteItems) {
       if (Array.prototype.find.call(containers, (c) => c.lastElementChild.mediaId === rItem.media.settings.metadata.id)) {
@@ -530,7 +531,7 @@ async function handleFiles(files, restored = null, handles = null) {
         continue;
       }
       const item = buildListItem(null, null, rItem);
-      (thumbnails.push(item.thumbnail), list.append(item.li), await tmg.utils.breath());
+      (thumbnails.push(item.thumbnail), list.append(item.li), remoteItems.length < 500 && (await tmg.utils.breath()));
     }
 
     const content = [];
@@ -619,7 +620,6 @@ async function handleFiles(files, restored = null, handles = null) {
           cloneOnDetach: true,
         });
         MP.attach(video);
-        console.log(MP);
         video.addEventListener("loadedmetadata", () => setTimeout(dispatchPlayerReadyToast, 500), { once: true });
         video.ontimeupdate = ({ target: { currentTime: ct, duration: d } }) => MP.controller?.throttle("TVP_thumbnail_update", () => ct > 3 && MP.controller?.config.lightState.disabled && containers[MP.controller?.plug("playlist")?.state.currentIndex]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / d)), 2500);
         video.onplay = () => {
