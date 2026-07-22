@@ -63,7 +63,6 @@ window.Memory = {
   },
 };
 
-window.tmg = tmg;
 window.MP = null;
 
 // ===========================================================================
@@ -434,8 +433,9 @@ async function handleFiles(files, restored = null, handles = null) {
           if (!["srt", "vtt"].includes(ext)) return ((thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported"));
           let txt = await f.text();
           if (ext === "srt") txt = tmg.utils.srtToVtt(txt);
-          DB.set((thumbnail.dataset.trackId = f.name), new TextEncoder().encode(txt), "subtitles");
           const plItem = thumbnail.getPlItem();
+          const id = thumbnail.dataset.trackId ?? (thumbnail.dataset.trackId = plItem.media.settings.metadata.id + "_sub");
+          DB.set(id, new TextEncoder().encode(txt), "subtitles");
           plItem.media.intent.tracks = [{ id: f.name, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
           if (MP.controller?.config.playlist.content[MP.controller.plug("playlist").state.currentIndex]?.media.settings.metadata.id === plItem.media.settings.metadata.id) MP.controller.media.intent.tracks = plItem.media.intent.tracks;
           thumbnail.dataset.captionState = "filled";
@@ -510,7 +510,7 @@ async function handleFiles(files, restored = null, handles = null) {
         },
         { passive: false }
       );
-      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${name}</span></p>${!isRemote ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${isRemote ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(isRemote ? [] : [captionsBtn]), deleteBtn, dragHandle);
+      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${name}</span></p>${!isRemote ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${isRemote ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(isRemote && !tmg.utils.getExtension(remoteItem.media.intent.src) ? [] : [captionsBtn]), deleteBtn, dragHandle);
       return { li, thumbnail, container: thumbnailContainer };
     };
 
