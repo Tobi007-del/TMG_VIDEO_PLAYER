@@ -42,7 +42,7 @@ window.Memory = {
   async getSession() {
     const state = this.getState(),
       session = await DB.get("last_handles");
-    if (!state?.config.playlist.content) return null;
+    if (!state?.config?.playlist.content) return null;
     const hasRemote = state.config.playlist.content.some((i) => !i.media.intent.src.startsWith("blob:"));
     if (!session && !hasRemote) return null;
     console.log("🎞 TVP found an ongoing session:", state, session);
