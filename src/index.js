@@ -7,7 +7,7 @@ import { inject } from "@vercel/analytics";
 import { injectSpeedInsights } from "@vercel/speed-insights";
 import { parsePathObj, setPath } from "sia-reactor/utils";
 
-(inject({ mode: import.meta.env.PROD ? "production" : "development" }), injectSpeedInsights()); // Realtime Vercel Analytics
+inject({ mode: import.meta.env.PROD ? "production" : "development" }), injectSpeedInsights(); // Realtime Vercel Analytics
 
 // ===========================================================================
 // GLOBAL CONTEXT & SYSTEM VARS
@@ -55,7 +55,7 @@ window.Memory = {
   },
   async clearSession() {
     this.adapter.set(window._lssk, { config: { settings: this.getState()?.config.settings || {} } }); // might not wanna clear settings
-    ((sessionHandles = []), await DB.clear());
+    (sessionHandles = []), await DB.clear();
   },
   clearSettings() {
     const state = this.getState();
@@ -134,7 +134,8 @@ const primaryLang = "eng",
 const prevGet = window.Memory.adapter.get.bind(window.Memory.adapter);
 window.Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
-  if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) ((state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" }));
+  if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) (state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" });
+  else if (state?.config?.actions?.logicPathBlacklist) delete state.config, this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
   return state;
 }; // V1 -> V2 MIGRATION LAYER
 
@@ -213,9 +214,11 @@ window.addEventListener("appinstalled", () => ((installed = true), (installButto
 
 installButton.addEventListener("click", async () => {
   const res = await installPrompt?.prompt?.();
-  if (res.outcome === "accepted") ((installButton.style.display = "none"), (installPrompt = null));
+  if (res.outcome === "accepted") (installButton.style.display = "none"), (installPrompt = null);
 });
 document.getElementById("clear-files-button").addEventListener("click", clearFiles);
+document.getElementById("sort-files-button")?.addEventListener("click", (e) => (MP?.controller?.plug("playlist")?.sort((e.currentTarget.dataset.dir = e.currentTarget.dataset.dir === "desc" ? "asc" : "desc")), (e.currentTarget.style.scale = e.currentTarget.dataset.dir === "desc" ? "1 -1" : "1")));
+document.getElementById("shuffle-files-button")?.addEventListener("click", () => MP?.controller?.plug("playlist")?.shuffle());
 clearSettingsButton.addEventListener("click", () => clearSettings(true));
 
 // ===========================================================================
@@ -284,7 +287,7 @@ function initUI() {
 function readyUI() {
   video.classList.remove("stall");
   videoPlayerContainer.classList.remove("loading");
-  setTimeout(() => MP.controller.toast?.(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }), 500);
+  setTimeout(() => MP.controller.plug("settings.toasts")?.toast?.(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }), 500);
   MP.controller.config.on("settings.css.brandColor", ({ value }) => setColors(value, false), { init: "auto" });
   MP.controller.config.on("settings.css.themeColor", ({ value }) => setColors(false, value), { init: "auto" });
 }
@@ -311,7 +314,7 @@ async function restoreSession({ handles }) {
     files = [],
     sureHandles = [];
 
-  (stoast.info("Restoring your ongoing session now", { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath());
+  stoast.info("Restoring your ongoing session now", { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath();
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
     try {
@@ -341,7 +344,7 @@ async function restoreSession({ handles }) {
 async function clearSettings(prompt = false) {
   const ok = prompt && (await confirm("Are you sure you want to clear your settings?", { title: "Clear Settings", confirmText: "Clear" }));
   if (prompt && !ok) return;
-  (Memory.clearSettings(), setColors());
+  Memory.clearSettings(), setColors();
   clearSettingsButton.classList.remove("shown");
   toast.success("Settings cleared successfully", { id: "settings", actions: false });
 }
@@ -351,8 +354,7 @@ async function clearFiles(skipPrompt = false) {
   if (!ok) return;
   toast.dismiss("ready");
   if (MP) MP.controller.media.intent.paused = true;
-  (video.removeAttribute("src"), video.removeAttribute("poster"));
-  video.onplay = video.onpause = video.ontimeupdate = null;
+  video.removeAttribute("src"), video.removeAttribute("poster");
   Array.prototype.forEach.call(containers, (c) => {
     const vid = c.querySelector("video");
     if (vid.src?.startsWith("blob:")) URL.revokeObjectURL(vid.src);
@@ -363,7 +365,7 @@ async function clearFiles(skipPrompt = false) {
   video = MP?.detach();
   MP = null;
   nums.files = nums.bytes = nums.time = 0;
-  (Memory.clearSession(), defaultUI(), clearSettingsButton.classList.add("shown"));
+  Memory.clearSession(), defaultUI(), clearSettingsButton.classList.add("shown");
   toast.success("Cleared all files from your session, Settings too?", { id: "settings", autoClose: 5000, actions: { Clear: () => clearSettings() } });
 }
 
@@ -375,11 +377,11 @@ async function handleFiles(files, restored = null, handles = null) {
   try {
     const remoteItems = restored?.config.playlist.content?.filter((item) => !item.media.intent.src.startsWith("blob:")) || [];
     if (!files?.length && !remoteItems.length && !nums.files) return defaultUI();
-    (stoast.dismiss("session"), initUI());
+    stoast.dismiss("session"), initUI();
 
-    if (handles?.length) ((sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))]), Memory.saveHandles());
-    for (const file of (files = !restored ? tmg.utils.smartFlatSort(files) : playlistSort(files, restored.config.playlist))) (nums.files++, (nums.bytes += file.size));
-    (updateUI(), await tmg.utils.deepBreath());
+    if (handles?.length) (sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))]), Memory.saveHandles();
+    for (const file of (files = !restored ? tmg.utils.smartFlatSort(files) : playlistSort(files, restored.config.playlist))) nums.files++, (nums.bytes += file.size);
+    updateUI(), await tmg.utils.deepBreath();
 
     const stateMap = new Map(restored?.config.playlist.content?.map((v) => [v.media.settings.metadata.title, v]) || []),
       list = fileList.appendChild(document.getElementById("media-list") || tmg.utils.createEl("ul", { id: "media-list" })),
@@ -387,7 +389,7 @@ async function handleFiles(files, restored = null, handles = null) {
 
     const buildListItem = (file, state, remoteItem) => {
       const name = file ? file.name : remoteItem.media.settings.metadata.title || "Unknown",
-        ffName = file ? tmg.utils.noExtension(file.name) : remoteItem.media.settings.metadata.title,
+        ffName = file ? tmg.utils.noExtension(file.name, false) : remoteItem.media.settings.metadata.title,
         isRemote = !file;
       const li = tmg.utils.createEl("li", { className: "content-line" }, { fileName: name });
       const thumbnail = tmg.utils.createEl(
@@ -430,7 +432,7 @@ async function handleFiles(files, restored = null, handles = null) {
           const f = e.target.files[0];
           if (!f) return;
           const ext = tmg.utils.getExtension(f.name);
-          if (!["srt", "vtt"].includes(ext)) return ((thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported"));
+          if (!["srt", "vtt"].includes(ext)) return (thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported");
           let txt = await f.text();
           if (ext === "srt") txt = tmg.utils.srtToVtt(txt);
           const plItem = thumbnail.getPlItem();
@@ -471,7 +473,7 @@ async function handleFiles(files, restored = null, handles = null) {
         if (!isRemote) {
           const hIdx = sessionHandles.findIndex((h) => h.name === file.name);
           hIdx !== -1 && (sessionHandles.splice(hIdx, 1), Memory.saveHandles());
-          (nums.files--, (nums.bytes -= file.size), (nums.time -= tmg.utils.safeNum(thumbnail.duration)));
+          nums.files--, (nums.bytes -= file.size), (nums.time -= tmg.utils.safeNum(thumbnail.duration));
         }
         if (!MP?.controller.config.playlist.content.length) return clearFiles(true);
         updateUI();
@@ -510,20 +512,20 @@ async function handleFiles(files, restored = null, handles = null) {
         },
         { passive: false }
       );
-      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${name}</span></p>${!isRemote ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${isRemote ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(isRemote && !tmg.utils.getExtension(remoteItem.media.intent.src) ? [] : [captionsBtn]), deleteBtn, dragHandle);
+      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${name}</span></p>${!isRemote ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${isRemote ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(isRemote && !tmg.utils.getExtension(remoteItem.media.intent.src, false) ? [] : [captionsBtn]), deleteBtn, dragHandle);
       return { li, thumbnail, container: thumbnailContainer };
     };
 
     for (let i = 0; i < files.length; i++) {
-      const ffName = tmg.utils.noExtension(files[i].name),
+      const ffName = tmg.utils.noExtension(files[i].name, false),
         state = stateMap.get(ffName);
       if ((restored && !state) || !!Array.prototype.find.call(containers, (c) => c.lastElementChild.ffName === ffName)) {
-        (nums.files--, (nums.bytes -= files[i].size));
+        nums.files--, (nums.bytes -= files[i].size);
         thumbnails.push(null);
         continue;
       }
       const item = buildListItem(files[i], state);
-      (thumbnails.push(item.thumbnail), list.append(item.li), files.length < 500 && (await tmg.utils.breath()));
+      thumbnails.push(item.thumbnail), list.append(item.li), files.length < 500 && (await tmg.utils.breath());
     }
     for (const rItem of remoteItems) {
       if (Array.prototype.find.call(containers, (c) => c.lastElementChild.mediaId === rItem.media.settings.metadata.id)) {
@@ -531,7 +533,7 @@ async function handleFiles(files, restored = null, handles = null) {
         continue;
       }
       const item = buildListItem(null, null, rItem);
-      (thumbnails.push(item.thumbnail), list.append(item.li), remoteItems.length < 500 && (await tmg.utils.breath()));
+      thumbnails.push(item.thumbnail), list.append(item.li), remoteItems.length < 500 && (await tmg.utils.breath());
     }
 
     const content = [];
@@ -545,7 +547,7 @@ async function handleFiles(files, restored = null, handles = null) {
             settings: { time: { start: 0 }, controlPanel: { timeline: { previews: true } } },
           };
         item._preRenderedLi = thumbnails[i].closest("li");
-        ((item.media.intent.src = url), (item.media.intent.tracks = (item.media.intent.tracks || []).filter((t) => !t.src.startsWith("blob:"))), content.push(item));
+        (item.media.intent.src = url), (item.media.intent.tracks = (item.media.intent.tracks || []).filter((t) => !t.src.startsWith("blob:"))), content.push(item);
         const thumb = thumbnails[i];
         thumb.src = url;
         thumb.mediaId = item.media.settings.metadata.id;
@@ -571,8 +573,8 @@ async function handleFiles(files, restored = null, handles = null) {
                 let li = item._preRenderedLi;
                 if (!li) {
                   const res = buildListItem(null, null, item);
-                  li = res.li;
-                  thumbnails.push(res.thumbnail);
+                  (li = res.li), thumbnails.push(res.thumbnail);
+                  deployTracks(undefined, res.thumbnail, undefined, item);
                 } else delete item._preRenderedLi;
                 return li;
               },
@@ -585,9 +587,7 @@ async function handleFiles(files, restored = null, handles = null) {
               destroyNode: (li) => {
                 const id = li.querySelector("video")?.mediaId,
                   idx = thumbnails.findIndex((t) => t?.mediaId === id);
-                idx !== -1 && thumbnails.splice(idx, 1);
-                const stillInPlaylist = MP.controller?.config.playlist.content.some((item) => item.media.settings.metadata.id === id);
-                if (!stillInPlaylist) li.cleanupDB?.();
+                idx !== -1 && thumbnails.splice(idx, 1), MP.controller?.config.playlist.content.some((item) => item.media.settings.metadata.id === id) && li.cleanupDB?.();
               },
             }))(validContent);
           });
@@ -595,15 +595,19 @@ async function handleFiles(files, restored = null, handles = null) {
         video.addEventListener(
           "tmginit",
           () => {
-            const i = restored && content.findIndex((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id),
-              should = restored?.config.lightState.disabled && i !== -1;
-            should && MP.controller.plug("playlist").moveTo(i);
-            should && (thumbnails[i]?.closest("li")?.classList.add("playing"), thumbnails[i]?.parentElement?.classList.toggle("paused", video.paused));
-            (readyUI(), setUpList());
+            MP.controller.media.once("status.loadedMetadata", () => setTimeout(dispatchPlayerReadyToast, 500));
+            MP.controller.media.on("state.currentTime", ({ value: ct, root }, d = root.status.duration) => MP.controller?.throttle("TVP_thumbnail_update", () => ct > 3 && MP.controller.config.lightState.disabled && containers[MP.controller.plug("playlist")?.state.currentIndex]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / d)), 2500));
+            MP.controller.media.on("state.paused", ({ value }) => {
+              const idx = MP.controller.plug("playlist")?.state.currentIndex;
+              if (!value) for (let i = 0; i < contentLines.length; i++) contentLines[i].classList.toggle("playing", i === idx);
+              containers[idx]?.classList.toggle("paused", value);
+            });
+            const i = restored && content.findIndex((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id);
+            restored?.config.lightState.disabled && i !== -1 && MP.controller.plug("playlist").moveTo(i), readyUI(), setUpList();
           },
           { once: true }
         );
-        MP = new tmg.Player({
+        (MP = new tmg.Player({
           lightState: restored?.config.lightState ?? { disabled: false },
           "playlist.content": content,
           "media.state.paused": restored?.media.state.paused ?? true,
@@ -618,23 +622,14 @@ async function handleFiles(files, restored = null, handles = null) {
           "settings.persist.blacklist.media": ["state.src", "state.sources", "state.tracks", "state.srcObject", "state.poster", "state.fullscreen", "state.pictureInPicture"],
           noPlugList: [],
           cloneOnDetach: true,
-        });
-        MP.attach(video);
-        video.addEventListener("loadedmetadata", () => setTimeout(dispatchPlayerReadyToast, 500), { once: true });
-        video.ontimeupdate = ({ target: { currentTime: ct, duration: d } }) => MP.controller?.throttle("TVP_thumbnail_update", () => ct > 3 && MP.controller?.config.lightState.disabled && containers[MP.controller?.plug("playlist")?.state.currentIndex]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / d)), 2500);
-        video.onplay = () => {
-          const idx = MP.controller.plug("playlist")?.state.currentIndex;
-          for (let i = 0; i < contentLines.length; i++) contentLines[i].classList.toggle("playing", i === idx);
-          containers[idx]?.classList.remove("paused");
-        };
-        video.onpause = () => containers[MP.controller?.plug("playlist")?.state.currentIndex]?.classList.add("paused");
+        })).attach(video);
       } else MP.controller.config.playlist.content = [...(MP.controller.config.playlist.content || []), ...content];
     };
-    nums.files && (deployVideos(files), await tmg.utils.deepBreath());
-    nums.files && (await Promise.all(files.map(async (_, i) => thumbnails[i] && (await deployTracks(files[i], thumbnails[i], undefined)))));
+    (nums.files || remoteItems.length) && (deployVideos(files), await tmg.utils.deepBreath());
+    (nums.files || remoteItems.length) && (await Promise.all(thumbnails.map(async (t, i) => t && (await deployTracks(i < files.length ? files[i] : undefined, t, undefined)))));
     if (!nums.files && !MP?.controller?.config.playlist.content?.length) return defaultUI();
   } catch (error) {
-    (console.error("TVP files handling failed:", error), errorUI(error));
+    console.error("TVP files handling failed:", error), errorUI(error);
   }
 }
 
@@ -663,6 +658,7 @@ async function deployTracks(file, thumbnail, autocancel = !crossOriginIsolated |
     return thumbnail.setAttribute("data-caption-state", subBuffers ? "filled" : "empty");
   }
   // 2. THE FACTORY (FFmpeg Processing)
+  if (!(file instanceof File)) return thumbnail.setAttribute("data-caption-state", item?.media.intent.tracks?.some((t) => t.kind === "captions") ? "filled" : "empty");
   autocancel && thumbnail.setAttribute("data-caption-state", "empty");
   let extractedSubs = [];
   const counts = {};
@@ -701,7 +697,7 @@ async function extractTracks(file, id, onProgress) {
     !ffmpeg.isLoaded() && (await ffmpeg.load());
     ffmpeg.FS("writeFile", inputName, await fetchFile(file));
     let logData = "";
-    (ffmpeg.setLogger(({ message }) => (logData += message + "\n")), await ffmpeg.run("-i", inputName).catch(() => {}), ffmpeg.setLogger(() => {}));
+    ffmpeg.setLogger(({ message }) => (logData += message + "\n")), await ffmpeg.run("-i", inputName).catch(() => {}), ffmpeg.setLogger(() => {});
     const subStreams = [];
     let match,
       idx = 0;
@@ -731,7 +727,7 @@ async function extractTracks(file, id, onProgress) {
     }
     return { success: true };
   } catch (err) {
-    return (console.error("❌ TVP tracks extraction failed:", err), { success: false, error: err.toString() });
+    return console.error("❌ TVP tracks extraction failed:", err), { success: false, error: err.toString() };
   } finally {
     try {
       ffmpeg.FS("unlink", inputName);

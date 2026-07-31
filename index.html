@@ -174,7 +174,20 @@
           <div id="file-list-wrapper">
             <button type="button" title="Clear Files!" id="clear-files-button">Clear Files</button>
             <button type="button" title="Clear Settings!" id="clear-settings-button">Clear Settings</button>
-            <h2 id="files-header">Selected Files</h2>
+            <div id="files-ui-container">
+              <div class="files-header-row">
+                <h2 id="files-header">Selected Files</h2>
+                <div class="files-header-actions">
+                  <button type="button" class="files-action-btn" title="Sort Files" id="sort-files-button">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z" /></svg>
+                  </button>
+                  <button type="button" class="files-action-btn" title="Shuffle Files" id="shuffle-files-button">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
+                  </button>
+                </div>
+              </div>
+              <p class="files-instruction-text">Double-click the <strong>CC</strong> button to extract embedded captions, click to remove or add external</p>
+            </div>
             <div id="file-list">
               <p id="no-files-text">No media currently selected :&lpar;</p>
             </div>
