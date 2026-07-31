@@ -59,7 +59,7 @@ window.Memory = {
   },
   clearSettings() {
     const state = this.getState();
-    this.adapter.set(window._lssk, (delete state.config.settings, state));
+    this.adapter.set(window._lssk, (delete state.config.settings, delete state.config.actions, state));
   },
 };
 
@@ -135,7 +135,7 @@ const prevGet = window.Memory.adapter.get.bind(window.Memory.adapter);
 window.Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
   if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) (state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" });
-  else if (state?.config?.actions?.logicPathBlacklist) delete state.config, this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
+  else if (state?.config?.actions?.logicPathBlacklist) (delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
   return state;
 }; // V1 -> V2 MIGRATION LAYER
 
