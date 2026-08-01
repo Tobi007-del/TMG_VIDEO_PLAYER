@@ -264,7 +264,7 @@ body:not(:has(#video.stall)) #clear-settings-button,
   animation: spin 600ms linear infinite, switch 600ms infinite ease forwards;
 }
 
-body.light #files-ui-container {
+body.light #files-ui-container :is(button, p) {
   display: none;
 }
 
