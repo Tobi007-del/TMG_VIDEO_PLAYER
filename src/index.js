@@ -42,9 +42,7 @@ window.Memory = {
   async getSession() {
     const state = this.getState(),
       session = await DB.get("last_handles");
-    if (!state?.config?.playlist.content) return null;
-    const hasRemote = state.config.playlist.content.some((i) => !i.media.intent.src.startsWith("blob:"));
-    if (!session && !hasRemote) return null;
+    if (!state?.config?.playlist.content || (!session && !state.config.playlist.content.some((i) => !i.media.intent.src.startsWith("blob:")))) return null;
     console.log("🎞 TVP found an ongoing session:", state, session);
     const lastUpdated = session?.lastUpdated || Date.now();
     return (Date.now() - lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (await this.clearSession(), console.log("🎞 TVP cleaned up expired session.")) : { state, handles: session?.handles || [], lastUpdated };
