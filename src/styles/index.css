@@ -275,7 +275,6 @@ body.light #files-ui-container :is(button, p) {
 
 .files-header-row h2 {
   text-align: center;
-  font-size: 1.25rem;
 }
 
 .files-header-actions {
