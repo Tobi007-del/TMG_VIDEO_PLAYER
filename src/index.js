@@ -577,7 +577,7 @@ async function handleFiles(files, restored = null, handles = null) {
                 return li;
               },
               updateNode: (li, item, index) => {
-                li.classList.toggle("playing", MP.controller.config.lightState.disabled && index === MP.controller.plug("playlist").state.currentIndex);
+                li.classList.toggle("playing", !MP.controller.media.state.paused && index === MP.controller.plug("playlist").state.currentIndex);
                 const nameEl = li.querySelector(".file-name span:last-child");
                 if (nameEl) nameEl.textContent = item.media.settings.metadata.title || li.dataset.fileName || "";
               },
