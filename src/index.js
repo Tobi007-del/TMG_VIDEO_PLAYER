@@ -42,7 +42,7 @@ window.Memory = {
   async getSession() {
     const state = this.getState(),
       session = await DB.get("last_handles");
-    if (!state?.config?.playlist.content || (!session && !state.config.playlist.content.some((i) => !i.media.intent.src.startsWith("blob:")))) return null;
+    if (!state?.config?.playlist?.content || (!session && !state.config.playlist.content.some((i) => !i.media.intent.src.startsWith("blob:")))) return null;
     console.log("🎞 TVP found an ongoing session:", state, session);
     const lastUpdated = session?.lastUpdated || Date.now();
     return (Date.now() - lastUpdated) / (1000 * 60 * 60 * 24) > this._expiryDays ? (await this.clearSession(), console.log("🎞 TVP cleaned up expired session.")) : { state, handles: session?.handles || [], lastUpdated };
@@ -133,7 +133,7 @@ const prevGet = window.Memory.adapter.get.bind(window.Memory.adapter);
 window.Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
   if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) (state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" });
-  else if (state?.config?.actions?.logicPathBlacklist) (delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
+  else if (state?.config?.settings?.settingsView.menu.viewLabel) (delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
   return state;
 }; // V1 -> V2 MIGRATION LAYER
 
@@ -523,7 +523,7 @@ async function handleFiles(files, restored = null, handles = null) {
         continue;
       }
       const item = buildListItem(files[i], state);
-      thumbnails.push(item.thumbnail), list.append(item.li), files.length < 500 && (await tmg.utils.breath());
+      thumbnails.push(item.thumbnail), list.append(item.li), files.length < 50 && (await tmg.utils.breath());
     }
     for (const rItem of remoteItems) {
       if (Array.prototype.find.call(containers, (c) => c.lastElementChild.mediaId === rItem.media.settings.metadata.id)) {
@@ -531,7 +531,7 @@ async function handleFiles(files, restored = null, handles = null) {
         continue;
       }
       const item = buildListItem(null, null, rItem);
-      thumbnails.push(item.thumbnail), list.append(item.li), remoteItems.length < 500 && (await tmg.utils.breath());
+      thumbnails.push(item.thumbnail), list.append(item.li), remoteItems.length < 50 && (await tmg.utils.breath());
     }
 
     const content = [];
@@ -577,7 +577,7 @@ async function handleFiles(files, restored = null, handles = null) {
                 return li;
               },
               updateNode: (li, item, index) => {
-                li.classList.toggle("playing", !MP.controller.media.state.paused && index === MP.controller.plug("playlist").state.currentIndex);
+                li.classList.toggle("playing", MP.controller.config.lightState.disabled && index === MP.controller.plug("playlist").state.currentIndex);
                 const nameEl = li.querySelector(".file-name span:last-child");
                 if (nameEl) nameEl.textContent = item.media.settings.metadata.title || li.dataset.fileName || "";
               },
