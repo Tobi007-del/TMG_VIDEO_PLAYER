@@ -283,7 +283,7 @@ function initUI() {
 }
 
 function readyUI() {
-  video.classList.remove("stall");
+  video.classList.remove("stall"), MP.controller.media.pseudoElement.classList.remove("stall");
   videoPlayerContainer.classList.remove("loading");
   setTimeout(() => MP.controller.plug("settings.toasts")?.toast?.(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }), 500);
   MP.controller.config.on("settings.css.brandColor", ({ value }) => setColors(value, false), { init: "auto" });
@@ -422,7 +422,7 @@ async function handleFiles(files, restored = null, handles = null) {
         thumbnail.getPlItem = (plItem = MP?.controller.config.playlist.content.find((v) => v.media.settings.metadata.id === remoteItem.media.settings.metadata.id)) => (thumbnail.plItem = plItem ?? thumbnail.plItem ?? remoteItem);
         thumbnail.getPlIndex = () => MP?.controller.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === remoteItem.media.settings.metadata.id);
       }
-      const thumbnailContainer = tmg.utils.createEl("span", { className: "thumbnail-container", innerHTML: `<button><svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated"><rect x="4" width="3" height="10" fill="white"></rect><rect x="10" width="3" height="10" fill="white"></rect><rect x="16" width="3" height="10" fill="white"></rect></svg></button>`, onclick: () => MP.controller?.plug("playlist")?.moveTo(thumbnail.getPlIndex(), true) }).appendChild(thumbnail).parentElement;
+      const thumbnailContainer = tmg.utils.createEl("span", { className: "thumbnail-container paused", innerHTML: `<button><svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated"><rect x="4" width="3" height="10" fill="white"></rect><rect x="10" width="3" height="10" fill="white"></rect><rect x="16" width="3" height="10" fill="white"></rect></svg></button>`, onclick: () => MP.controller?.plug("playlist")?.moveTo(thumbnail.getPlIndex(), true) }).appendChild(thumbnail).parentElement;
       const captionsInput = tmg.utils.createEl("input", {
         type: "file",
         accept: ".srt, .vtt",
