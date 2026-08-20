@@ -4,8 +4,8 @@ export default defineConfig({
   publicDir: "public",
   server: {
     headers: {
-      "Cross-Origin-Embedder-Policy": "require-corp",
       "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "credentialless",
     },
     proxy: {
       "/api": {

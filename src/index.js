@@ -122,8 +122,7 @@ const primaryLang = "eng",
   queue = new tmg.AsyncQueue(),
   nums = { bytes: 0, files: 0, time: 0 },
   { createFFmpeg, fetchFile } = FFmpeg,
-  ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" }),
-  formatVisit = (d, sx = "") => ((d = Math.floor((Date.now() - new Date(d).getTime()) / 1000)), `${d < 60 ? `${d} second` : d < 3600 ? `${Math.floor(d / 60)} minute` : d < 86400 ? `${Math.floor(d / 3600)} hour` : d < 604800 ? `${Math.floor(d / 86400)} day` : d < 2592000 ? `${Math.floor(d / 604800)} week` : d < 31536000 ? `${Math.floor(d / 2592000)} month` : `${Math.floor(d / 31536000)} year`}`.replace(/(\d+)\s(\w+)/g, (_, n, u) => (n == 1 ? `${u[0] == "h" ? "an" : "a"} ${u}` : `${n} ${u}s`)) + sx);
+  ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" });
 
 // ===========================================================================
 // INITIALIZATION IIFES (Fire & Forget)
@@ -133,14 +132,14 @@ const prevGet = window.Memory.adapter.get.bind(window.Memory.adapter);
 window.Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
   if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) (state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" });
-  else if (state?.config?.settings?.settingsView.menu.viewLabel) (delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
+  else if (state?.config?.actions?.entries.arrowleft.private) (delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
   return state;
 }; // V1 -> V2 MIGRATION LAYER
 
 (async function logVisitor() {
   vi.isNew = vi.isNew == null ? true : false;
   vi.visitCount += 1;
-  vi.lastVisited = vi.lastVisit ? formatVisit(vi.lastVisit, " ago") : "Just now";
+  vi.lastVisited = vi.lastVisit ? tmg.utils.formatUITime(new Date(vi.lastVisit).getTime() - Date.now(), "date", false) : "Just now";
   try {
     const response = await fetch("../api/log-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...vi, screenW: screen.width, screenH: screen.height, platform: navigator.platform, touchScreen: navigator.maxTouchPoints > 0, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }) });
   } catch (err) {
@@ -194,8 +193,8 @@ window.Memory.adapter.get = function (key, reviver) {
 
 window.addEventListener("load", async () => {
   const session = !nums.files && (await Memory.getSession());
-  if (session) stoast(`You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}`, { id: "session", icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: () => (clearInterval(sessionTInt), stoast.info("You can reload the page to see this prompt again", { id: "session", icon: true, autoClose: 5000, closeButton: !tmg.utils.IS_MOBILE, dragToClose: true, actions: { Reload: () => location.reload() } })) } });
-  if (session) sessionTInt = setInterval(() => stoast.update("session", { render: `You have an ongoing session from ${formatVisit(session.lastUpdated, " ago")}` }), 60000);
+  if (session) stoast(`You have an ongoing session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}`, { id: "session", icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: () => (clearInterval(sessionTInt), stoast.info("You can reload the page to see this prompt again", { id: "session", icon: true, autoClose: 5000, closeButton: !tmg.utils.IS_MOBILE, dragToClose: true, actions: { Reload: () => location.reload() } })) } });
+  if (session) sessionTInt = setInterval(() => stoast.update("session", { render: `You have an ongoing session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}` }), 60000);
 
   (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
 
@@ -333,7 +332,7 @@ async function restoreSession({ handles }) {
       await (err === "User denied" ? tmg.utils.deepBreath() : tmg.utils.mockAsync(800));
     }
   }
-  if (sureHandles.length) stoast.success("Your ongoing session has been restored :)", { id: "session", actions: false });
+  if (sureHandles.length || state?.config?.playlist?.content?.some((i) => !i.media.intent.src.startsWith("blob:"))) stoast.success("Your ongoing session has been restored :)", { id: "session", actions: false });
   else return stoast.error("Your ongoing session was not restored :(", { id: "session", actions: { Reload: () => location.reload(), Dismiss: () => stoast.dismiss("session") } });
 
   handleFiles(files, state, sureHandles);
@@ -385,10 +384,9 @@ async function handleFiles(files, restored = null, handles = null) {
       list = fileList.appendChild(document.getElementById("media-list") || tmg.utils.createEl("ul", { id: "media-list" })),
       thumbnails = [];
 
-    const buildListItem = (file, state, remoteItem) => {
-      const name = file ? file.name : remoteItem.media.settings.metadata.title || "Unknown",
-        ffName = file ? tmg.utils.noExtension(file.name, false) : remoteItem.media.settings.metadata.title,
-        isRemote = !file;
+    const buildListItem = (file, item) => {
+      const name = file ? file.name : item?.media.settings.metadata.title || "Unknown",
+        ffName = file ? tmg.utils.noExtension(file.name, false) : item?.media.settings.metadata.title;
       const li = tmg.utils.createEl("li", { className: "content-line" }, { fileName: name });
       const thumbnail = tmg.utils.createEl(
         "video",
@@ -397,18 +395,16 @@ async function handleFiles(files, restored = null, handles = null) {
           preload: "metadata",
           muted: true,
           playsInline: true,
+          poster: item?.media.intent.poster,
           onloadedmetadata: ({ target }) => {
-            if (file) {
-              nums.time += tmg.utils.safeNum(target.duration);
-              document.getElementById("total-time").textContent = tmg.utils.formatMediaTime({ time: nums.time });
-            }
-            target.currentTime = tmg.utils.parseIfPercent(MP?.controller?.config.lightState.preview.time ?? 4, target.duration);
+            if (file) document.getElementById("total-time").textContent = tmg.utils.formatMediaTime({ time: (nums.time += tmg.utils.safeNum(target.duration)) });
+            target.currentTime = tmg.utils.parseIfPercent(MP.controller.config.lightState.preview.time ?? 4, target.duration);
             li.querySelector(".file-duration span:last-child").innerHTML = `${tmg.utils.formatMediaTime({ time: target.duration })}`;
-            if (restored || isRemote) thumbnail.parentElement?.style.setProperty("--video-progress-position", tmg.utils.safeNum((state?.settings?.time?.start || 0) / target.duration));
+            if (restored || !file) thumbnail.parentElement.style.setProperty("--video-progress-position", tmg.utils.safeNum((item?.settings.time.start || 0) / target.duration));
           },
           onerror: ({ target }) => {
-            !isRemote && li.classList.add("error");
-            if (tmg.utils.safeNum(target.duration) || isRemote) return;
+            file && li.classList.add("error");
+            if (tmg.utils.safeNum(target.duration) || !file) return;
             li.querySelector(".file-duration span:last-child").classList.add("failed");
             li.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load";
           },
@@ -416,13 +412,13 @@ async function handleFiles(files, restored = null, handles = null) {
         { captionState: "waiting" }
       );
       thumbnail.ffName = ffName;
-      if (isRemote) {
-        thumbnail.src = remoteItem.media.intent.src;
-        thumbnail.mediaId = remoteItem.media.settings.metadata.id;
-        thumbnail.getPlItem = (plItem = MP?.controller.config.playlist.content.find((v) => v.media.settings.metadata.id === remoteItem.media.settings.metadata.id)) => (thumbnail.plItem = plItem ?? thumbnail.plItem ?? remoteItem);
-        thumbnail.getPlIndex = () => MP?.controller.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === remoteItem.media.settings.metadata.id);
+      if (!file) {
+        thumbnail.mediaId = item.media.settings.metadata.id;
+        thumbnail.getPlItem = (plItem = MP.controller.config.playlist.content.find((v) => v.media.settings.metadata.id === item.media.settings.metadata.id)) => (thumbnail.plItem = plItem ?? thumbnail.plItem ?? item);
+        thumbnail.getPlIndex = () => MP.controller.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === item.media.settings.metadata.id);
       }
-      const thumbnailContainer = tmg.utils.createEl("span", { className: "thumbnail-container paused", innerHTML: `<button><svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated"><rect x="4" width="3" height="10" fill="white"></rect><rect x="10" width="3" height="10" fill="white"></rect><rect x="16" width="3" height="10" fill="white"></rect></svg></button>`, onclick: () => MP.controller?.plug("playlist")?.moveTo(thumbnail.getPlIndex(), true) }).appendChild(thumbnail).parentElement;
+      const thumbnailContainer = tmg.utils.createEl("span", { className: "thumbnail-container paused", innerHTML: `<button><svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated"><rect x="4" width="3" height="10" fill="white"></rect><rect x="10" width="3" height="10" fill="white"></rect><rect x="16" width="3" height="10" fill="white"></rect></svg></button>`, onclick: () => MP.controller.plug("playlist").moveTo(thumbnail.getPlIndex(), true) }).appendChild(thumbnail).parentElement;
+      if (item?.media.status.duration) thumbnailContainer.style.setProperty("--video-progress-position", tmg.utils.safeNum((item.settings.time.start || 0) / item.media.status.duration));
       const captionsInput = tmg.utils.createEl("input", {
         type: "file",
         accept: ".srt, .vtt",
@@ -437,7 +433,7 @@ async function handleFiles(files, restored = null, handles = null) {
           const id = thumbnail.dataset.trackId ?? (thumbnail.dataset.trackId = plItem.media.settings.metadata.id + "_sub");
           DB.set(id, new TextEncoder().encode(txt), "subtitles");
           plItem.media.intent.tracks = [{ id: f.name, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
-          if (MP.controller?.config.playlist.content[MP.controller.plug("playlist").state.currentIndex]?.media.settings.metadata.id === plItem.media.settings.metadata.id) MP.controller.media.intent.tracks = plItem.media.intent.tracks;
+          if (MP.controller.config.playlist.content[MP.controller.plug("playlist").state.currentIndex]?.media.settings.metadata.id === plItem.media.settings.metadata.id) MP.controller.media.intent.tracks = plItem.media.intent.tracks;
           thumbnail.dataset.captionState = "filled";
         },
         oncancel: () => (thumbnail.dataset.captionState = "empty"),
@@ -463,12 +459,12 @@ async function handleFiles(files, restored = null, handles = null) {
       );
       const deleteBtn = tmg.utils.createEl("button", { title: "Remove Video", className: "delete-btn", innerHTML: `<svg width="20px" height="20px" viewBox="0 0 24 24" fill="none"><path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="#0D0D0D"/></svg>`, onclick: () => MP.controller?.plug("playlist")?.remove(thumbnail.getPlIndex()) });
       li.cleanupDB = () => {
-        if (!isRemote && thumbnail.src?.startsWith("blob:")) URL.revokeObjectURL(thumbnail.src);
+        if (file && thumbnail.src?.startsWith("blob:")) URL.revokeObjectURL(thumbnail.src);
         const plItem = thumbnail.getPlItem();
         plItem?.media.intent.tracks?.forEach((t) => t.src?.startsWith("blob:") && URL.revokeObjectURL(t.src));
         const tId = thumbnail.dataset.trackId;
         tId && (queue.drop(tId), DB.remove(tId, "subtitles"), DB.remove(tId + "_chap", "chapters"));
-        if (!isRemote) {
+        if (file) {
           const hIdx = sessionHandles.findIndex((h) => h.name === file.name);
           hIdx !== -1 && (sessionHandles.splice(hIdx, 1), Memory.saveHandles());
           nums.files--, (nums.bytes -= file.size), (nums.time -= tmg.utils.safeNum(thumbnail.duration));
@@ -510,7 +506,7 @@ async function handleFiles(files, restored = null, handles = null) {
         },
         { passive: false }
       );
-      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${name}</span></p>${!isRemote ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${isRemote ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(isRemote && !tmg.utils.getExtension(remoteItem.media.intent.src, false) ? [] : [captionsBtn]), deleteBtn, dragHandle);
+      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${ffName}</span></p>${file ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${!file ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(!file && !tmg.utils.getExtension(item.media.intent.src, false) ? [] : [captionsBtn]), deleteBtn, dragHandle);
       return { li, thumbnail, container: thumbnailContainer };
     };
 
@@ -530,7 +526,7 @@ async function handleFiles(files, restored = null, handles = null) {
         thumbnails.push(null);
         continue;
       }
-      const item = buildListItem(null, null, rItem);
+      const item = buildListItem(null, rItem);
       thumbnails.push(item.thumbnail), list.append(item.li), remoteItems.length < 50 && (await tmg.utils.breath());
     }
 
@@ -540,46 +536,46 @@ async function handleFiles(files, restored = null, handles = null) {
         if (!thumbnails[i]) continue;
         const url = URL.createObjectURL(files[i]),
           state = stateMap.get(thumbnails[i].ffName),
-          item = state ?? {
-            media: { intent: {}, settings: { metadata: { id: tmg.utils.uid(), title: thumbnails[i].ffName, artist: "TMG Video Player", profile: "assets/icons/tmg-icon.jpeg", links: { artist: "https://tmg-video-player.vercel.app", profile: "https://github.com/Tobi007-del/tmg-media-player" } } } },
-            settings: { time: { start: 0 }, controlPanel: { timeline: { previews: true } } },
-          };
-        item._preRenderedLi = thumbnails[i].closest("li");
+          item = state ?? { media: { intent: {}, settings: { metadata: { id: tmg.utils.uid(), title: thumbnails[i].ffName, artist: "TMG Video Player", profile: "assets/icons/tmg-icon.jpeg", links: { artist: "https://tmg-video-player.vercel.app", profile: "https://github.com/Tobi007-del/tmg-media-player" } } } }, settings: { time: { start: 0 }, controlPanel: { timeline: { previews: true } } } };
+        item._renderedLi = thumbnails[i].closest("li");
         (item.media.intent.src = url), (item.media.intent.tracks = (item.media.intent.tracks || []).filter((t) => !t.src.startsWith("blob:"))), content.push(item);
-        const thumb = thumbnails[i];
-        thumb.src = url;
-        thumb.mediaId = item.media.settings.metadata.id;
-        thumb.getPlItem = (plItem = MP?.controller.config.playlist.content.find((v) => v.media.settings.metadata.id === item.media.settings.metadata.id)) => (thumb.plItem = plItem ?? thumb.plItem ?? item);
-        thumb.getPlIndex = () => MP?.controller.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === item.media.settings.metadata.id);
+        const nail = thumbnails[i];
+        (nail.src = url), (nail.mediaId = item.media.settings.metadata.id);
+        nail.getPlItem = (plItem = MP?.controller.config.playlist.content.find((v) => v.media.settings.metadata.id === item.media.settings.metadata.id)) => (nail.plItem = plItem ?? nail.plItem ?? item);
+        nail.getPlIndex = () => MP?.controller.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === item.media.settings.metadata.id);
       }
       for (let i = 0; i < remoteItems.length; i++) {
         const thumbIdx = files.length + i;
         if (!thumbnails[thumbIdx]) continue;
         const item = remoteItems[i];
-        item._preRenderedLi = thumbnails[thumbIdx].closest("li");
+        item._renderedLi = thumbnails[thumbIdx].closest("li");
         content.push(item);
+      }
+      if (restored) {
+        const orderMap = new Map(restored.config.playlist.content.map((v, i) => [v.media.settings.metadata.id, i]));
+        content.sort((a, b) => (orderMap.get(a.media.settings.metadata.id) ?? Infinity) - (orderMap.get(b.media.settings.metadata.id) ?? Infinity));
       }
       if (!MP) {
         const setUpList = (renderList) => {
           MP.controller.config.on("playlist.content", ({ currentTarget: { value: content } }) => {
             if (!content || !document.getElementById("media-list")) return;
-            const validContent = content.filter((item) => item.media.intent.src && (item.media.settings.metadata.id || (setPath(item, "media.settings.metadata.id", tmg.utils.uid()), true)));
             (renderList ??= tmg.utils.createListRenderer({
               container: list,
               getKey: (item) => item.media.settings.metadata.id,
               createNode: (item) => {
-                let li = item._preRenderedLi;
+                let li = item._renderedLi;
                 if (!li) {
-                  const res = buildListItem(null, null, item);
-                  (li = res.li), thumbnails.push(res.thumbnail);
-                  deployTracks(undefined, res.thumbnail, undefined, item);
-                } else delete item._preRenderedLi;
+                  const { li: resLi, thumbnail } = buildListItem(null, item);
+                  (li = resLi), deployTracks(undefined, (thumbnails.push(thumbnail), thumbnail), undefined, item);
+                } else delete item._renderedLi;
                 return li;
               },
               updateNode: (li, item, index) => {
                 li.classList.toggle("playing", MP.controller.config.lightState.disabled && index === MP.controller.plug("playlist").state.currentIndex);
                 const nameEl = li.querySelector(".file-name span:last-child");
                 if (nameEl) nameEl.textContent = item.media.settings.metadata.title || li.dataset.fileName || "";
+                const vid = li.querySelector("video");
+                if (vid) vid.poster = item.media.intent.poster;
               },
               initNode: (li, register) => li.querySelector("video")?.mediaId && register(li.querySelector("video").mediaId),
               destroyNode: (li) => {
@@ -587,7 +583,7 @@ async function handleFiles(files, restored = null, handles = null) {
                   idx = thumbnails.findIndex((t) => t?.mediaId === id);
                 idx !== -1 && thumbnails.splice(idx, 1), MP.controller?.config.playlist.content.some((item) => item.media.settings.metadata.id === id) && li.cleanupDB?.();
               },
-            }))(validContent);
+            }))(content.filter((item) => item.media.intent.src && (item.media.settings.metadata.id || (setPath(item, "media.settings.metadata.id", tmg.utils.uid()), true))));
           });
         };
         video.addEventListener(
@@ -600,15 +596,15 @@ async function handleFiles(files, restored = null, handles = null) {
               if (!value) for (let i = 0; i < contentLines.length; i++) contentLines[i].classList.toggle("playing", i === idx);
               containers[idx]?.classList.toggle("paused", value);
             });
-            const i = restored && content.findIndex((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id);
-            restored?.config.lightState.disabled && i !== -1 && MP.controller.plug("playlist").moveTo(i), readyUI(), setUpList();
+            readyUI(), setUpList();
           },
           { once: true }
         );
         (MP = new tmg.Player({
           lightState: restored?.config.lightState ?? { disabled: false },
           "playlist.content": content,
-          "media.state.paused": restored?.media.state.paused ?? true,
+          "media.intent.paused": restored?.media.state.paused ?? true,
+          "media.intent.src": restored ? content.find((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id)?.media.intent.src : undefined,
           "media.settings.metadata": { artist: "TMG Video Player", profile: "assets/icons/tmg-icon.jpeg", links: { artist: "https://tmg-video-player.vercel.app", profile: "https://github.com/Tobi007-del/tmg-media-player" } },
           "settings.controlPanel.timeline.bufferMarks": false,
           "settings.captions.font.size.value": 200,
@@ -645,9 +641,8 @@ async function deployTracks(file, thumbnail, autocancel = !crossOriginIsolated |
     console.log(`✨TVP IDB Vault Hit: Tracks restored for ${id}`);
     item.media.intent.tracks = item.media.intent.tracks.filter((t) => t.kind !== "captions" && t.kind !== "chapters");
     if (subBuffers) {
-      const counts = {};
       (Array.isArray(subBuffers) ? subBuffers : [subBuffers]).forEach((data, i, _) => {
-        const { buffer, srclang, label } = getSubMeta(data, counts);
+        const { buffer, srclang = "", label = "" } = getSubMeta(data);
         item.media.intent.tracks.push({ id: `${id}_${i}`, kind: "captions", label, srclang, default: i === 0, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })) });
       });
     }
@@ -659,7 +654,6 @@ async function deployTracks(file, thumbnail, autocancel = !crossOriginIsolated |
   if (!(file instanceof File)) return thumbnail.setAttribute("data-caption-state", item?.media.intent.tracks?.some((t) => t.kind === "captions") ? "filled" : "empty");
   autocancel && thumbnail.setAttribute("data-caption-state", "empty");
   let extractedSubs = [];
-  const counts = {};
   const res = await queue.add(
     async () =>
       await extractTracks(file, id, async (p) => {
@@ -667,8 +661,8 @@ async function deployTracks(file, thumbnail, autocancel = !crossOriginIsolated |
           extractedSubs.push(p.data);
           await DB.set(id, extractedSubs, "subtitles");
           const i = extractedSubs.length - 1,
-            { buffer, srclang, label } = getSubMeta(p.data, counts);
-          const newTrack = { id: `${id}_${i}`, kind: "captions", label: label || "", srclang: srclang || "", default: i === 0, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })) };
+            { buffer, srclang = "", label = "" } = getSubMeta(p.data);
+          const newTrack = { id: `${id}_${i}`, kind: "captions", label, srclang, default: i === 0, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })) };
           item.media.intent.tracks = [...(item.media.intent.tracks || []), newTrack];
           if (MP.controller?.config.playlist.content?.[MP.controller.plug("playlist")?.state.currentIndex]?.media.settings.metadata.id === item.media.settings.metadata.id) MP.controller.media.intent.tracks = item.media.intent.tracks;
         } else if (p.type === "chapter") {
@@ -837,12 +831,11 @@ function metadataToVTT(metaText) {
   return !chapters.length ? null : (chapters.forEach((ch) => (vtt += `${formatTime(ch.start)} --> ${formatTime(ch.end)}\n${ch.title}\n\n`)), vtt);
 }
 
-function getSubMeta(data, counts = {}, name = "English") {
+function getSubMeta(data, name = "English") {
   try {
     name = langNames.of(data.lang || "eng");
   } catch {}
-  counts[name] = (counts[name] || 0) + 1;
-  return { buffer: data.buffer || data, srclang: data.lang?.slice(0, 2) || "en", label: counts[name] > 1 ? `${name} ${counts[name]}` : name };
+  return { buffer: data.buffer || data, srclang: data.lang?.slice(0, 2) || "en", label: name };
 }
 
 import { field } from "@t007/input";

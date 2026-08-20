@@ -48,7 +48,7 @@
 body .tmg-media-container {
   --tmg-media-brand-color: var(--tvp-brand-color);
   --tmg-media-theme-color: var(--tvp-theme-color);
-  --tmg-media-current-miniplayer-x: calc(100% - (var(--tmg-media-current-container-width) / 2) - 8px);
+  --tmg-media-current-miniplayer-x: calc((var(--tmg-media-current-container-width) / 2) - 8px);
   --tmg-media-current-miniplayer-y: calc(100% - (var(--tmg-media-current-container-height) / 2) - 8px);
 }
 
