@@ -1,16 +1,31 @@
 {
   "name": "tmg_video_player",
+  "productName": "TMG Video Player",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "TVP is a simple video player that allows you to play videos from your local device in your web browser.",
   "author": "Oketade Oluwatobiloba <tobioketade007@gmail.com>",
-  "main": "src/index.js",
+  "main": "main.cjs",
   "scripts": {
     "dev": "vite",
     "start": "vercel dev --listen 5173",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:dev": "electron . --dev",
+    "electron": "electron .",
+    "pack": "vite build --outDir build && electron-builder --win"
+  },
+  "build": {
+    "appId": "com.tmg.videoplayer",
+    "win": {
+      "target": "nsis",
+      "icon": "public/favicon.ico"
+    },
+    "directories": {
+      "buildResources": "assets",
+      "output": "release"
+    }
   },
   "repository": {
     "type": "git",
@@ -23,6 +38,8 @@
   },
   "homepage": "https://github.com/Tobi007-del/TMG_VIDEO_PLAYER#readme",
   "devDependencies": {
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
     "vite": "^8.0.1"
   },
   "dependencies": {

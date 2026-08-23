@@ -128,7 +128,15 @@ body {
   margin: 0;
   padding: 0;
   padding-bottom: 30px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
   overflow-x: hidden;
 }
 
@@ -156,11 +164,17 @@ body::before {
   width: 100%;
   height: 100lvh;
   z-index: -1;
-  background: linear-gradient(var(--tvp-theme-shadow-color), var(--tvp-theme-shadow-color)), center/cover url("/assets/images/lone-tree.jpg"), var(--tvp-theme-dark-color);
+  background:
+    linear-gradient(var(--tvp-theme-shadow-color), var(--tvp-theme-shadow-color)),
+    center/cover url("/assets/images/lone-tree.jpg"),
+    var(--tvp-theme-dark-color);
 }
 
 body.light::before {
-  background: conic-gradient(from var(--turn) at 50% -10%, var(--tvp-theme-shadow-color) 10deg, var(--tvp-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--tvp-theme-shadow-2-color), var(--tvp-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--tvp-theme-shadow-color) 350deg), center/cover url("/assets/images/lone-tree.jpg"), var(--tvp-theme-dark-color);
+  background:
+    conic-gradient(from var(--turn) at 50% -10%, var(--tvp-theme-shadow-color) 10deg, var(--tvp-theme-shadow-color) calc((360deg - var(--degree)) / 2), var(--tvp-theme-shadow-2-color), var(--tvp-theme-shadow-color) calc(360deg - (360deg - var(--degree)) / 2), var(--tvp-theme-shadow-color) 350deg),
+    center/cover url("/assets/images/lone-tree.jpg"),
+    var(--tvp-theme-dark-color);
   animation: rotateLight 30s linear infinite;
 }
 
@@ -205,6 +219,23 @@ body:has(.dragging) {
   font-size: 12.5px;
   color: var(--tvp-theme-light-color);
   padding-inline: 10vw;
+}
+
+#file-inputs-wrapper {
+  position: relative;
+}
+#product-hunter {
+  position: absolute;
+  top: calc(100% + 25px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.75);
+}
+@media (max-width: 480px) {
+  #product-hunter {
+    position: relative;
+    top: 0;
+    transform: translateX(-50%);
+  }
 }
 
 #video {
@@ -261,7 +292,9 @@ body:not(:has(#video.stall)) #clear-settings-button,
   border-width: var(--loader-width);
   border-color: var(--tvp-brand-color) var(--tvp-theme-accent-2-color) var(--tvp-brand-color) var(--tvp-brand-color);
   rotate: 0;
-  animation: spin 600ms linear infinite, switch 600ms infinite ease forwards;
+  animation:
+    spin 600ms linear infinite,
+    switch 600ms infinite ease forwards;
 }
 
 body.light #files-ui-container :is(button, p) {
@@ -492,7 +525,9 @@ body.light #files-ui-container :is(button, p) {
   color: var(--tvp-theme-accent-color);
   box-shadow: 0 2px 5px rgb(from var(--tvp-theme-inverse-color) r g b/ 0.25); /* 🧪 subtle lift */
   border: 1px solid var(--tvp-theme-accent-2-color);
-  transition: transform 250ms ease, box-shadow 250ms ease;
+  transition:
+    transform 250ms ease,
+    box-shadow 250ms ease;
 }
 
 #install {

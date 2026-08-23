@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -154,6 +154,7 @@
                     </span>
                     <input id="folders-file-input" type="file" webkitdirectory multiple />
                   </label>
+                  <a id="product-hunter" href="https://www.producthunt.com/products/tvp?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-tvp" target="_blank" rel="noopener noreferrer"><img alt="TVP - Play videos from your local device in your web browser | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1229405&amp;theme=light&amp;t=1787471906184" /></a>
                 </span>
                 <span>
                   <label for="total-num">Selected files:</label>
@@ -215,7 +216,7 @@
     </script>
     <script>
       window.TMG_MEDIA_CSS_SRC = window.T007_INPUT_JS_SRC = window.T007_INPUT_CSS_SRC = window.T007_TOAST_JS_SRC = window.T007_TOAST_CSS_SRC = window.T007_DIALOG_JS_SRC = window.T007_DIALOG_CSS_SRC = Symbol.for("T007_VIRTUAL_RESOURCE");
-      window.TMG_MEDIA_ALT_IMG_SRC = "/assets/icons/movie-tape.png";
+      window.TMG_MEDIA_ALT_IMG_SRC = "./assets/icons/movie-tape.png";
     </script>
     <script type="module">
       import "@t007/toast";
@@ -241,10 +242,13 @@
         star.style.animation = "";
       };
       for (const star of document.getElementsByClassName("magic-star")) {
-        setTimeout(() => {
-          animate(star);
-          setTimeout(animate, 1000, star); // setInterval(animate, 1000, star);
-        }, index++ * (interval / 3));
+        setTimeout(
+          () => {
+            animate(star);
+            setTimeout(animate, 1000, star); // setInterval(animate, 1000, star);
+          },
+          index++ * (interval / 3)
+        );
       }
     </script>
   </body>
