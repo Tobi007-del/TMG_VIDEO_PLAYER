@@ -3,6 +3,8 @@ node_modules/
 
 # Build outputs
 dist/
+build/
+release/
 .turbo/
 
 # OS/Editor files
