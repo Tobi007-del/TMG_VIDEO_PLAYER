@@ -24,7 +24,7 @@
     },
     "directories": {
       "buildResources": "assets",
-      "output": "release"
+      "output": "C:/temp/tmg-release"
     }
   },
   "repository": {
@@ -50,6 +50,6 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "sia-reactor": "^0.0.40",
-    "tmg-media-player": "^0.0.18"
+    "tmg-media-player": "^0.0.19"
   }
 }

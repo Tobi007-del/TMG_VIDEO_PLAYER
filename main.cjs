@@ -11,7 +11,7 @@ function createWindow() {
       title: "TMG Video Player",
       autoHideMenuBar: true,
       icon: path.join(__dirname, isDev ? 'public/favicon.ico' : 'build/favicon.ico'),
-      webPreferences: { nodeIntegration: true, contextIsolation: false, webSecurity: false },
+      webPreferences: { nodeIntegration: false, contextIsolation: false, webSecurity: false },
     });
 
   if (isDev) return mainWindow.loadURL('http://localhost:5173'), mainWindow.webContents.openDevTools();
