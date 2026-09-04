@@ -395,7 +395,7 @@ async function handleFiles(files, restored = null, handles = null) {
           playsInline: true,
           poster: item?.media.intent.poster,
           onloadedmetadata: ({ target }) => {
-            if (item) item.media.status.duration = target.duration;
+            if (file) nums.time += tmg.utils.safeNum(target.duration);
             target.currentTime = tmg.utils.parseIfPercent(MC.config.lightState.preview.time ?? 4, target.duration);
             li.querySelector(".file-duration span:last-child").innerHTML = `${tmg.utils.formatMediaTime({ time: target.duration })}`;
             if (restored || !file) thumbnail.parentElement.style.setProperty("--video-progress-position", tmg.utils.safeNum((item?.settings.time.start || 0) / target.duration));
@@ -554,7 +554,7 @@ async function handleFiles(files, restored = null, handles = null) {
         const setUpList = (renderList) => {
           MC.config.on("playlist.content", ({ currentTarget: { value } }) => {
             if (!value || !document.getElementById("media-list")) return;
-            for (let i = (nums.time = 0); i < value.length; i++) value[i].media.settings.metadata.id || setPath(value[i], "media.settings.metadata.id", tmg.utils.uid()), (nums.time += tmg.utils.safeNum(value[i].media.status?.duration));
+            for (let i = (nums.time = 0); i < value.length; i++) value[i].media.settings.metadata.id || setPath(value[i], "media.settings.metadata.id", tmg.utils.uid()), (nums.time += tmg.utils.safeNum(value[i].media.status.duration));
             (renderList ??= tmg.utils.createListRenderer({
               container: list,
               getKey: (item) => item.media.settings.metadata.id,
