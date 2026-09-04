@@ -394,8 +394,8 @@ async function handleFiles(files, restored = null, handles = null) {
           muted: true,
           playsInline: true,
           poster: item?.media.intent.poster,
-          onloadedmetadata: ({ target }) => {
-            if (file) nums.time += tmg.utils.safeNum(target.duration);
+          onloadedmetadata: ({ target }, item = thumbnail.getPlItem() ?? item) => {
+            if (item) item.media.status.duration = tmg.utils.safeNum(target.duration);
             target.currentTime = tmg.utils.parseIfPercent(MC.config.lightState.preview.time ?? 4, target.duration);
             li.querySelector(".file-duration span:last-child").innerHTML = `${tmg.utils.formatMediaTime({ time: target.duration })}`;
             if (restored || !file) thumbnail.parentElement.style.setProperty("--video-progress-position", tmg.utils.safeNum((item?.settings.time.start || 0) / target.duration));
@@ -427,8 +427,8 @@ async function handleFiles(files, restored = null, handles = null) {
           if (!["srt", "vtt"].includes(ext)) return (thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported");
           let txt = await f.text();
           if (ext === "srt") txt = tmg.utils.srtToVtt(txt);
-          const plItem = thumbnail.getPlItem();
-          const id = thumbnail.dataset.trackId ?? (thumbnail.dataset.trackId = plItem.media.settings.metadata.id + "_sub");
+          const plItem = thumbnail.getPlItem(),
+            id = thumbnail.dataset.trackId ?? (thumbnail.dataset.trackId = plItem.media.settings.metadata.id + "_sub");
           DB.set(id, new TextEncoder().encode(txt), "subtitles");
           plItem.media.intent.tracks = [{ id: f.name, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
           if (MC.config.playlist.content[MC.media.state.currentItem]?.media.settings.metadata.id === plItem.media.settings.metadata.id) MC.media.intent.tracks = plItem.media.intent.tracks;
