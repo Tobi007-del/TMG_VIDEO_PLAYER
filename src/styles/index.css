@@ -788,10 +788,6 @@ body.light #files-ui-container :is(button, p) {
   color: #f73839cc;
 }
 
-.content-line:has([data-caption-state="waiting"]) .captions-btn::after {
-  color: var(--tvp-theme-accent-2-color);
-}
-
 .captions-btn svg {
   width: 21px;
   height: 21px;

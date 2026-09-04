@@ -2,7 +2,8 @@ import * as tmg from "tmg-media-player/super";
 import toast, { toaster } from "@t007/toast";
 import { confirm } from "@t007/dialog";
 import { initVScrollerator } from "@t007/utils/hooks/vanilla";
-import { IndexedDBAdapter, LocalStorageAdapter } from "sia-reactor/modules";
+import { IndexedDBAdapter, LocalStorageAdapter, transaction } from "sia-reactor/modules";
+import { reactive } from "sia-reactor";
 import { inject } from "@vercel/analytics";
 import { injectSpeedInsights } from "@vercel/speed-insights";
 import { parsePathObj, setPath } from "sia-reactor/utils";
@@ -61,7 +62,7 @@ window.Memory = {
   },
 };
 
-window.MP = null;
+window.MP = window.MC = null;
 
 // ===========================================================================
 // UI STATE & METRICS
@@ -75,7 +76,7 @@ let installed = window.matchMedia("(display-mode: standalone)").matches || windo
 
 const installButton = document.getElementById("install"),
   clearSettingsButton = document.getElementById("clear-settings-button"),
-  videoPlayerContainer = document.getElementById("video-player-container"),
+  playerContainer = document.getElementById("video-player-container"),
   fileList = document.getElementById("file-list"),
   contentLines = document.getElementsByClassName("content-line"),
   containers = document.getElementsByClassName("thumbnail-container"),
@@ -120,7 +121,7 @@ const primaryLang = "eng",
   stoast = toaster({ autoClose: false, closeButton: false, dragToClose: false }),
   scroller = initVScrollerator({ lineHeight: 80, margin: 80, car: document.body }),
   queue = new tmg.AsyncQueue(),
-  nums = { bytes: 0, files: 0, time: 0 },
+  nums = reactive({ bytes: 0, files: 0, time: 0 }),
   { createFFmpeg, fetchFile } = FFmpeg,
   ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" });
 
@@ -132,7 +133,7 @@ const prevGet = window.Memory.adapter.get.bind(window.Memory.adapter);
 window.Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
   if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) (state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" });
-  else if (state?.config?.actions?.entries.arrowleft.private) (delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
+  else if (state?.config?.actions?.entries.voiceHistoryClear) (delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
   return state;
 }; // V1 -> V2 MIGRATION LAYER
 
@@ -147,6 +148,10 @@ window.Memory.adapter.get = function (key, reviver) {
   }
   localStorage[_lsik] = JSON.stringify({ ...vi, lastVisit: new Date().toISOString() });
 })();
+
+nums.on("bytes", ({ value }) => (document.getElementById("total-size").textContent = tmg.utils.formatSize(value, 2)), { init: true });
+nums.on("files", ({ value }) => (document.getElementById("total-num").textContent = value), { init: true });
+nums.on("time", ({ value }) => (document.getElementById("total-time").textContent = tmg.utils.formatMediaTime({ time: value })), { init: true });
 
 (async function registerServiceWorker() {
   if (tmg.utils.isDef(SharedArrayBuffer)) console.log("✅ TVP isolation active: SharedArrayBuffer is ready for FFmpeg.");
@@ -215,8 +220,8 @@ installButton.addEventListener("click", async () => {
   if (res.outcome === "accepted") (installButton.style.display = "none"), (installPrompt = null);
 });
 document.getElementById("clear-files-button").addEventListener("click", clearFiles);
-document.getElementById("sort-files-button")?.addEventListener("click", (e) => (MP?.controller?.plug("playlist").sort((e.currentTarget.dataset.dir = e.currentTarget.dataset.dir === "desc" ? "asc" : "desc")), (e.currentTarget.style.scale = e.currentTarget.dataset.dir === "desc" ? "1 -1" : "1")));
-document.getElementById("shuffle-files-button")?.addEventListener("click", () => MP?.controller?.plug("playlist").shuffle());
+document.getElementById("sort-files-button")?.addEventListener("click", (e) => (MC?.plug("playlist").sort((e.currentTarget.dataset.dir = e.currentTarget.dataset.dir === "desc" ? "asc" : "desc")), (e.currentTarget.style.scale = e.currentTarget.dataset.dir === "desc" ? "1 -1" : "1")));
+document.getElementById("shuffle-files-button")?.addEventListener("click", () => MC?.plug("playlist").shuffle());
 clearSettingsButton.addEventListener("click", () => clearSettings(true));
 
 // ===========================================================================
@@ -265,42 +270,34 @@ clearSettingsButton.addEventListener("click", () => clearSettings(true));
 // ===========================================================================
 
 function defaultUI() {
-  if (MP?.controller?.config.playlist.content?.length || nums.files) return;
-  videoPlayerContainer.classList.remove("loading");
+  if (MC?.config.playlist.content?.length || nums.files) return;
+  playerContainer.classList.remove("loading");
   video.classList.add("stall");
   document.body.classList.add("light");
   fileList.innerHTML = `<p id="no-files-text">No videos currently selected :&lpar;</p>`;
-  updateUI();
 }
 
 function initUI() {
-  if (MP?.controller?.config.playlist.content?.length || nums.files) return;
-  videoPlayerContainer.classList.add("loading");
+  if (MC?.config.playlist.content?.length || nums.files) return;
+  playerContainer.classList.add("loading");
   video.classList.add("stall");
   document.body.classList.remove("light");
   fileList.innerHTML = "";
-  updateUI();
 }
 
 function readyUI() {
-  video.classList.remove("stall"), MP.controller.media.pseudoElement.classList.remove("stall");
-  videoPlayerContainer.classList.remove("loading");
-  setTimeout(() => MP.controller.plug("settings.toasts")?.toast?.(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }), 500);
-  MP.controller.config.on("settings.css.brandColor", ({ value }) => setColors(value, false), { init: "auto" });
-  MP.controller.config.on("settings.css.themeColor", ({ value }) => setColors(false, value), { init: "auto" });
+  video.classList.remove("stall"), MC.media.pseudoElement.classList.remove("stall");
+  playerContainer.classList.remove("loading");
+  setTimeout(() => MC.plug("settings.toasts")?.toast?.(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }), 500);
+  MC.config.on("settings.css.brandColor", ({ value }) => setColors(value, false), { init: "auto" });
+  MC.config.on("settings.css.themeColor", ({ value }) => setColors(false, value), { init: "auto" });
 }
 
 function errorUI(error) {
-  videoPlayerContainer.classList.remove("loading");
+  playerContainer.classList.remove("loading");
   video.classList.add("stall");
   document.body.classList.add("light");
   fileList.innerHTML = `<p id="no-files-text">${error}!</p>`;
-}
-
-function updateUI() {
-  document.getElementById("total-num").textContent = nums.files;
-  document.getElementById("total-size").textContent = tmg.utils.formatSize(nums.bytes, 2);
-  document.getElementById("total-time").textContent = tmg.utils.formatMediaTime({ time: nums.time });
 }
 
 // ===========================================================================
@@ -351,7 +348,7 @@ async function clearFiles(skipPrompt = false) {
   const ok = skipPrompt === true || (await confirm("Are you sure you want to clear all files?", { title: "Clear Files", confirmText: "Clear" }));
   if (!ok) return;
   toast.dismiss("ready");
-  if (MP) MP.controller.media.intent.paused = true;
+  if (MP) MC.media.intent.paused = true;
   video.removeAttribute("src"), video.removeAttribute("poster");
   Array.prototype.forEach.call(containers, (c) => {
     const vid = c.querySelector("video");
@@ -361,7 +358,7 @@ async function clearFiles(skipPrompt = false) {
     queue.drop(vid.dataset.trackId);
   });
   video = MP?.detach();
-  MP = null;
+  MP = MC = null;
   nums.files = nums.bytes = nums.time = 0;
   Memory.clearSession(), defaultUI(), clearSettingsButton.classList.add("shown");
   toast.success("Cleared all files from your session, Settings too?", { id: "settings", autoClose: 5000, actions: { Clear: () => clearSettings() } });
@@ -379,7 +376,7 @@ async function handleFiles(files, restored = null, handles = null) {
 
     if (handles?.length) (sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))]), Memory.saveHandles();
     for (const file of (files = !restored ? tmg.utils.smartFlatSort(files) : playlistSort(files, restored.config.playlist))) nums.files++, (nums.bytes += file.size);
-    updateUI(), await tmg.utils.deepBreath();
+    await tmg.utils.deepBreath();
 
     const stateMap = new Map(restored?.config.playlist.content?.map((v) => [v.media.settings.metadata.title, v]) || []),
       list = fileList.appendChild(document.getElementById("media-list") || tmg.utils.createEl("ul", { id: "media-list" })),
@@ -398,8 +395,8 @@ async function handleFiles(files, restored = null, handles = null) {
           playsInline: true,
           poster: item?.media.intent.poster,
           onloadedmetadata: ({ target }) => {
-            if (file) document.getElementById("total-time").textContent = tmg.utils.formatMediaTime({ time: (nums.time += tmg.utils.safeNum(target.duration)) });
-            target.currentTime = tmg.utils.parseIfPercent(MP.controller.config.lightState.preview.time ?? 4, target.duration);
+            if (item) item.media.status.duration = target.duration;
+            target.currentTime = tmg.utils.parseIfPercent(MC.config.lightState.preview.time ?? 4, target.duration);
             li.querySelector(".file-duration span:last-child").innerHTML = `${tmg.utils.formatMediaTime({ time: target.duration })}`;
             if (restored || !file) thumbnail.parentElement.style.setProperty("--video-progress-position", tmg.utils.safeNum((item?.settings.time.start || 0) / target.duration));
           },
@@ -415,10 +412,10 @@ async function handleFiles(files, restored = null, handles = null) {
       thumbnail.ffName = ffName;
       if (!file) {
         thumbnail.mediaId = item.media.settings.metadata.id;
-        thumbnail.getPlItem = (plItem = MP.controller.config.playlist.content.find((v) => v.media.settings.metadata.id === item.media.settings.metadata.id)) => (thumbnail.plItem = plItem ?? thumbnail.plItem ?? item);
-        thumbnail.getPlIndex = () => MP.controller.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === item.media.settings.metadata.id);
+        thumbnail.getPlItem = (plItem = MC.config.playlist.content.find((v) => v.media.settings.metadata.id === item.media.settings.metadata.id)) => (thumbnail.plItem = plItem ?? thumbnail.plItem ?? item);
+        thumbnail.getPlIndex = () => MC.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === item.media.settings.metadata.id);
       }
-      const thumbnailContainer = tmg.utils.createEl("span", { className: "thumbnail-container paused", innerHTML: `<button><svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated"><rect x="4" width="3" height="10" fill="white"></rect><rect x="10" width="3" height="10" fill="white"></rect><rect x="16" width="3" height="10" fill="white"></rect></svg></button>`, onclick: () => MP.controller.plug("playlist").moveTo(thumbnail.getPlIndex(), true) }).appendChild(thumbnail).parentElement;
+      const thumbnailContainer = tmg.utils.createEl("span", { className: "thumbnail-container paused", innerHTML: `<button><svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated"><rect x="4" width="3" height="10" fill="white"></rect><rect x="10" width="3" height="10" fill="white"></rect><rect x="16" width="3" height="10" fill="white"></rect></svg></button>`, onclick: () => transaction(() => ((MC.media.intent.currentItem = thumbnail.getPlIndex()), (MC.media.intent.paused = false)), `Playlist move to ${thumbnail.getPlIndex()} of ${MC.config.playlist.content.length}`) }).appendChild(thumbnail).parentElement;
       if (item?.media.status.duration) thumbnailContainer.style.setProperty("--video-progress-position", tmg.utils.safeNum((item.settings.time.start || 0) / item.media.status.duration));
       const captionsInput = tmg.utils.createEl("input", {
         type: "file",
@@ -434,7 +431,7 @@ async function handleFiles(files, restored = null, handles = null) {
           const id = thumbnail.dataset.trackId ?? (thumbnail.dataset.trackId = plItem.media.settings.metadata.id + "_sub");
           DB.set(id, new TextEncoder().encode(txt), "subtitles");
           plItem.media.intent.tracks = [{ id: f.name, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
-          if (MP.controller.config.playlist.content[MP.controller.plug("playlist").state.currentIndex]?.media.settings.metadata.id === plItem.media.settings.metadata.id) MP.controller.media.intent.tracks = plItem.media.intent.tracks;
+          if (MC.config.playlist.content[MC.media.state.currentItem]?.media.settings.metadata.id === plItem.media.settings.metadata.id) MC.media.intent.tracks = plItem.media.intent.tracks;
           thumbnail.dataset.captionState = "filled";
         },
         oncancel: () => (thumbnail.dataset.captionState = "empty"),
@@ -452,13 +449,13 @@ async function handleFiles(files, restored = null, handles = null) {
             plItem?.media.intent.tracks?.forEach((t) => t.kind === "captions" && t.src.startsWith("blob:") && URL.revokeObjectURL(t.src));
             if (!thumbnail.dataset.trackId.startsWith("tmg-")) DB.remove(thumbnail.dataset.trackId, "subtitles");
             if (plItem.media) plItem.media.intent.tracks = plItem.media.intent.tracks.filter((t) => t.kind !== "captions");
-            if (MP.controller?.config.playlist.content[MP.controller.plug("playlist").state.currentIndex]?.media.settings.metadata.id === plItem.media.settings.metadata.id) MP.controller.media.intent.tracks = plItem.media.intent.tracks;
+            if (MC.config.playlist.content[MC.media.state.currentItem]?.media.settings.metadata.id === plItem.media.settings.metadata.id) MC.media.intent.tracks = plItem.media.intent.tracks;
           } else if (!queue.drop(thumbnail.dataset.trackId)) return;
           thumbnail.dataset.captionState = "empty";
         },
         async () => thumbnail.dataset.captionState === "empty" && file && (await deployTracks(file, thumbnail, false))
       );
-      const deleteBtn = tmg.utils.createEl("button", { title: "Remove Video", className: "delete-btn", innerHTML: `<svg width="20px" height="20px" viewBox="0 0 24 24" fill="none"><path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="#0D0D0D"/></svg>`, onclick: () => MP.controller?.plug("playlist").remove(thumbnail.getPlIndex()) });
+      const deleteBtn = tmg.utils.createEl("button", { title: "Remove Video", className: "delete-btn", innerHTML: `<svg width="20px" height="20px" viewBox="0 0 24 24" fill="none"><path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="#0D0D0D"/></svg>`, onclick: () => MC?.plug("playlist").remove(thumbnail.getPlIndex()) });
       li.cleanupDB = () => {
         if (file && thumbnail.src?.startsWith("blob:")) URL.revokeObjectURL(thumbnail.src);
         const plItem = thumbnail.getPlItem();
@@ -468,10 +465,9 @@ async function handleFiles(files, restored = null, handles = null) {
         if (file) {
           const hIdx = sessionHandles.findIndex((h) => h.name === file.name);
           hIdx !== -1 && (sessionHandles.splice(hIdx, 1), Memory.saveHandles());
-          nums.files--, (nums.bytes -= file.size), (nums.time -= tmg.utils.safeNum(thumbnail.duration));
+          nums.files--, (nums.bytes -= file.size);
         }
-        if (!MP?.controller.config.playlist.content.length) return clearFiles(true);
-        updateUI();
+        if (!MC?.config.playlist.content.length) return clearFiles(true);
       };
       const dragHandle = tmg.utils.createEl("span", { title: "Drag to Reorder", className: "drag-handle", innerHTML: `<svg fill="#000000" height="20px" width="20px" viewBox="0 0 24 24"><path d="M10,6H6V2h4V6z M18,2h-4v4h4V2z M10,10H6v4h4V10z M18,10h-4v4h4V10z M10,18H6v4h4V18z M18,18h-4v4h4V18z"/></svg>` });
       dragHandle.addEventListener(
@@ -505,7 +501,7 @@ async function handleFiles(files, restored = null, handles = null) {
         },
         { passive: false }
       );
-      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${ffName}</span></p>${file ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${!file ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(!file && !tmg.utils.getExtension(item.media.intent.src, false) ? [] : [captionsBtn]), deleteBtn, dragHandle);
+      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${ffName}</span></p>${file ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${item?.media.status.duration ? tmg.utils.formatMediaTime({ time: item.media.status.duration }) : !file ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(!file && !tmg.utils.getExtension(item.media.intent.src, false) ? [] : [captionsBtn]), deleteBtn, dragHandle);
       return { li, thumbnail, container: thumbnailContainer };
     };
 
@@ -540,8 +536,8 @@ async function handleFiles(files, restored = null, handles = null) {
         (item.media.intent.src = url), (item.media.intent.tracks = item.media.intent.tracks.filter((t) => !t.src.startsWith("blob:"))), content.push(item);
         const nail = thumbnails[i];
         (nail.src = url), (nail.mediaId = item.media.settings.metadata.id);
-        nail.getPlItem = (plItem = MP?.controller.config.playlist.content.find((v) => v.media.settings.metadata.id === item.media.settings.metadata.id)) => (nail.plItem = plItem ?? nail.plItem ?? item);
-        nail.getPlIndex = () => MP?.controller.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === item.media.settings.metadata.id);
+        nail.getPlItem = (plItem = MC?.config.playlist.content.find((v) => v.media.settings.metadata.id === item.media.settings.metadata.id)) => (nail.plItem = plItem ?? nail.plItem ?? item);
+        nail.getPlIndex = () => MC?.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === item.media.settings.metadata.id);
       }
       for (let i = 0; i < remoteItems.length; i++) {
         const thumbIdx = files.length + i;
@@ -554,10 +550,11 @@ async function handleFiles(files, restored = null, handles = null) {
         const orderMap = new Map(restored.config.playlist.content.map((v, i) => [v.media.settings.metadata.id, i]));
         content.sort((a, b) => (orderMap.get(a.media.settings.metadata.id) ?? Infinity) - (orderMap.get(b.media.settings.metadata.id) ?? Infinity));
       }
-      if (!MP) {
+      if (!MC) {
         const setUpList = (renderList) => {
-          MP.controller.config.on("playlist.content", ({ currentTarget: { value: content } }) => {
-            if (!content || !document.getElementById("media-list")) return;
+          MC.config.on("playlist.content", ({ currentTarget: { value } }) => {
+            if (!value || !document.getElementById("media-list")) return;
+            for (let i = (nums.time = 0); i < value.length; i++) value[i].media.settings.metadata.id || setPath(value[i], "media.settings.metadata.id", tmg.utils.uid()), (nums.time += tmg.utils.safeNum(value[i].media.status?.duration));
             (renderList ??= tmg.utils.createListRenderer({
               container: list,
               getKey: (item) => item.media.settings.metadata.id,
@@ -570,29 +567,28 @@ async function handleFiles(files, restored = null, handles = null) {
                 return li;
               },
               updateNode: (li, item, index) => {
-                li.classList.toggle("playing", MP.controller.config.lightState.disabled && index === MP.controller.plug("playlist").state.currentIndex);
-                const nameEl = li.querySelector(".file-name span:last-child");
-                if (nameEl) nameEl.textContent = item.media.settings.metadata.title || li.dataset.fileName || "";
-                const vid = li.querySelector("video");
-                if (vid) vid.poster = item.media.intent.poster;
+                li.classList.toggle("playing", MC.config.lightState.disabled && index === MC.media.state.currentItem);
+                li.querySelector("video").poster = item.media.intent.poster;
+                li.querySelector(".file-name span:last-child").textContent = item.media.settings.metadata.title || li.dataset.fileName || "";
+                li.querySelector(".file-duration span:last-child").textContent = tmg.utils.formatMediaTime({ time: item.media.status.duration });
               },
               initNode: (li, register) => li.querySelector("video")?.mediaId && register(li.querySelector("video").mediaId),
               destroyNode: (li) => {
                 const id = li.querySelector("video")?.mediaId,
                   idx = thumbnails.findIndex((t) => t?.mediaId === id);
-                idx !== -1 && thumbnails.splice(idx, 1), MP.controller?.config.playlist.content.some((item) => item.media.settings.metadata.id === id) && li.cleanupDB?.();
+                idx !== -1 && thumbnails.splice(idx, 1), MC.config.playlist.content.some((item) => item.media.settings.metadata.id === id) && li.cleanupDB?.();
               },
-            }))(content.filter((item) => item.media.intent.src && (item.media.settings.metadata.id || (setPath(item, "media.settings.metadata.id", tmg.utils.uid()), true))));
+            }))(value);
           });
         };
         video.addEventListener(
           "tmginit",
           () => {
-            MP.controller.media.once("status.loadedMetadata", () => setTimeout(dispatchPlayerReadyToast, 500));
-            MP.controller.media.on("state.currentTime", ({ value: ct, root }, d = root.status.duration) => MP.controller?.throttle("TVP_thumbnail_update", () => ct > 3 && MP.controller.config.lightState.disabled && containers[MP.controller.plug("playlist").state.currentIndex]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / d)), 2500));
-            MP.controller.media.on("state.paused", ({ value }) => {
-              const idx = MP.controller.plug("playlist").state.currentIndex;
-              if (!value) for (let i = 0; i < contentLines.length; i++) contentLines[i].classList.toggle("playing", i === idx);
+            MC = MP.controller;
+            MC.media.once("status.loadedMetadata", () => setTimeout(dispatchPlayerReadyToast, 500));
+            MC.media.on("state.currentTime", ({ value: ct }) => MC?.throttle("TVP_thumbnail_update", () => ct > 3 && MC.config.lightState.disabled && containers[MC.media.state.currentItem]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / MC.media.status.duration)), 2500));
+            MC.media.on("state.paused", ({ value }, idx = MC.media.state.currentItem) => {
+              if (!value) for (let i = 0, len = contentLines.length; i < len; i++) contentLines[i].classList.toggle("playing", i === idx);
               containers[idx]?.classList.toggle("paused", value);
             });
             readyUI(), setUpList();
@@ -616,11 +612,11 @@ async function handleFiles(files, restored = null, handles = null) {
           noPlugList: [],
           cloneOnDetach: true,
         })).attach(video);
-      } else MP.controller.config.playlist.content = [...(MP.controller.config.playlist.content || []), ...content];
+      } else MC.config.playlist.content = [...(MC.config.playlist.content || []), ...content];
     };
     (nums.files || remoteItems.length) && (deployVideos(files), await tmg.utils.deepBreath());
     (nums.files || remoteItems.length) && (await Promise.all(thumbnails.map(async (t, i) => t && (await deployTracks(i < files.length ? files[i] : undefined, t, undefined)))));
-    if (!nums.files && !MP?.controller?.config.playlist.content?.length) return defaultUI();
+    if (!nums.files && !MC?.config.playlist.content?.length) return defaultUI();
   } catch (error) {
     console.error("TVP files handling failed:", error), errorUI(error);
   }
@@ -646,7 +642,7 @@ async function deployTracks(file, thumbnail, autocancel = !tmg.utils.isDef(Share
       });
     }
     if (chapBuffer) item.media.intent.tracks.push({ id: id + "_chap", kind: "chapters", label: "Chapters", srclang: "en", src: URL.createObjectURL(new Blob([chapBuffer], { type: "text/vtt" })) });
-    if (MP.controller?.config.playlist.content?.[MP.controller.plug("playlist").state.currentIndex]?.media.settings.metadata.id === item.media.settings.metadata.id) MP.controller.media.intent.tracks = item.media.intent.tracks;
+    if (MC?.config.playlist.content?.[MC.media.state.currentItem]?.media.settings.metadata.id === item.media.settings.metadata.id) MC.media.intent.tracks = item.media.intent.tracks;
     return thumbnail.setAttribute("data-caption-state", subBuffers ? "filled" : "empty");
   }
   // 2. THE FACTORY (FFmpeg Processing)
@@ -663,13 +659,13 @@ async function deployTracks(file, thumbnail, autocancel = !tmg.utils.isDef(Share
             { buffer, srclang = "", label = "" } = getSubMeta(p.data);
           const newTrack = { id: `${id}_${i}`, kind: "captions", label, srclang, default: i === 0, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })) };
           item.media.intent.tracks = [...item.media.intent.tracks, newTrack];
-          if (MP.controller?.config.playlist.content?.[MP.controller.plug("playlist").state.currentIndex]?.media.settings.metadata.id === item.media.settings.metadata.id) MP.controller.media.intent.tracks = item.media.intent.tracks;
+          if (MC?.config.playlist.content?.[MC.media.state.currentItem]?.media.settings.metadata.id === item.media.settings.metadata.id) MC.media.intent.tracks = item.media.intent.tracks;
         } else if (p.type === "chapter") {
           await DB.set(id + "_chap", new TextEncoder().encode(p.data), "chapters");
           item.media.intent.tracks?.forEach((t) => t.kind === "chapters" && t.src.startsWith("blob:") && URL.revokeObjectURL(t.src));
           const chapterTrack = { id: id + "_chap", kind: "chapters", label: "Chapters", srclang: "en", src: URL.createObjectURL(new Blob([p.data], { type: "text/vtt" })) };
           item.media.intent.tracks = [...item.media.intent.tracks.filter((t) => t.kind !== "chapters"), chapterTrack];
-          if (MP.controller?.config.playlist.content?.[MP.controller.plug("playlist").state.currentIndex]?.media.settings.metadata.id === item.media.settings.metadata.id) MP.controller.media.intent.tracks = item.media.intent.tracks;
+          if (MC?.config.playlist.content?.[MC.media.state.currentItem]?.media.settings.metadata.id === item.media.settings.metadata.id) MC.media.intent.tracks = item.media.intent.tracks;
         }
       }),
     id,
@@ -799,8 +795,8 @@ function dispatchPlayerReadyToast(hour = new Date().getHours()) {
 }
 
 function syncPlaylist() {
-  const map = Object.fromEntries(MP.controller.config.playlist.content?.map((v) => [v.media.settings.metadata.id, v]) || []);
-  MP.controller.config.playlist.content = Array.from(contentLines, (li) => map[li.querySelector("video")?.mediaId]).filter(Boolean);
+  const map = Object.fromEntries(MC.config.playlist.content?.map((v) => [v.media.settings.metadata.id, v]) || []);
+  MC.config.playlist.content = Array.from(contentLines, (li) => map[li.querySelector("video")?.mediaId]).filter(Boolean);
 }
 
 function playlistSort(files, playlist) {
