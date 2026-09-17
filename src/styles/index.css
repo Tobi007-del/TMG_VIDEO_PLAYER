@@ -644,7 +644,7 @@ body.light #files-ui-container :is(button, p) {
 }
 
 .thumbnail-container button {
-  background-color: rgb(from var(--tvp-brand-color) r g b / 0.4);
+  background-color: rgb(from var(--tvp-theme-inverse-color) r g b / 0.4);
   border-radius: 50%;
   width: 25px;
   height: 25px;

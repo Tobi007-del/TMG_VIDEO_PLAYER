@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -205,7 +205,7 @@
     <p class="offline-notice">You're offline</p>
     <script>
       // Conditional UI rendering before other scripts to avoid flashes for that magic feel :), using window so scripts don't have to duplicate logic btw
-      document.body.classList.toggle("no-folders-pick", !("webkitdirectory" in HTMLInputElement.prototype) || ("showDirectoryPicker" in window && /Mobi|Android|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent))); // dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data
+      document.body.classList.toggle("no-folders-pick", !("webkitdirectory" in HTMLInputElement.prototype)); // (dir picker is a false facade on mobile for now & IDB's active here, we can't mix "stored" and "unstored" data) - not anymore
       document.body.classList.toggle("no-videos-pick", !("files" in HTMLInputElement.prototype));
       window._lssk = "TVP_last_session_state"; // localStorage session key
       window.setColors = (brand = "#e26e02", theme = "#ffffff") => (brand && document.documentElement.style.setProperty("--tvp-brand-color", brand), theme && document.documentElement.style.setProperty("--tvp-theme-color", theme));
@@ -242,13 +242,10 @@
         star.style.animation = "";
       };
       for (const star of document.getElementsByClassName("magic-star")) {
-        setTimeout(
-          () => {
-            animate(star);
-            setTimeout(animate, 1000, star); // setInterval(animate, 1000, star);
-          },
-          index++ * (interval / 3)
-        );
+        setTimeout(() => {
+          animate(star);
+          setTimeout(animate, 1000, star); // setInterval(animate, 1000, star);
+        }, index++ * (interval / 3));
       }
     </script>
   </body>
