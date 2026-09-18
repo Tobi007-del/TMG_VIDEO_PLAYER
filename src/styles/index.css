@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Google Sans Flex:wght@400;500;600;700&display=swap");
 @font-face {
   font-family: "Google Sans Flex";
   src: url("/assets/fonts/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf") format("truetype");
@@ -434,7 +435,7 @@ body.light #files-ui-container :is(button, p) {
   position: absolute;
   width: 100%;
   bottom: 0;
-  font-size: 77.5%;
+  font-size: 70%;
   white-space: wrap;
   text-align: center;
   padding-inline: inherit;
