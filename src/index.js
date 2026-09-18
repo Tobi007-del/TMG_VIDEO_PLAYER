@@ -46,7 +46,7 @@ window.Memory = {
     const state = this.getState(),
       session = await DB.get("last_handles");
     if (!state?.config?.playlist?.content || (!session && !state.config.playlist.content.some((i) => !i.media.intent.src.startsWith("blob:")))) return null;
-    console.log("🎞 TVP found an ongoing session:", state, session);
+    console.log("🎞 TVP found a session:", state, session);
     const lastUpdated = session?.lastUpdated || Date.now();
     return (Date.now() - lastUpdated) / (1000 * 60 * 60 * 24) > this.expiryDays ? (await this.clearSession(), console.log("🎞 TVP cleaned up expired session.")) : { state, handles: session?.handles || [], lastUpdated };
   },
@@ -133,7 +133,7 @@ const prevGet = window.Memory.adapter.get.bind(window.Memory.adapter);
 window.Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
   if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) (state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" });
-  else if (state?.config?.actions?.logicBlacklist) (delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
+  else if (state?.config?.settings?.frame?.captureAutoClose) (delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
   return state;
 }; // V1 -> V2 MIGRATION LAYER
 
@@ -199,8 +199,8 @@ nums.on("time", ({ value }) => (document.getElementById("total-time").textConten
 
 window.addEventListener("load", async () => {
   const session = !nums.files && (await Memory.getSession());
-  if (session) stoast(`You have an ongoing session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}`, { id: "session", icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: () => (clearInterval(sessionTInt), stoast.info("You can reload the page to see this prompt again", { id: "session", icon: true, autoClose: 5000, closeButton: !tmg.utils.IS_MOBILE, dragToClose: true, actions: { Reload: () => location.reload() } })) } });
-  if (session) sessionTInt = setInterval(() => stoast.update("session", { render: `You have an ongoing session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}` }), 60000);
+  if (session) stoast(`You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}`, { id: "session", icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: () => (clearInterval(sessionTInt), stoast.info("Reload the page to see this prompt again", { id: "session", icon: true, autoClose: 5000, closeButton: !tmg.utils.IS_MOBILE, dragToClose: true, actions: { Reload: () => location.reload() } })) } });
+  if (session) sessionTInt = setInterval(() => stoast.update("session", { render: `You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}` }), 60000);
 
   (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
 
@@ -309,7 +309,7 @@ async function restoreSession({ handles }) {
     files = [],
     sureHandles = [];
 
-  stoast.info("Restoring your ongoing session now", { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath();
+  stoast.info("Restoring your session now", { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath();
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
     try {
@@ -330,8 +330,8 @@ async function restoreSession({ handles }) {
       await (err === "User denied" ? tmg.utils.deepBreath() : tmg.utils.mockAsync(800));
     }
   }
-  if (sureHandles.length || state?.config.playlist.content?.some((i) => !i.media.intent.src.startsWith("blob:"))) stoast.success("Your ongoing session has been restored :)", { id: "session", actions: false });
-  else return stoast.error("Your ongoing session was not restored :(", { id: "session", actions: { Reload: () => location.reload(), Dismiss: () => stoast.dismiss("session") } });
+  if (sureHandles.length || state?.config.playlist.content?.some((i) => !i.media.intent.src.startsWith("blob:"))) stoast.success("Your session has been restored :)", { id: "session", actions: false });
+  else return stoast.error("Your session was not restored :(", { id: "session", actions: { Reload: () => location.reload(), Dismiss: () => stoast.dismiss("session") } });
 
   handleFiles(files, state, sureHandles);
 }

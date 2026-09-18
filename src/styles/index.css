@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Google Sans Flex";
+  src: url("/assets/fonts/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @property --tvp-brand-color {
   syntax: "<color>";
   initial-value: #e26e02;
@@ -11,6 +19,7 @@
 }
 
 :root {
+  font-family: "Google Sans Flex", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --tvp-brand-color: #e26e02;
   --tvp-brand-light-color: hsl(from var(--tvp-brand-color) h s calc(l + 40));
   --tvp-brand-accent-color: rgb(from var(--tvp-brand-color) calc(r + 18) calc(g + 33) calc(b + 175));
@@ -128,7 +137,6 @@ body {
   margin: 0;
   padding: 0;
   padding-bottom: 30px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   overflow-x: hidden;
 }
 
@@ -205,6 +213,7 @@ body:has(.dragging) {
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding-inline: 10vw;
   font-size: 12.5px;
   color: var(--tvp-theme-light-color);
 }
