@@ -16,37 +16,37 @@ The main idea here is for you to test out the custom controls of the video playe
 
 ### Visusal Previews
 
-![Desktop Preview of the Page](./assets/images/desktop_preview.png)
+![Desktop Preview of the Page](./public/assets/images/desktop_preview.png)
 _Desktop view of the Page_
 
-![Mobile Preview of the Page](./assets/images/mobile_preview.png)
+![Mobile Preview of the Page](./public/assets/images/mobile_preview.png)
 _Mobile view of the Page_
 
-![Desktop Preview of the Video Player](./assets/images/player_desktop_preview.png)
+![Desktop Preview of the Video Player](./public/assets/images/player_desktop_preview.png)
 _Desktop view of the Video Player_
 
-![Mobile Preview of the Video Player](./assets/images/player_mobile_preview.png)
+![Mobile Preview of the Video Player](./public/assets/images/player_mobile_preview.png)
 _Mobile view of the Video Player_
 
-![Desktop Preview of the Video Player in Fullscreen](./assets/images/player_desktop_fullscreen_preview.png)
+![Desktop Preview of the Video Player in Fullscreen](./public/assets/images/player_desktop_fullscreen_preview.png)
 _Desktop view of the Video Player in Fullscreen_
 
-![Mobile Preview of the Video Player in Fullscreen](./assets/images/player_mobile_fullscreen_preview.png)
+![Mobile Preview of the Video Player in Fullscreen](./public/assets/images/player_mobile_fullscreen_preview.png)
 _Mobile view of the Video Player in Fullscreen_
 
-![Desktop Preview of the Video Player in Theater](./assets/images/player_theater_preview.png)
+![Desktop Preview of the Video Player in Theater](./public/assets/images/player_theater_preview.png)
 _Desktop view of the Video Player in Theater_
 
-![Desktop Preview of the Video Player in Picture-in-picture](./assets/images/player_desktop_pictureinpicture_preview.png)
+![Desktop Preview of the Video Player in Picture-in-picture](./public/assets/images/player_desktop_pictureinpicture_preview.png)
 _Desktop Preview of the Video Player in Picture-in-picture_
 
-![Mobile Preview of the Video Player in Picture-in-picture](./assets/images/player_mobile_pictureinpicture_preview.png)
+![Mobile Preview of the Video Player in Picture-in-picture](./public/assets/images/player_mobile_pictureinpicture_preview.png)
 _Mobile Preview of the Video Player in Picture-in-picture_
 
-![Desktop Preview of the Video Mini-player](./assets/images/miniplayer_desktop_preview.png)
+![Desktop Preview of the Video Mini-player](./public/assets/images/miniplayer_desktop_preview.png)
 _Desktop Preview of the Video Mini-player_
 
-![Mobile Preview of the Video Mini-player](./assets/images/miniplayer_mobile_preview.png)
+![Mobile Preview of the Video Mini-player](./public/assets/images/miniplayer_mobile_preview.png)
 _Mobile Preview of the Video Mini-player_
 
 ### More Info!
