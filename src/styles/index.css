@@ -1,16 +1,19 @@
+/* @import url("https://fonts.googleapis.com/css2?family=Google Sans Flex:wght@400;500;600;700&display=swap"); */
+
 @font-face {
   font-family: "Google Sans Flex";
   src: url("/assets/fonts/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf") format("truetype");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
+  font-variation-settings: "wdth" 92;
 }
 
-@property --tvp-brand-color {
+/* @property --tvp-brand-color {
   syntax: "<color>";
   initial-value: #e26e02;
   inherits: true;
-}
+} */
 
 @property --turn {
   syntax: "<angle>";
@@ -70,11 +73,11 @@ body .tmg-media-container {
   }
 }
 
-@keyframes switch {
+/* @keyframes switch {
   to {
     --tvp-brand-color: var(--tvp-brand-accent-color);
   }
-}
+} */
 
 @keyframes spin {
   from {
@@ -277,7 +280,7 @@ body:not(:has(#video.stall)) #clear-settings-button,
   border-width: var(--loader-width);
   border-color: var(--tvp-brand-color) var(--tvp-theme-accent-2-color) var(--tvp-brand-color) var(--tvp-brand-color);
   rotate: 0;
-  animation: spin 600ms linear infinite, switch 600ms infinite ease forwards;
+  animation: spin 600ms linear infinite; /* , switch 600ms infinite ease forwards */
 }
 
 body.light #files-ui-container :is(button, p) {
