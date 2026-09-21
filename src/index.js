@@ -118,7 +118,7 @@ const primaryLang = "eng",
   // whitelist = ["eng", "spa", "fra", "jpn"],
   langNames = new Intl.DisplayNames(["en"], { type: "language" }),
   vi = JSON.parse(localStorage[_lsik] || `{ "visitorId": "${crypto?.randomUUID?.() || tmg.utils.uid()}", "visitCount": 0 }`),
-  stoast = toaster({ autoClose: false, closeButton: false, dragToClose: false }),
+  stoast = toaster({ autoClose: false, closeButton: false, onClose: (_, user = true) => user && (clearInterval(sessionTInt), stoast.info("Reload the page to be prompted again", { id: "session", icon: true, autoClose: 5000, actions: { Reload: () => location.reload() } })) }),
   scroller = initVScrollerator({ lineHeight: 80, margin: 80, car: document.body }),
   queue = new tmg.AsyncQueue(),
   nums = reactive({ bytes: 0, files: 0, time: 0 }),
@@ -199,7 +199,7 @@ nums.on("time", ({ value }) => (document.getElementById("total-time").textConten
 
 window.addEventListener("load", async () => {
   const session = !nums.files && (await Memory.getSession());
-  if (session) stoast(`You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}`, { id: "session", icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: () => (clearInterval(sessionTInt), stoast.info("Reload the page to see this prompt again", { id: "session", icon: true, autoClose: 5000, closeButton: !tmg.utils.IS_MOBILE, dragToClose: true, actions: { Reload: () => location.reload() } })) } });
+  if (session) stoast(`You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}`, { id: "session", icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: stoast.defaults.onClose } });
   if (session) sessionTInt = setInterval(() => stoast.update("session", { render: `You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}` }), 60000);
 
   (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
