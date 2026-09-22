@@ -43,13 +43,13 @@
     "vite": "^8.0.1"
   },
   "dependencies": {
-    "@t007/dialog": "^0.0.40",
-    "@t007/input": "^0.0.39",
-    "@t007/toast": "^0.0.45",
-    "@t007/utils": "^0.0.41",
+    "@t007/dialog": "^0.0.41",
+    "@t007/input": "^0.0.40",
+    "@t007/toast": "^0.0.46",
+    "@t007/utils": "^0.0.42",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "sia-reactor": "^0.0.43",
-    "tmg-media-player": "^0.0.29"
+    "sia-reactor": "^0.0.44",
+    "tmg-media-player": "^0.0.30"
   }
 }
