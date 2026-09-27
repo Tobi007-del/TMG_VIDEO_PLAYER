@@ -134,6 +134,7 @@ window.Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
   if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) ((state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" }));
   else if (state?.config?.settings?.settingsView) ((delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" }));
+  if (state?.config?.lightState) ((state.config.light = state.config.lightState), delete state.config.lightState); // backwards compat
   return state;
 }; // V1 -> V2 MIGRATION LAYER
 
@@ -591,7 +592,7 @@ async function handleFiles(files, restored = null, handles = null) {
         );
         (MP = new tmg.Player({
           devMode: !import.meta.env.PROD,
-          light: restored?.config.light ?? restored?.config.lightState ?? { disabled: false, "preview.tease": true }, // backwards compat
+          light: restored?.config.light ?? { disabled: false, "preview.tease": true },
           "playlist.content": content,
           "media.intent.paused": restored?.media.state.paused ?? true,
           "media.intent.src": restored ? content.find((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id)?.media.intent.src : undefined,
