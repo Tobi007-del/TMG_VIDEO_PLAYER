@@ -6,7 +6,7 @@ import { IndexedDBAdapter, LocalStorageAdapter, transaction } from "sia-reactor/
 import { reactive } from "sia-reactor";
 import { inject } from "@vercel/analytics";
 import { injectSpeedInsights } from "@vercel/speed-insights";
-import { parsePathObj, setPath } from "sia-reactor/utils";
+import { setPath } from "sia-reactor/utils";
 
 inject({ mode: import.meta.env.PROD ? "production" : "development" }), injectSpeedInsights(); // Realtime Vercel Analytics
 
@@ -401,7 +401,7 @@ async function handleFiles(files, restored = null, handles = null) {
           poster: item?.media.intent.poster,
           onloadedmetadata: ({ target }, item = thumbnail.getPlItem() ?? item) => {
             if (item) item.media.status.duration = tmg.utils.safeNum(target.duration);
-            target.currentTime = tmg.utils.parseIfPercent(MC?.config.lightState.preview.time ?? 4, target.duration, 0.25);
+            target.currentTime = tmg.utils.parseIfPercent(MC?.config.light.preview.max ?? 4, target.duration, 0.25);
             if (restored || !file) thumbnail.parentElement.style.setProperty("--video-progress-position", tmg.utils.safeNum((item?.settings.time.start || 0) / target.duration));
           },
           onerror: ({ target }) => {
@@ -431,7 +431,7 @@ async function handleFiles(files, restored = null, handles = null) {
             id = thumbnail.dataset.trackId ?? (thumbnail.dataset.trackId = plItem.media.settings.metadata.id + "_sub");
           DB.set(id, new TextEncoder().encode(txt), "subtitles");
           plItem.media.intent.tracks = [{ id: f.name, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
-          if (MC.config.playlist.content[MC.media.state.currentItem]?.media.settings.metadata.id === plItem.media.settings.metadata.id) MC.media.intent.tracks = plItem.media.intent.tracks;
+          if (MC.plug("playlist").item?.media.settings.metadata.id === plItem.media.settings.metadata.id) MC.media.intent.tracks = plItem.media.intent.tracks;
           thumbnail.dataset.captionState = "filled";
         },
         oncancel: () => (thumbnail.dataset.captionState = "empty"),
@@ -449,7 +449,7 @@ async function handleFiles(files, restored = null, handles = null) {
             plItem?.media.intent.tracks?.forEach((t) => t.kind === "captions" && t.src.startsWith("blob:") && URL.revokeObjectURL(t.src));
             if (!thumbnail.dataset.trackId.startsWith("tmg-")) DB.remove(thumbnail.dataset.trackId, "subtitles");
             if (plItem.media) plItem.media.intent.tracks = plItem.media.intent.tracks.filter((t) => t.kind !== "captions");
-            if (MC.config.playlist.content[MC.media.state.currentItem]?.media.settings.metadata.id === plItem.media.settings.metadata.id) MC.media.intent.tracks = plItem.media.intent.tracks;
+            if (MC.plug("playlist").item?.media.settings.metadata.id === plItem.media.settings.metadata.id) MC.media.intent.tracks = plItem.media.intent.tracks;
           } else if (!queue.drop(thumbnail.dataset.trackId)) return;
           thumbnail.dataset.captionState = "empty";
         },
@@ -562,7 +562,7 @@ async function handleFiles(files, restored = null, handles = null) {
                 return li;
               },
               updateNode: (li, item, index) => {
-                li.classList.toggle("playing", MC.config.lightState.disabled && index === MC.media.state.currentItem);
+                li.classList.toggle("playing", MC.config.light.disabled && index === MC.media.state.currentItem);
                 li.querySelector("video").poster = item.media.intent.poster;
                 li.querySelector(".file-name span:last-child").textContent = item.media.settings.metadata.title || li.dataset.fileName || "";
                 if (item.media.status.duration) li.querySelector(".file-duration span:last-child").textContent = tmg.utils.formatMediaTime({ time: item.media.status.duration });
@@ -580,7 +580,7 @@ async function handleFiles(files, restored = null, handles = null) {
           "tmginit",
           () => {
             (MC = MP.ctlr).media.once("status.loadedMetadata", () => setTimeout(dispatchPlayerReadyToast, 500));
-            MC.media.on("state.currentTime", ({ value: ct }) => MC.throttle("TVP_thumbnail_update", () => ct > 3 && MC.config.lightState.disabled && containers[MC.media.state.currentItem]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / MC.media.status.duration)), 2500));
+            MC.media.on("state.currentTime", ({ value: ct }) => MC.throttle("TVP_thumbnail_update", () => ct > 3 && MC.config.light.disabled && containers[MC.media.state.currentItem]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / MC.media.status.duration)), 2500));
             MC.media.on("state.paused", ({ value }, idx = MC.media.state.currentItem) => {
               if (!value) for (let i = 0, len = contentLines.length; i < len; i++) contentLines[i].classList.toggle("playing", i === idx);
               containers[idx]?.classList.toggle("paused", value);
@@ -590,7 +590,8 @@ async function handleFiles(files, restored = null, handles = null) {
           { once: true }
         );
         (MP = new tmg.Player({
-          lightState: restored?.config.lightState ?? { disabled: false },
+          devMode: !import.meta.env.PROD,
+          light: restored?.config.light ?? { disabled: false, "preview.tease": true },
           "playlist.content": content,
           "media.intent.paused": restored?.media.state.paused ?? true,
           "media.intent.src": restored ? content.find((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id)?.media.intent.src : undefined,
@@ -601,7 +602,7 @@ async function handleFiles(files, restored = null, handles = null) {
           "settings.captions.background.opacity.value": 0,
           "settings.captions.characterEdgeStyle.value": "drop-shadow",
           "settings.overlay.behavior.value": "auto",
-          "settings.persist": { key: window._lssk, adapter: Memory.adapter, throttle: 2500, strict: true, beforeHydrate: (p) => (p.config && (delete p.config.playlist, delete p.config.lightState), p.media?.settings && delete p.media.settings.metadata, p.media?.state && delete p.media.state.paused) },
+          "settings.persist": { key: window._lssk, adapter: Memory.adapter, throttle: 2500, strict: true, beforeHydrate: (p) => (p.config && (delete p.config.playlist, delete p.config.light), p.media?.settings && delete p.media.settings.metadata, p.media?.state && delete p.media.state.paused) },
           "settings.persist.blacklist.media": ["state.src", "state.sources", "state.tracks", "state.srcObject", "state.poster", "state.fullscreen", "state.pictureInPicture"],
           noPlugList: [],
           safeDetach: true,
