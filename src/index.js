@@ -8,7 +8,7 @@ import { inject } from "@vercel/analytics";
 import { injectSpeedInsights } from "@vercel/speed-insights";
 import { setPath } from "sia-reactor/utils";
 
-inject({ mode: import.meta.env.PROD ? "production" : "development" }), injectSpeedInsights(); // Realtime Vercel Analytics
+(inject({ mode: import.meta.env.PROD ? "production" : "development" }), injectSpeedInsights()); // Realtime Vercel Analytics
 
 // ===========================================================================
 // GLOBAL CONTEXT & SYSTEM VARS
@@ -56,7 +56,7 @@ window.Memory = {
   },
   async clearSession() {
     this.adapter.set(window._lssk, { config: { settings: this.getState()?.config.settings || {} } }); // might not wanna clear settings
-    (sessionHandles = []), await DB.clear();
+    ((sessionHandles = []), await DB.clear());
   },
   clearSettings() {
     const state = this.getState();
@@ -132,8 +132,8 @@ const primaryLang = "eng",
 const prevGet = window.Memory.adapter.get.bind(window.Memory.adapter);
 window.Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
-  if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) (state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" });
-  else if (state?.config?.settings?.settingsView) (delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
+  if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) ((state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" }));
+  else if (state?.config?.settings?.settingsView) ((delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" }));
   return state;
 }; // V1 -> V2 MIGRATION LAYER
 
@@ -217,7 +217,7 @@ window.addEventListener("appinstalled", () => ((installed = true), (installButto
 
 installButton.addEventListener("click", async () => {
   const res = await installPrompt?.prompt?.();
-  if (res.outcome === "accepted") (installButton.style.display = "none"), (installPrompt = null);
+  if (res.outcome === "accepted") ((installButton.style.display = "none"), (installPrompt = null));
 });
 document.getElementById("clear-files-button").addEventListener("click", clearFiles);
 document.getElementById("sort-files-button")?.addEventListener("click", (e) => (MC?.plug("playlist").sort((e.currentTarget.dataset.dir = e.currentTarget.dataset.dir === "desc" ? "asc" : "desc")), (e.currentTarget.style.scale = e.currentTarget.dataset.dir === "desc" ? "1 -1" : "1")));
@@ -286,7 +286,7 @@ function initUI() {
 }
 
 function readyUI() {
-  video.classList.remove("stall"), MC.media.pseudoElement.classList.remove("stall");
+  (video.classList.remove("stall"), MC.media.pseudoElement.classList.remove("stall"));
   playerContainer.classList.remove("loading");
   setTimeout(() => MC.plug("settings.toasts")?.toast?.(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }), 500);
   MC.config.on("settings.css.brandColor", ({ value }) => setColors(value, false), { init: "auto" });
@@ -309,7 +309,7 @@ async function restoreSession({ handles }) {
     files = [],
     sureHandles = [];
 
-  stoast.info("Restoring your session now", { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath();
+  (stoast.info("Restoring your session now", { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath());
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
     try {
@@ -339,7 +339,7 @@ async function restoreSession({ handles }) {
 async function clearSettings(prompt = false) {
   const ok = prompt && (await confirm("Are you sure you want to clear your settings?", { title: "Clear Settings", confirmText: "Clear" }));
   if (prompt && !ok) return;
-  Memory.clearSettings(), setColors();
+  (Memory.clearSettings(), setColors());
   clearSettingsButton.classList.remove("shown");
   toast.success("Settings cleared successfully", { id: "settings", actions: false });
 }
@@ -349,7 +349,7 @@ async function clearFiles(skipPrompt = false) {
   if (!ok) return;
   toast.dismiss("ready");
   if (MP) MC.media.intent.paused = true;
-  video.removeAttribute("src"), video.removeAttribute("poster");
+  (video.removeAttribute("src"), video.removeAttribute("poster"));
   Array.prototype.forEach.call(containers, (c) => {
     const vid = c.querySelector("video");
     if (vid.src?.startsWith("blob:")) URL.revokeObjectURL(vid.src);
@@ -360,7 +360,7 @@ async function clearFiles(skipPrompt = false) {
   video = MP?.detach();
   MP = MC = null;
   nums.files = nums.bytes = nums.time = 0;
-  Memory.clearSession(), defaultUI(), clearSettingsButton.classList.add("shown");
+  (Memory.clearSession(), defaultUI(), clearSettingsButton.classList.add("shown"));
   toast.success("Cleared all files from your session, Settings too?", { id: "settings", autoClose: 5000, actions: { Clear: () => clearSettings() } });
 }
 
@@ -372,10 +372,10 @@ async function handleFiles(files, restored = null, handles = null) {
   try {
     const remoteItems = restored?.config.playlist.content?.filter((item) => !item.media.intent.src.startsWith("blob:")) || [];
     if (!files?.length && !remoteItems.length && !nums.files) return defaultUI();
-    stoast.dismiss("session"), initUI();
+    (stoast.dismiss("session"), initUI());
 
-    if (handles?.length) (sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))]), Memory.saveHandles();
-    for (const file of (files = !restored ? tmg.utils.smartFlatSort(files) : playlistSort(files, restored.config.playlist))) nums.files++, (nums.bytes += file.size);
+    if (handles?.length) ((sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))]), Memory.saveHandles());
+    for (const file of (files = !restored ? tmg.utils.smartFlatSort(files) : playlistSort(files, restored.config.playlist))) (nums.files++, (nums.bytes += file.size));
     await tmg.utils.deepBreath();
 
     const stateMap = new Map(restored?.config.playlist.content?.map((v) => [v.media.settings.metadata.title, v]) || []),
@@ -424,7 +424,7 @@ async function handleFiles(files, restored = null, handles = null) {
           const f = e.target.files[0];
           if (!f) return;
           const ext = tmg.utils.getExtension(f.name);
-          if (!["srt", "vtt"].includes(ext)) return (thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported");
+          if (!["srt", "vtt"].includes(ext)) return ((thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported"));
           let txt = await f.text();
           if (ext === "srt") txt = tmg.utils.srtToVtt(txt);
           const plItem = thumbnail.getPlItem(),
@@ -465,7 +465,7 @@ async function handleFiles(files, restored = null, handles = null) {
         if (!file) return;
         const hIdx = sessionHandles.findIndex((h) => h.name === file.name);
         hIdx !== -1 && (sessionHandles.splice(hIdx, 1), Memory.saveHandles());
-        nums.files--, (nums.bytes -= file.size);
+        (nums.files--, (nums.bytes -= file.size));
       };
       const dragHandle = tmg.utils.createEl("span", { title: "Drag to Reorder", className: "drag-handle", innerHTML: `<svg fill="#000000" height="20px" width="20px" viewBox="0 0 24 24"><path d="M10,6H6V2h4V6z M18,2h-4v4h4V2z M10,10H6v4h4V10z M18,10h-4v4h4V10z M10,18H6v4h4V18z M18,18h-4v4h4V18z"/></svg>` });
       dragHandle.addEventListener(
@@ -492,7 +492,7 @@ async function handleFiles(files, restored = null, handles = null) {
             tmg.utils.cancelRAFLoop("listItemDragging");
             scroller.reset();
             li.classList.remove("dragging");
-            placeholderLi.parentElement.replaceChild(li, placeholderLi), (placeholderLi = null);
+            (placeholderLi.parentElement.replaceChild(li, placeholderLi), (placeholderLi = null));
             syncPlaylist();
             ["pointermove", "pointerup", "pointercancel"].forEach((e, i) => document.removeEventListener(e, !i ? onPointerMove : onPointerUp));
           }
@@ -507,12 +507,12 @@ async function handleFiles(files, restored = null, handles = null) {
       const ffName = tmg.utils.noExtension(files[i].name, false),
         state = stateMap.get(ffName);
       if ((restored && !state) || !!Array.prototype.find.call(containers, (c) => c.lastElementChild.ffName === ffName)) {
-        nums.files--, (nums.bytes -= files[i].size);
+        (nums.files--, (nums.bytes -= files[i].size));
         thumbnails.push(null);
         continue;
       }
       const item = buildListItem(files[i], state);
-      thumbnails.push(item.thumbnail), list.append(item.li), files.length < 50 && (await tmg.utils.breath());
+      (thumbnails.push(item.thumbnail), list.append(item.li), files.length < 50 && (await tmg.utils.breath()));
     }
     for (const rItem of remoteItems) {
       if (Array.prototype.find.call(containers, (c) => c.lastElementChild.mediaId === rItem.media.settings.metadata.id)) {
@@ -520,7 +520,7 @@ async function handleFiles(files, restored = null, handles = null) {
         continue;
       }
       const item = buildListItem(null, rItem);
-      thumbnails.push(item.thumbnail), list.append(item.li), remoteItems.length < 50 && (await tmg.utils.breath());
+      (thumbnails.push(item.thumbnail), list.append(item.li), remoteItems.length < 50 && (await tmg.utils.breath()));
     }
 
     const content = [];
@@ -531,8 +531,8 @@ async function handleFiles(files, restored = null, handles = null) {
           state = stateMap.get(thumbnails[i].ffName),
           item = state ?? { media: { intent: { tracks: [] }, settings: { metadata: { id: tmg.utils.uid(), title: thumbnails[i].ffName, artist: "TMG Video Player", profile: "assets/icons/tmg-icon.jpeg", links: { artist: "https://tmg-video-player.vercel.app", profile: "https://github.com/Tobi007-del/tmg-media-player" } } } }, settings: { time: { start: 0 }, controlPanel: { timeline: { previews: true } } } };
         item._renderedLi = thumbnails[i].closest("li");
-        (item.media.intent.src = url), (item.media.intent.tracks = item.media.intent.tracks.filter((t) => !t.src.startsWith("blob:")));
-        content.push(item), (thumbnails[i].src = url), readyNail(thumbnails[i], item);
+        ((item.media.intent.src = url), (item.media.intent.tracks = item.media.intent.tracks.filter((t) => !t.src.startsWith("blob:"))));
+        (content.push(item), (thumbnails[i].src = url), readyNail(thumbnails[i], item));
       }
       for (let i = 0; i < remoteItems.length; i++) {
         const thumbIdx = files.length + i;
@@ -549,7 +549,7 @@ async function handleFiles(files, restored = null, handles = null) {
         const setUpList = (renderList) => {
           MC.config.on("playlist.content", ({ currentTarget: { value } }) => {
             if (!value || !document.getElementById("media-list")) return;
-            for (let i = (nums.time = 0); i < value.length; i++) value[i].media.settings.metadata.id || setPath(value[i], "media.settings.metadata.id", tmg.utils.uid()), (nums.time += tmg.utils.safeNum(value[i].media.status.duration));
+            for (let i = (nums.time = 0); i < value.length; i++) (value[i].media.settings.metadata.id || setPath(value[i], "media.settings.metadata.id", tmg.utils.uid()), (nums.time += tmg.utils.safeNum(value[i].media.status.duration)));
             (renderList ??= tmg.utils.createListRenderer({
               container: list,
               getKey: (item) => item.media.settings.metadata.id,
@@ -557,7 +557,7 @@ async function handleFiles(files, restored = null, handles = null) {
                 let li = item._renderedLi;
                 if (!li) {
                   const { li: resLi, thumbnail } = buildListItem(null, item);
-                  (li = resLi), deployTracks(undefined, (thumbnails.push(thumbnail), thumbnail), undefined, item);
+                  ((li = resLi), deployTracks(undefined, (thumbnails.push(thumbnail), thumbnail), undefined, item));
                 } else delete item._renderedLi;
                 return li;
               },
@@ -571,7 +571,7 @@ async function handleFiles(files, restored = null, handles = null) {
               destroyNode: (li) => {
                 const id = li.querySelector("video")?.mediaId,
                   idx = thumbnails.findIndex((t) => t?.mediaId === id);
-                idx !== -1 && thumbnails.splice(idx, 1), !MC.config.playlist.content.some((item) => item.media.settings.metadata.id === id) && li.cleanUpDB?.();
+                (idx !== -1 && thumbnails.splice(idx, 1), !MC.config.playlist.content.some((item) => item.media.settings.metadata.id === id) && li.cleanUpDB?.());
               },
             }))(value);
           });
@@ -585,13 +585,13 @@ async function handleFiles(files, restored = null, handles = null) {
               if (!value) for (let i = 0, len = contentLines.length; i < len; i++) contentLines[i].classList.toggle("playing", i === idx);
               containers[idx]?.classList.toggle("paused", value);
             });
-            readyUI(), setUpList();
+            (readyUI(), setUpList());
           },
           { once: true }
         );
         (MP = new tmg.Player({
           devMode: !import.meta.env.PROD,
-          light: restored?.config.light ?? { disabled: false, "preview.tease": true },
+          light: restored?.config.light ?? restored?.config.lightState ?? { disabled: false, "preview.tease": true }, // backwards compat
           "playlist.content": content,
           "media.intent.paused": restored?.media.state.paused ?? true,
           "media.intent.src": restored ? content.find((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id)?.media.intent.src : undefined,
@@ -613,7 +613,7 @@ async function handleFiles(files, restored = null, handles = null) {
     (nums.files || remoteItems.length) && (await Promise.all(thumbnails.map(async (t, i) => t && (await deployTracks(i < files.length ? files[i] : undefined, t, undefined)))));
     if (!nums.files && !MC?.config.playlist.content?.length) return defaultUI();
   } catch (error) {
-    console.error("TVP files handling failed:", error), errorUI(error);
+    (console.error("TVP files handling failed:", error), errorUI(error));
   }
 }
 
@@ -709,7 +709,7 @@ async function extractTracks(file, id, onProgress) {
     }
     return { success: true };
   } catch (err) {
-    return console.error("❌ TVP tracks extraction failed:", err), { success: false, error: err.toString() };
+    return (console.error("❌ TVP tracks extraction failed:", err), { success: false, error: err.toString() });
   } finally {
     try {
       ffmpeg.FS("unlink", inputName);
