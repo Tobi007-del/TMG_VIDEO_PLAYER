@@ -133,7 +133,7 @@ const prevGet = window.Memory.adapter.get.bind(window.Memory.adapter);
 window.Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
   if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) ((state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" }));
-  else if (state?.config?.settings?.settingsView) ((delete state.config.settings, delete state.config.actions), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" }));
+  else if (state?.config?.settings?.settingsView) ((delete state.config.settings, delete state.config.actions, delete state.config.devMode), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" }));
   if (state?.config?.lightState) ((state.config.light = state.config.lightState), delete state.config.lightState); // backwards compat
   return state;
 }; // V1 -> V2 MIGRATION LAYER
@@ -384,7 +384,7 @@ async function handleFiles(files, restored = null, handles = null) {
       thumbnails = [];
 
     const readyNail = (thumbnail, item) => {
-      thumbnail.mediaId = item.media.settings.metadata.id;
+      ((thumbnail.src = item.media.intent.src), (thumbnail.poster = item.media.intent.poster), (thumbnail.mediaId = item.media.settings.metadata.id));
       thumbnail.getPlItem = (plItem = MC?.config.playlist.content.find((v) => v.media.settings.metadata.id === item.media.settings.metadata.id)) => (thumbnail.plItem = plItem ?? thumbnail.plItem ?? item);
       thumbnail.getPlIndex = () => MC?.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === item.media.settings.metadata.id);
     };
@@ -399,7 +399,6 @@ async function handleFiles(files, restored = null, handles = null) {
           preload: "metadata",
           muted: true,
           playsInline: true,
-          poster: item?.media.intent.poster,
           onloadedmetadata: ({ target }, item = thumbnail.getPlItem() ?? item) => {
             if (item) item.media.status.duration = tmg.utils.safeNum(target.duration);
             target.currentTime = tmg.utils.parseIfPercent(MC?.config.light.preview.max ?? 4, target.duration, 0.25);
@@ -532,8 +531,8 @@ async function handleFiles(files, restored = null, handles = null) {
           state = stateMap.get(thumbnails[i].ffName),
           item = state ?? { media: { intent: { tracks: [] }, settings: { metadata: { id: tmg.utils.uid(), title: thumbnails[i].ffName, artist: "TMG Video Player", profile: "assets/icons/tmg-icon.jpeg", links: { artist: "https://tmg-video-player.vercel.app", profile: "https://github.com/Tobi007-del/tmg-media-player" } } } }, settings: { time: { start: 0 }, controlPanel: { timeline: { previews: true } } } };
         item._renderedLi = thumbnails[i].closest("li");
-        ((item.media.intent.src = url), (item.media.intent.tracks = item.media.intent.tracks.filter((t) => !t.src.startsWith("blob:"))));
-        (content.push(item), (thumbnails[i].src = url), readyNail(thumbnails[i], item));
+        ((item.media.intent.src = url), (item.media.intent.poster = ""), (item.media.intent.tracks = item.media.intent.tracks.filter((t) => !t.src.startsWith("blob:"))));
+        (content.push(item), readyNail(thumbnails[i], item));
       }
       for (let i = 0; i < remoteItems.length; i++) {
         const thumbIdx = files.length + i;
@@ -594,17 +593,17 @@ async function handleFiles(files, restored = null, handles = null) {
           devMode: !import.meta.env.PROD,
           light: restored?.config.light ?? { disabled: false, "preview.tease": true },
           "playlist.content": content,
-          "media.intent.paused": restored?.media.state.paused ?? true,
           "media.intent.src": restored ? content.find((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id)?.media.intent.src : undefined,
+          "media.intent.poster": "",
+          "media.intent.paused": restored?.media.state.paused ?? true,
           "media.settings.metadata": { artist: "TMG Video Player", profile: "assets/icons/tmg-icon.jpeg", links: { artist: "https://tmg-video-player.vercel.app", profile: "https://github.com/Tobi007-del/tmg-media-player" } },
-          "settings.controlPanel.timeline.bufferMarks": false,
           "settings.captions.font.size.value": 200,
           "settings.captions.font.weight.value": 700,
           "settings.captions.background.opacity.value": 0,
           "settings.captions.characterEdgeStyle.value": "drop-shadow",
           "settings.overlay.behavior.value": "auto",
           "settings.persist": { key: window._lssk, adapter: Memory.adapter, throttle: 2500, strict: true, beforeHydrate: (p) => (p.config && (delete p.config.playlist, delete p.config.light), p.media?.settings && delete p.media.settings.metadata, p.media?.state && delete p.media.state.paused) },
-          "settings.persist.blacklist.media": ["state.src", "state.sources", "state.tracks", "state.srcObject", "state.poster", "state.fullscreen", "state.pictureInPicture"],
+          "settings.persist.blacklist.media": ["state.src", "state.sources", "state.srcObject", "state.tracks", "state.poster", "state.fullscreen", "state.pictureInPicture"],
           noPlugList: [],
           safeDetach: true,
         })).attach(video);
