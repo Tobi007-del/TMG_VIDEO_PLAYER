@@ -289,7 +289,6 @@ function initUI() {
 function readyUI() {
   video.classList.remove("stall"), MC.media.pseudoElement.classList.remove("stall");
   playerContainer.classList.remove("loading");
-  setTimeout(() => MC.plug("settings.toasts")?.toast?.(`You're welcome${vi.isNew ? "" : " back"} to TVP`, { icon: "🎬", image: "assets/images/lone-tree.jpg" }), 500);
   MC.config.on("settings.css.brandColor", ({ value }) => setColors(value, false), { init: "auto" });
   MC.config.on("settings.css.themeColor", ({ value }) => setColors(false, value), { init: "auto" });
 }
@@ -579,7 +578,7 @@ async function handleFiles(files, restored = null, handles = null) {
         video.addEventListener(
           "tmginit",
           () => {
-            (MC = MP.ctlr).media.once("status.loadedMetadata", () => setTimeout(dispatchPlayerReadyToast, 500));
+            (MC = MP.ctlr).media.once("status.loadedMetadata", () => setTimeout(() => (dispatchPlayerReadyToast(), teachColorBasics()), 500));
             MC.media.on("state.currentTime", ({ value: ct }) => MC.throttle("TVP_thumbnail_update", () => ct > 3 && MC.config.light.disabled && containers[MC.media.state.currentItem]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / MC.media.status.duration)), 2500));
             MC.media.on("state.paused", ({ value }, idx = MC.media.state.currentItem) => {
               if (!value) for (let i = 0, len = contentLines.length; i < len; i++) contentLines[i].classList.toggle("playing", i === idx);
@@ -590,7 +589,6 @@ async function handleFiles(files, restored = null, handles = null) {
           { once: true }
         );
         (MP = new tmg.Player({
-          devMode: !import.meta.env.PROD,
           light: restored?.config.light ?? { disabled: false, "preview.tease": true },
           "playlist.content": content,
           "media.intent.src": restored ? content.find((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id)?.media.intent.src : undefined,
@@ -602,6 +600,7 @@ async function handleFiles(files, restored = null, handles = null) {
           "settings.captions.background.opacity.value": 0,
           "settings.captions.characterEdgeStyle.value": "drop-shadow",
           "settings.overlay.behavior.value": "auto",
+          "settings.css.syncWithMedia.brandColor": true,
           "settings.persist": { key: window._lssk, adapter: Memory.adapter, throttle: 2500, strict: true, beforeHydrate: (p) => (p.config && (delete p.config.playlist, delete p.config.light), p.media?.settings && delete p.media.settings.metadata, p.media?.state && delete p.media.state.paused) },
           "settings.persist.blacklist.media": ["state.src", "state.sources", "state.srcObject", "state.tracks", "state.poster", "state.fullscreen", "state.pictureInPicture"],
           noPlugList: [],
@@ -785,8 +784,15 @@ function dispatchPlayerReadyToast(hour = new Date().getHours()) {
   const timeLines = readyLines[hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : hour >= 17 && hour < 21 ? "evening" : "night"] || [],
     combined = [...timeLines, ...readyLines.default, ...timeLines],
     { body, icon } = combined[Math.floor(Math.random() * combined.length)];
-  toast(body, { id: "ready", vibrate: true, icon });
+  toast(body, { id: "ready", vibrate: true, icon, image: "assets/images/lone-tree.jpg" });
 }
+
+const teachColorBasics = tmg.utils.limited(
+  (_id) => {
+    if (MC.config.settings.css.syncWithMedia.brandColor) _id = MC.plug("settings.toasts").toast("Visit more settings if you don't want your video's brand color?", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Open: () => (toast.dismiss(_id), MC.plug("settings.panel").toggleView()) } });
+  },
+  { key: "teach_brandColor", maxTimes: 60, perSession: 2 }
+);
 
 function syncPlaylist() {
   const map = Object.fromEntries(MC.config.playlist.content?.map((v) => [v.media.settings.metadata.id, v]) || []);

@@ -44,7 +44,6 @@
 :where(body > .t007-toast-container) > .t007-toast {
   --t007-toast-color: var(--tvp-brand-color);
   --t007-toast-box-shadow: 1px 1px 2px rgb(from var(--tvp-brand-accent-color) r g b / 0.06), 2px 2px 4px rgb(from var(--tvp-brand-accent-color) r g b / 0.06);
-  --t007-toast-progress-background: linear-gradient(to left, var(--tvp-brand-color), var(--tvp-brand-accent-color), var(--tvp-brand-light-color));
 }
 .t007-toast[data-tag="tvp-restore"] .t007-toast-icon:where(:not(.t007-toast-loader)) {
   animation: none;
