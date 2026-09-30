@@ -789,9 +789,9 @@ function dispatchPlayerReadyToast(hour = new Date().getHours()) {
 
 const teachColorBasics = tmg.utils.limited(
   (_id) => {
-    if (MC.config.settings.css.syncWithMedia.brandColor) _id = MC.plug("settings.toasts").toast("Visit more settings if you don't want your video's brand color?", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Open: () => (toast.dismiss(_id), MC.plug("settings.panel").toggleView()) } });
+    if (MC.config.settings.css.syncWithMedia.brandColor) _id = MC.plug("settings.toasts").toast("Visit more settings to change your video's brand color", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Open: () => (toast.dismiss(_id), MC.plug("settings.panel").toggleView()) } });
   },
-  { key: "teach_brandColor", maxTimes: 60, perSession: 2 }
+  { key: "teach_brandColor", maxTimes: 6, perSession: 2 }
 );
 
 function syncPlaylist() {
