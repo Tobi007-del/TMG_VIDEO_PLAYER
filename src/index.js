@@ -15,13 +15,14 @@ inject({ mode: import.meta.env.PROD ? "production" : "development" }), injectSpe
 // ===========================================================================
 
 window._lsik = "TVP_visitor_info"; // localStorage info key
+window._lsvk = "TVP_settings_version";
 window.canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype;
 window.sessionHandles = []; // global handle access of current session handles
 
 // ===========================================================================
 // MEMORY BRIDGE & STORAGE ADAPTERS
 // ===========================================================================
-
+window.SV = 1; // settings version, bump to reset settings on next load
 window.MP = window.MC = null;
 
 window.DB = new IndexedDBAdapter({
@@ -35,9 +36,8 @@ window.DB = new IndexedDBAdapter({
   onversionchange: () => (toast.info(`TVP updated in another ${installed ? "window" : "tab"}. Reloading...`), location.reload()),
   onblocked: () => toast.warn(`Please close other ${installed ? "windows" : "tabs"} of TVP to apply updates`),
 });
-
 window.Memory = {
-  adapter: new LocalStorageAdapter({ key: window._lssk }),
+  adapter: new LocalStorageAdapter({ key: _lssk }),
   expiryDays: 70 * 7, // the Bible said "seventy times seven", so here we are
   getState() {
     return this.adapter.get();
@@ -55,12 +55,13 @@ window.Memory = {
     sessionHandles.length || state?.config.playlist.content?.some((i) => !i.media.intent.src.startsWith("blob:")) ? await DB.set("last_handles", { handles: sessionHandles, lastUpdated: Date.now() }) : await this.clearSession();
   },
   async clearSession() {
-    this.adapter.set(window._lssk, { config: { settings: this.getState()?.config.settings || {} } }); // might not wanna clear settings
+    this.adapter.set(_lssk, { config: { settings: this.getState()?.config.settings || {} } }); // might not wanna clear settings
     (sessionHandles = []), await DB.clear();
   },
   clearSettings() {
     const state = this.getState();
-    this.adapter.set(window._lssk, (delete state.config.settings, delete state.config.actions, state));
+    this.adapter.set(_lssk, (delete state.config.settings, delete state.config.actions, state));
+    localStorage.removeItem(tmg.consts.FN_KEY);
   },
 };
 
@@ -129,12 +130,15 @@ const primaryLang = "eng",
 // INITIALIZATION IIFES (Fire & Forget)
 // ===========================================================================
 
-const prevGet = window.Memory.adapter.get.bind(window.Memory.adapter);
-window.Memory.adapter.get = function (key, reviver) {
+const prevGet = Memory.adapter.get.bind(Memory.adapter);
+Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
-  if ((state?.playlist && !state.config) || (state?.config?.playlist && Array.isArray(state.config.playlist))) (state = null), this.remove(key), toast.info("Previous session data has been cleared due to recent upgrades.", { icon: "⚙️" });
-  else if (state?.config?.settings?.settingsView) (delete state.config.settings, delete state.config.actions, delete state.config.devMode), this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" });
-  if (state?.config?.lightState) (state.config.light = state.config.lightState), delete state.config.lightState; // backwards compat
+  // 1. Legacy Full Wipe
+  if ((state?.playlist && !state.config) || Array.isArray(state?.config?.playlist)) (state = null), this.remove(key), toast.info("Your session data has been cleared due to recent upgrades.", { icon: "⚙️" });
+  // 2. Versioned Settings Wipe
+  if ((localStorage[_lsvk] || 0) < SV && state?.config) delete state.config.settings, delete state.config.actions, delete state.config.devMode, this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" }), localStorage.removeItem(tmg.consts.FN_KEY), (localStorage[_lsvk] = SV);
+  // 3. Backwards compat
+  if (state?.config?.lightState) (state.config.light = state.config.lightState), delete state.config.lightState;
   return state;
 }; // V1 -> V2 MIGRATION LAYER
 
@@ -320,7 +324,7 @@ async function restoreSession({ handles }) {
         })();
       });
       const file = handle.kind === "file" ? await handle.getFile() : await getHandlesFiles([handle]);
-      tmg.utils.isArr(file) ? files.push(...file.filter((file) => file.type.match(/^(video|audio)\//))) : files.push(file);
+      Array.isArray(file) ? files.push(...file.filter((file) => file.type.match(/^(video|audio)\//))) : files.push(file);
       sureHandles.push(handle);
       stoast.success(`Restored ${name} successfully`, { id: "session", actions: false });
       await (resp === "User not needed" ? tmg.utils.deepBreath() : tmg.utils.mockAsync(200));
@@ -601,7 +605,7 @@ async function handleFiles(files, restored = null, handles = null) {
           "settings.captions.characterEdgeStyle.value": "drop-shadow",
           "settings.overlay.behavior.value": "auto",
           "settings.css.syncWithMedia.brandColor": true,
-          "settings.persist": { key: window._lssk, adapter: Memory.adapter, throttle: 2500, strict: true, beforeHydrate: (p) => (p.config && (delete p.config.playlist, delete p.config.light), p.media?.settings && delete p.media.settings.metadata, p.media?.state && delete p.media.state.paused) },
+          "settings.persist": { key: _lssk, adapter: Memory.adapter, throttle: 2500, strict: true, beforeHydrate: (p) => (p.config && (delete p.config.playlist, delete p.config.light), p.media?.settings && delete p.media.settings.metadata, p.media?.state && delete p.media.state.paused) },
           "settings.persist.blacklist.media": ["state.src", "state.sources", "state.srcObject", "state.tracks", "state.poster", "state.fullscreen", "state.pictureInPicture"],
           noPlugList: [],
           safeDetach: true,
