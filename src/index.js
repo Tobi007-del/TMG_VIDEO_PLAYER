@@ -22,7 +22,7 @@ window.sessionHandles = []; // global handle access of current session handles
 // ===========================================================================
 // MEMORY BRIDGE & STORAGE ADAPTERS
 // ===========================================================================
-window.SV = 2; // settings version, bump to reset settings on next load
+window.SV = 3; // settings version, bump to reset settings on next load
 window.MP = window.MC = null;
 
 window.DB = new IndexedDBAdapter({
@@ -594,6 +594,7 @@ async function handleFiles(files, restored = null, handles = null) {
         );
         (MP = new tmg.Player({
           light: restored?.config.light ?? { disabled: false, "preview.tease": true },
+          devMode: !import.meta.env.PROD,
           "playlist.content": content,
           "media.intent.src": restored ? content.find((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id)?.media.intent.src : undefined,
           "media.intent.poster": "",
