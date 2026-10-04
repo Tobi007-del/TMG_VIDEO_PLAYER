@@ -22,7 +22,7 @@ window.sessionHandles = []; // global handle access of current session handles
 // ===========================================================================
 // MEMORY BRIDGE & STORAGE ADAPTERS
 // ===========================================================================
-window.SV = 1; // settings version, bump to reset settings on next load
+window.SV = 2; // settings version, bump to reset settings on next load
 window.MP = window.MC = null;
 
 window.DB = new IndexedDBAdapter({
