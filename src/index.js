@@ -22,7 +22,7 @@ window.sessionHandles = []; // global handle access of current session handles
 // ===========================================================================
 // MEMORY BRIDGE & STORAGE ADAPTERS
 // ===========================================================================
-window.SV = 3; // settings version, bump to reset settings on next load
+window.SV = 4; // settings version, bump to reset settings on next load
 window.MP = window.MC = null;
 
 window.DB = new IndexedDBAdapter({
@@ -134,9 +134,9 @@ const prevGet = Memory.adapter.get.bind(Memory.adapter);
 Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
   // 1. Legacy Full Wipe
-  if ((state?.playlist && !state.config) || Array.isArray(state?.config?.playlist)) (state = null), this.remove(key), toast.info("Your session data has been cleared due to recent upgrades.", { icon: "⚙️" });
+  if ((state?.playlist && !state.config) || Array.isArray(state?.config?.playlist)) (state = null), this.remove(key), toast.info("Your session data has been cleared due to recent upgrades.", { icon: "⚙️" }), setColors();
   // 2. Versioned Settings Wipe
-  if ((localStorage[_lsvk] || 0) < SV && state?.config) delete state.config.settings, delete state.config.actions, delete state.config.devMode, this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" }), localStorage.removeItem(tmg.consts.FN_KEY), (localStorage[_lsvk] = SV);
+  if ((localStorage[_lsvk] || 0) < SV && state?.config) delete state.config.settings, delete state.config.actions, delete state.config.devMode, this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" }), localStorage.removeItem(tmg.consts.FN_KEY), (localStorage[_lsvk] = SV), setColors();
   // 3. Backwards compat
   if (state?.config?.lightState) (state.config.light = state.config.lightState), delete state.config.lightState;
   return state;
