@@ -18,11 +18,12 @@ window._lsik = "TVP_visitor_info"; // localStorage info key
 window._lsvk = "TVP_settings_version";
 window.canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype;
 window.sessionHandles = []; // global handle access of current session handles
+t007.TOAST_DEFAULT_OPTIONS.closeButton = false;
 
 // ===========================================================================
 // MEMORY BRIDGE & STORAGE ADAPTERS
 // ===========================================================================
-window.SV = 4; // settings version, bump to reset settings on next load
+window.SV = 5; // settings version, bump to reset settings on next load
 window.MP = window.MC = null;
 
 window.DB = new IndexedDBAdapter({
@@ -55,12 +56,12 @@ window.Memory = {
     sessionHandles.length || state?.config.playlist.content?.some((i) => !i.media.intent.src.startsWith("blob:")) ? await DB.set("last_handles", { handles: sessionHandles, lastUpdated: Date.now() }) : await this.clearSession();
   },
   async clearSession() {
-    this.adapter.set(_lssk, { config: { settings: this.getState()?.config.settings || {} } }); // might not wanna clear settings
+    await this.adapter.set(_lssk, { config: { settings: this.getState()?.config.settings || {} } }); // might not wanna clear settings
     (sessionHandles = []), await DB.clear();
   },
-  clearSettings() {
+  async clearSettings() {
     const state = this.getState();
-    this.adapter.set(_lssk, (delete state.config.settings, delete state.config.actions, state));
+    await this.adapter.set(_lssk, (delete state.config.settings, delete state.config.actions, state));
     localStorage.removeItem(tmg.consts.FN_KEY);
   },
 };
@@ -134,9 +135,9 @@ const prevGet = Memory.adapter.get.bind(Memory.adapter);
 Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
   // 1. Legacy Full Wipe
-  if ((state?.playlist && !state.config) || Array.isArray(state?.config?.playlist)) (state = null), this.remove(key), toast.info("Your session data has been cleared due to recent upgrades.", { icon: "⚙️" }), setColors();
+  if ((state?.playlist && !state.config) || Array.isArray(state?.config?.playlist)) toast.promise(tmg.utils.mockAsync(1600), { pending: "Applying latest updates...", success: "Your session data was cleared due to recent updates." }), (state = null), this.remove(key), setColors();
   // 2. Versioned Settings Wipe
-  if ((localStorage[_lsvk] || 0) < SV && state?.config) delete state.config.settings, delete state.config.actions, delete state.config.devMode, this.set(key, state), toast.info("Your settings have been reset due to recent upgrades.", { icon: "⚙️" }), localStorage.removeItem(tmg.consts.FN_KEY), (localStorage[_lsvk] = SV), setColors();
+  if ((localStorage[_lsvk] || 0) < SV && state?.config) toast.promise(tmg.utils.mockAsync(1600), { pending: "Applying latest updates...", success: "Your settings were reset due to recent updates." }), delete state.config.settings, delete state.config.actions, delete state.config.devMode, this.set(key, state), localStorage.removeItem(tmg.consts.FN_KEY), (localStorage[_lsvk] = SV), setColors();
   // 3. Backwards compat
   if (state?.config?.lightState) (state.config.light = state.config.lightState), delete state.config.lightState;
   return state;
@@ -343,9 +344,9 @@ async function restoreSession({ handles }) {
 async function clearSettings(prompt = false) {
   const ok = prompt && (await confirm("Are you sure you want to clear your settings?", { title: "Clear Settings", confirmText: "Clear" }));
   if (prompt && !ok) return;
-  Memory.clearSettings(), setColors();
+  await toast.promise(Memory.clearSettings(), { pending: "Clearing settings...", success: { render: "Settings cleared successfully", actions: false }, error: "Failed to clear settings.", id: "settings" });
+  setColors();
   clearSettingsButton.classList.remove("shown");
-  toast.success("Settings cleared successfully", { id: "settings", actions: false });
 }
 
 async function clearFiles(skipPrompt = false) {
@@ -364,8 +365,8 @@ async function clearFiles(skipPrompt = false) {
   video = MP?.detach();
   MP = MC = null;
   nums.files = nums.bytes = nums.time = 0;
-  Memory.clearSession(), defaultUI(), clearSettingsButton.classList.add("shown");
-  toast.success("Cleared all files from your session, Settings too?", { id: "settings", autoClose: 5000, actions: { Clear: () => clearSettings() } });
+  await toast.promise(Memory.clearSession(), { pending: "Clearing files...", success: { render: "Cleared all files from your session, Settings too?", autoClose: 5000, actions: { Clear: () => clearSettings() } }, error: "Failed to clear session files.", id: "settings" });
+  defaultUI(), clearSettingsButton.classList.add("shown");
 }
 
 // ===========================================================================
@@ -445,7 +446,7 @@ async function handleFiles(files, restored = null, handles = null) {
         ({ target }) => {
           if (target.matches("input")) return;
           if (thumbnail.dataset.captionState === "empty") {
-            setTimeout(() => (thumbnail.dataset.captionState = "loading"), 1000);
+            thumbnail._captionTid = setTimeout(() => (thumbnail.dataset.captionState = "loading"), 1000);
             return captionsBtn.querySelector("input").click();
           } else if (thumbnail.dataset.captionState === "filled") {
             const plItem = thumbnail.getPlItem();
@@ -631,7 +632,7 @@ async function deployTracks(file, thumbnail, autocancel = !tmg.utils.isDef(Share
   // 1. THE VAULT CHECK (Instant IDB Access)
   const subBuffers = await DB.get(id, "subtitles"),
     chapBuffer = await DB.get(id + "_chap", "chapters");
-  if (subBuffers || chapBuffer) {
+  if (subBuffers) {
     console.log(`✨TVP IDB Vault Hit: Tracks restored for ${id}`);
     item.media.intent.tracks = item.media.intent.tracks.filter((t) => t.kind !== "captions" && t.kind !== "chapters");
     if (subBuffers) {
@@ -642,7 +643,7 @@ async function deployTracks(file, thumbnail, autocancel = !tmg.utils.isDef(Share
     }
     if (chapBuffer) item.media.intent.tracks.push({ id: id + "_chap", kind: "chapters", label: "Chapters", srclang: "en", src: URL.createObjectURL(new Blob([chapBuffer], { type: "text/vtt" })) });
     if (MC?.config.playlist.content?.[MC.media.state.currentItem]?.media.settings.metadata.id === item.media.settings.metadata.id) silence(() => (MC.media.intent.tracks = item.media.intent.tracks));
-    return thumbnail.setAttribute("data-caption-state", subBuffers ? "filled" : "empty");
+    return thumbnail.setAttribute("data-caption-state", subBuffers && (!Array.isArray(subBuffers) || subBuffers.length) ? "filled" : "empty");
   }
   // 2. THE FACTORY (FFmpeg Processing)
   if (!(file instanceof File)) return thumbnail.setAttribute("data-caption-state", item?.media.intent.tracks?.some((t) => t.kind === "captions") ? "filled" : "empty");
@@ -671,6 +672,7 @@ async function deployTracks(file, thumbnail, autocancel = !tmg.utils.isDef(Share
     () => thumbnail.setAttribute("data-caption-state", "loading")
   );
   if (res.cancelled) return thumbnail.setAttribute("data-caption-state", "empty");
+  if (!subs.length) await DB.set(id, [], "subtitles");
   thumbnail.setAttribute("data-caption-state", subs.length ? "filled" : "empty");
 }
 
@@ -794,7 +796,7 @@ function dispatchPlayerReadyToast(hour = new Date().getHours()) {
 
 const teachColorBasics = tmg.utils.limited(
   (_id) => {
-    if (MC.config.settings.css.syncWithMedia.brandColor) _id = MC.plug("settings.toasts").toast("Visit more settings to change your video's brand color", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Open: () => (toast.dismiss(_id), MC.plug("settings.panel").toggleView()) } });
+    if (MC.config.settings.css.syncWithMedia.brandColor) _id = MC.plug("settings.toasts").toast("Visit more settings to change your video's brand color", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Open: () => (toast.dismiss(_id), MC.plug("settings.panel").toggleMore()) } });
   },
   { key: "teach_brandColor", maxTimes: 6, perSession: 2 }
 );
