@@ -584,11 +584,9 @@ async function handleFiles(files, restored = null, handles = null) {
           "tmginit",
           () => {
             (MC = MP.ctlr).media.once("status.loadedMetadata", () => (setTimeout(dispatchPlayerReadyToast, 500), setTimeout(teachColorBasics, 3000)));
-            MC.media.on("state.currentTime", ({ value: ct }) => MC.throttle("TVP_thumbnail_update", () => ct > 3 && MC.config.light.disabled && containers[MC.media.state.currentItem]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / MC.media.status.duration)), 2500));
-            MC.media.on("state.paused", ({ value }, idx = MC.media.state.currentItem) => {
-              if (!value) for (let i = 0, len = contentLines.length; i < len; i++) contentLines[i].classList.toggle("playing", i === idx);
-              containers[idx]?.classList.toggle("paused", value);
-            });
+            MC.media.on("state.currentTime", ({ value: ct }) => MC.throttle("TVP_thumbnail_update", () => ct > 3 && MC.config.light.disabled && containers[MC.media.state.currentItem]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / tmg.utils.getMediaMax(MC.media))), 2500));
+            MC.media.on("state.paused", ({ value }) => containers[MC.media.state.currentItem]?.classList.toggle("paused", value));
+            MC.media.on("state.currentItem", ({ value }) => MC.config.light.disabled && contentLines.forEach((line, i) => line.classList.toggle("playing", i === value)));
             readyUI(), setUpList();
           },
           { once: true }
