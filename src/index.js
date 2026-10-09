@@ -23,7 +23,7 @@ t007.TOAST_DEFAULT_OPTIONS.closeButton = false;
 // ===========================================================================
 // MEMORY BRIDGE & STORAGE ADAPTERS
 // ===========================================================================
-window.SV = 7; // settings version, bump to reset settings on next load
+window.SV = 8; // settings version, bump to reset settings on next load
 window.MP = window.MC = null;
 
 window.DB = new IndexedDBAdapter({
@@ -583,7 +583,7 @@ async function handleFiles(files, restored = null, handles = null) {
         video.addEventListener(
           "tmginit",
           () => {
-            (MC = MP.ctlr).media.once("status.loadedMetadata", () => setTimeout(() => (dispatchPlayerReadyToast(), teachColorBasics()), 500));
+            (MC = MP.ctlr).media.once("status.loadedMetadata", () => (setTimeout(dispatchPlayerReadyToast, 500), setTimeout(teachColorBasics, 1500)));
             MC.media.on("state.currentTime", ({ value: ct }) => MC.throttle("TVP_thumbnail_update", () => ct > 3 && MC.config.light.disabled && containers[MC.media.state.currentItem]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / MC.media.status.duration)), 2500));
             MC.media.on("state.paused", ({ value }, idx = MC.media.state.currentItem) => {
               if (!value) for (let i = 0, len = contentLines.length; i < len; i++) contentLines[i].classList.toggle("playing", i === idx);
@@ -606,6 +606,8 @@ async function handleFiles(files, restored = null, handles = null) {
           "settings.captions.background.opacity.value": 0,
           "settings.captions.characterEdgeStyle.value": "drop-shadow",
           "settings.overlay.behavior.value": "auto",
+          "settings.keys.showOverlay": false,
+          "settings.controlPanel.progressBar": true,
           "settings.css.syncWithMedia.brandColor": true,
           // "settings.volume.factor": 2,
           "settings.persist": { key: _lssk, adapter: Memory.adapter, throttle: 2500, strict: true, beforeHydrate: (p) => (p.config && (delete p.config.playlist, delete p.config.light), p.media?.settings && delete p.media.settings.metadata, p.media?.state && delete p.media.state.paused) },
