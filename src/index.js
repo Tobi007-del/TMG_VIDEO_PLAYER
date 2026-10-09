@@ -135,9 +135,9 @@ const prevGet = Memory.adapter.get.bind(Memory.adapter);
 Memory.adapter.get = function (key, reviver) {
   let state = prevGet(key, reviver);
   // 1. Legacy Full Wipe
-  if ((state?.playlist && !state.config) || Array.isArray(state?.config?.playlist)) toast.promise(tmg.utils.mockAsync(1600), { pending: "Applying latest updates...", success: "Your session data was cleared due to recent updates." }), (state = null), this.remove(key), setColors();
+  if ((state?.playlist && !state.config) || Array.isArray(state?.config?.playlist)) toast.promise(tmg.utils.mockAsync(2500), { pending: "Applying latest updates...", success: "Your session data was cleared due to recent updates.", position: "bottom-left" }), (state = null), this.remove(key), setColors();
   // 2. Versioned Settings Wipe
-  if ((localStorage[_lsvk] || 0) < SV && state?.config) toast.promise(tmg.utils.mockAsync(1600), { pending: "Applying latest updates...", success: "Your settings were reset due to recent updates." }), delete state.config.settings, delete state.config.actions, delete state.config.devMode, this.set(key, state), localStorage.removeItem(tmg.consts.FN_KEY), (localStorage[_lsvk] = SV), setColors();
+  if ((localStorage[_lsvk] || 0) < SV) state?.config && (toast.promise(tmg.utils.mockAsync(2500), { pending: "Applying latest updates...", success: "Your settings were reset due to recent updates.", position: "bottom-left" }), delete state.config.settings, delete state.config.actions, delete state.config.devMode, this.set(key, state), localStorage.removeItem(tmg.consts.FN_KEY), setColors()), (localStorage[_lsvk] = SV);
   // 3. Backwards compat
   if (state?.config?.lightState) (state.config.light = state.config.lightState), delete state.config.lightState;
   return state;
@@ -583,7 +583,7 @@ async function handleFiles(files, restored = null, handles = null) {
         video.addEventListener(
           "tmginit",
           () => {
-            (MC = MP.ctlr).media.once("status.loadedMetadata", () => (setTimeout(dispatchPlayerReadyToast, 500), setTimeout(teachColorBasics, 1500)));
+            (MC = MP.ctlr).media.once("status.loadedMetadata", () => (setTimeout(dispatchPlayerReadyToast, 500), setTimeout(teachColorBasics, 3000)));
             MC.media.on("state.currentTime", ({ value: ct }) => MC.throttle("TVP_thumbnail_update", () => ct > 3 && MC.config.light.disabled && containers[MC.media.state.currentItem]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / MC.media.status.duration)), 2500));
             MC.media.on("state.paused", ({ value }, idx = MC.media.state.currentItem) => {
               if (!value) for (let i = 0, len = contentLines.length; i < len; i++) contentLines[i].classList.toggle("playing", i === idx);
