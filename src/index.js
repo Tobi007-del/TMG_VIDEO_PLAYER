@@ -23,7 +23,7 @@ t007.TOAST_DEFAULT_OPTIONS.closeButton = false;
 // ===========================================================================
 // MEMORY BRIDGE & STORAGE ADAPTERS
 // ===========================================================================
-window.SV = 6; // settings version, bump to reset settings on next load
+window.SV = 7; // settings version, bump to reset settings on next load
 window.MP = window.MC = null;
 
 window.DB = new IndexedDBAdapter({
