@@ -23,7 +23,7 @@ t007.TOAST_DEFAULT_OPTIONS.closeButton = false;
 // ===========================================================================
 // MEMORY BRIDGE & STORAGE ADAPTERS
 // ===========================================================================
-window.SV = 5; // settings version, bump to reset settings on next load
+window.SV = 6; // settings version, bump to reset settings on next load
 window.MP = window.MC = null;
 
 window.DB = new IndexedDBAdapter({
@@ -607,6 +607,7 @@ async function handleFiles(files, restored = null, handles = null) {
           "settings.captions.characterEdgeStyle.value": "drop-shadow",
           "settings.overlay.behavior.value": "auto",
           "settings.css.syncWithMedia.brandColor": true,
+          // "settings.volume.factor": 2,
           "settings.persist": { key: _lssk, adapter: Memory.adapter, throttle: 2500, strict: true, beforeHydrate: (p) => (p.config && (delete p.config.playlist, delete p.config.light), p.media?.settings && delete p.media.settings.metadata, p.media?.state && delete p.media.state.paused) },
           "settings.persist.blacklist.media": ["state.src", "state.sources", "state.srcObject", "state.tracks", "state.poster", "state.fullscreen", "state.pictureInPicture"],
           noPlugList: [],
