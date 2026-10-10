@@ -423,7 +423,7 @@ body.light #files-ui-container :is(button, p) {
   margin: auto;
   color: rgb(from var(--tvp-theme-inverse-color) r g b/ 0.75);
   cursor: pointer;
-  transition: 200ms ease;
+  transition: 250ms ease;
   border: 1.35px solid rgb(from var(--tvp-theme-accent-color) r g b/ 0.6);
   font-size: 16.5px;
   font-weight: bolder;
@@ -638,10 +638,7 @@ body.light #files-ui-container :is(button, p) {
   border-radius: 5px;
   overflow: hidden;
   background: var(--tvp-theme-inverse-color);
-}
-
-.thumbnail-container:hover {
-  transform: scale(1.015); /* 🧪 micro interaction */
+  cursor: pointer;
 }
 
 .thumbnail-container::after {
@@ -650,8 +647,11 @@ body.light #files-ui-container :is(button, p) {
   left: 0;
   bottom: 0;
   height: 2.5px;
-  width: calc(var(--video-progress-position, 0) * 100%);
+  width: 100%;
+  transform: scaleX(calc(var(--video-progress-position, 0) * 100%));
+  transform-origin: left;
   background: var(--tvp-brand-color);
+  transition: transform 250ms ease;
 }
 
 .thumbnail-container button {
@@ -663,7 +663,7 @@ body.light #files-ui-container :is(button, p) {
   padding-inline: 5px;
   position: absolute;
   z-index: 1;
-  transition: transform 200ms ease;
+  transition: transform 250ms ease;
 }
 
 .thumbnail-container button:hover {
@@ -758,7 +758,7 @@ body.light #files-ui-container :is(button, p) {
   border: none;
   cursor: pointer;
   margin-right: 2px;
-  transition: all 200ms ease;
+  transition: all 250ms ease;
 }
 
 .captions-btn input {

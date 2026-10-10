@@ -204,8 +204,8 @@ nums.on("time", ({ value }) => (document.getElementById("total-time").textConten
 // ===========================================================================
 
 window.addEventListener("load", async () => {
-  const session = !nums.files && (await Memory.getSession());
-  if (session) stoast(`You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}`, { id: "session", icon: "🎞️", actions: { Restore: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: stoast.defaults.onClose } });
+  const session = await Memory.getSession();
+  if (session) stoast(`You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}`, { id: "session", icon: "🎞️", actions: { [nums.files ? "Combine" : "Restore"]: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: stoast.defaults.onClose } });
   if (session) sessionTInt = setInterval(() => stoast.update("session", { render: `You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}` }), 60000);
 
   (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
@@ -335,7 +335,7 @@ async function restoreSession({ handles }) {
       await (err === "User denied" ? tmg.utils.deepBreath() : tmg.utils.mockAsync(800));
     }
   }
-  if (sureHandles.length || state?.config.playlist.content?.some((i) => !i.media.intent.src.startsWith("blob:"))) stoast.success("Your session has been restored :)", { id: "session", actions: false });
+  if (sureHandles.length || state?.config.playlist.content?.some((i) => !i.media.intent.src.startsWith("blob:"))) stoast.success("Your session has been restored :)", { id: "session", autoClose: true, actions: false });
   else return stoast.error("Your session was not restored :(", { id: "session", actions: { Reload: () => location.reload(), Dismiss: () => stoast.dismiss("session") } });
 
   handleFiles(files, state, sureHandles);
@@ -377,7 +377,7 @@ async function handleFiles(files, restored = null, handles = null) {
   try {
     const remoteItems = restored?.config.playlist.content?.filter((item) => !item.media.intent.src.startsWith("blob:")) || [];
     if (!files?.length && !remoteItems.length && !nums.files) return defaultUI();
-    stoast.dismiss("session"), initUI();
+    initUI();
 
     if (handles?.length) (sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))]), Memory.saveHandles();
     for (const file of (files = !restored ? tmg.utils.smartFlatSort(files) : playlistSort(files, restored.config.playlist))) nums.files++, (nums.bytes += file.size);
@@ -404,13 +404,12 @@ async function handleFiles(files, restored = null, handles = null) {
           muted: true,
           playsInline: true,
           onloadedmetadata: ({ target }, item = thumbnail.getPlItem() ?? item) => {
-            if (item) item.media.status.duration = tmg.utils.safeNum(target.duration);
             target.currentTime = tmg.utils.parseIfPercent(MC?.config.light.preview.max ?? 4, target.duration, 0.25);
-            if (restored || !file) thumbnail.parentElement.style.setProperty("--video-progress-position", tmg.utils.safeNum((item?.settings.time.start || 0) / target.duration));
+            if (item) (item.media.status.duration = target.duration), (restored || !file) && thumbnail.parentElement.style.setProperty("--video-progress-position", item.media.status.isLive ? 1 : tmg.utils.safeNum(item.settings.time.start / target.duration));
           },
           onerror: ({ target }) => {
             file && li.classList.add("error");
-            if (tmg.utils.safeNum(target.duration) || !file) return;
+            if (!file || tmg.utils.safeNum(target.duration)) return;
             li.querySelector(".file-duration span:last-child").classList.add("failed");
             li.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load";
           },
@@ -420,7 +419,7 @@ async function handleFiles(files, restored = null, handles = null) {
       thumbnail.ffName = ffName;
       if (!file) readyNail(thumbnail, item);
       const thumbnailContainer = tmg.utils.createEl("span", { className: "thumbnail-container paused", innerHTML: `<button><svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated"><rect x="4" width="3" height="10" fill="white"></rect><rect x="10" width="3" height="10" fill="white"></rect><rect x="16" width="3" height="10" fill="white"></rect></svg></button>`, onclick: () => MC.plug("playlist").moveTo(thumbnail.getPlIndex()) }).appendChild(thumbnail).parentElement;
-      if (item?.media.status.duration) thumbnailContainer.style.setProperty("--video-progress-position", tmg.utils.safeNum((item.settings.time.start || 0) / item.media.status.duration));
+      tmg.utils.isDef(item?.media.status.duration) && thumbnailContainer.style.setProperty("--video-progress-position", item.media.status.isLive ? 1 : tmg.utils.safeNum(item.settings.time.start / item.media.status.duration));
       const captionsInput = tmg.utils.createEl("input", {
         type: "file",
         accept: ".srt, .vtt",
@@ -503,7 +502,7 @@ async function handleFiles(files, restored = null, handles = null) {
         },
         { passive: false }
       );
-      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${ffName}</span></p>${file ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${item?.media.status.duration ? tmg.utils.formatMediaTime({ time: item.media.status.duration }) : !file ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(!file && !tmg.utils.getExtension(item.media.intent.src, false) ? [] : [captionsBtn]), deleteBtn, dragHandle);
+      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${ffName}</span></p>${file ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${item?.media.status.isLive ? "LIVE" : item?.media.status.duration ? tmg.utils.formatMediaTime({ time: item.media.status.duration }) : !file ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(!file && !tmg.utils.getExtension(item.media.intent.src, false) ? [] : [captionsBtn]), deleteBtn, dragHandle);
       return { li, thumbnail, container: thumbnailContainer };
     };
 
@@ -569,7 +568,7 @@ async function handleFiles(files, restored = null, handles = null) {
                 li.classList.toggle("playing", MC.config.light.disabled && index === MC.media.state.currentItem);
                 li.querySelector("video").poster = item.media.intent.poster;
                 li.querySelector(".file-name span:last-child").textContent = item.media.settings.metadata.title || li.dataset.fileName || "";
-                if (item.media.status.duration) li.querySelector(".file-duration span:last-child").textContent = tmg.utils.formatMediaTime({ time: item.media.status.duration });
+                if (item.media.status.duration) li.querySelector(".file-duration span:last-child").textContent = item.media.status.isLive ? "LIVE" : tmg.utils.formatMediaTime({ time: item.media.status.duration });
               },
               initNode: (li, register) => li.querySelector("video")?.mediaId && register(li.querySelector("video").mediaId),
               destroyNode: (li) => {
@@ -584,9 +583,9 @@ async function handleFiles(files, restored = null, handles = null) {
           "tmginit",
           () => {
             (MC = MP.ctlr).media.once("status.loadedMetadata", () => (setTimeout(dispatchPlayerReadyToast, 500), setTimeout(teachColorBasics, 3000)));
-            MC.media.on("state.currentTime", ({ value: ct }) => MC.throttle("TVP_thumbnail_update", () => ct > 3 && MC.config.light.disabled && containers[MC.media.state.currentItem]?.style.setProperty("--video-progress-position", tmg.utils.safeNum(ct / tmg.utils.getMediaMax(MC.media))), 2500));
+            MC.media.on("state.currentTime", ({ value }) => value > 3 && MC.config.light.disabled && containers[MC.media.state.currentItem]?.style.setProperty("--video-progress-position", tmg.utils.getMediaProgress(MC.media)));
             MC.media.on("state.paused", ({ value }) => containers[MC.media.state.currentItem]?.classList.toggle("paused", value));
-            MC.media.on("state.currentItem", ({ value }) => MC.config.light.disabled && contentLines.forEach((line, i) => line.classList.toggle("playing", i === value)));
+            MC.media.on("state.currentItem", ({ value }) => MC.config.light.disabled && Array.prototype.forEach.call(contentLines, (line, i) => line.classList.toggle("playing", i === value)));
             readyUI(), setUpList();
           },
           { once: true }
