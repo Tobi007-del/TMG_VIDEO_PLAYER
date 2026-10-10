@@ -309,9 +309,8 @@ function errorUI(error) {
 // SESSION CONTROLLERS
 // ===========================================================================
 
-async function restoreSession({ handles }) {
-  const state = Memory.getState(),
-    files = [],
+async function restoreSession({ handles, state }, state = !nums.files ? Memory.getState() : state) {
+  const files = [],
     sureHandles = [];
 
   stoast.info("Restoring your session now", { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath();
