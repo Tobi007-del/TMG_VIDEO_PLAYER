@@ -421,18 +421,24 @@ async function handleFiles(files, restored = null, handles = null) {
       const captionsInput = tmg.utils.createEl("input", {
         type: "file",
         accept: ".srt, .vtt",
+        multiple: true,
         onchange: async (e) => {
-          const f = e.target.files[0];
-          if (!f) return;
-          const ext = tmg.utils.getExtension(f.name);
-          if (!["srt", "vtt"].includes(ext)) return (thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported");
-          let txt = await f.text();
-          if (ext === "srt") txt = tmg.utils.srtToVtt(txt);
+          const files = Array.from(e.target.files).filter((f) => ["srt", "vtt"].includes(tmg.utils.getExtension(f.name)));
+          if (!files.length) return (thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported");
           const plItem = thumbnail.getPlItem(),
-            id = thumbnail.dataset.trackId ?? (thumbnail.dataset.trackId = plItem.media.settings.metadata.id + "_sub");
-          DB.set(id, new TextEncoder().encode(txt), "subtitles");
-          plItem.media.intent.tracks = [{ id: f.name, kind: "captions", label: "English", srclang: "en", src: URL.createObjectURL(new Blob([txt], { type: "text/vtt" })), default: true }];
-          if (MC.plug("playlist").item?.media.settings.metadata.id === plItem.media.settings.metadata.id) silence(() => (MC.media.intent.tracks = plItem.media.intent.tracks));
+            subs = [],
+            tracks = [];
+          for (let i = 0; i < files.length; i++) {
+            const name = files[i].name;
+            let txt = await files[i].text();
+            tmg.utils.getExtension(name) === "srt" && (txt = tmg.utils.srtToVtt(txt));
+            const data = { buffer: new TextEncoder().encode(txt), lang: getSubLang(name, thumbnail.ffName) },
+              { buffer, srclang = "", label = "" } = getSubMeta(data);
+            subs.push(data), tracks.push({ id: `${name}_${i}`, kind: "captions", label, srclang, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })), default: i === 0 });
+          }
+          plItem.media.intent.tracks = [...plItem.media.intent.tracks.filter((t) => t.kind !== "captions"), ...tracks];
+          MC.plug("playlist").item?.media.settings.metadata.id === plItem.media.settings.metadata.id && silence(() => (MC.media.intent.tracks = plItem.media.intent.tracks));
+          await DB.set((thumbnail.dataset.trackId ??= plItem.media.settings.metadata.id + "_sub"), subs, "subtitles");
           thumbnail.dataset.captionState = "filled";
         },
         oncancel: () => (thumbnail.dataset.captionState = "empty"),
@@ -629,41 +635,38 @@ async function deployTracks(file, thumbnail, autocancel = !tmg.utils.isDef(Share
   const id = (thumbnail.dataset.trackId = thumbnail.dataset.trackId ?? item.media.settings.metadata.id + "_sub");
   thumbnail.setAttribute("data-caption-state", item?.media.intent.tracks[0] ? "loading" : "waiting");
   // 1. THE VAULT CHECK (Instant IDB Access)
-  const subBuffers = await DB.get(id, "subtitles"),
+  const subBuffer = await DB.get(id, "subtitles"),
     chapBuffer = await DB.get(id + "_chap", "chapters");
-  if (subBuffers) {
+  if (subBuffer || chapBuffer) {
     console.log(`✨TVP IDB Vault Hit: Tracks restored for ${id}`);
     item.media.intent.tracks = item.media.intent.tracks.filter((t) => t.kind !== "captions" && t.kind !== "chapters");
-    if (subBuffers) {
-      (Array.isArray(subBuffers) ? subBuffers : [subBuffers]).forEach((data, i, _) => {
+    subBuffer &&
+      (Array.isArray(subBuffer) ? subBuffer : [subBuffer]).forEach((data, i, _) => {
         const { buffer, srclang = "", label = "" } = getSubMeta(data);
         item.media.intent.tracks.push({ id: `${id}_${i}`, kind: "captions", label, srclang, default: i === 0, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })) });
       });
-    }
-    if (chapBuffer) item.media.intent.tracks.push({ id: id + "_chap", kind: "chapters", label: "Chapters", srclang: "en", src: URL.createObjectURL(new Blob([chapBuffer], { type: "text/vtt" })) });
-    if (MC?.config.playlist.content?.[MC.media.state.currentItem]?.media.settings.metadata.id === item.media.settings.metadata.id) silence(() => (MC.media.intent.tracks = item.media.intent.tracks));
-    return thumbnail.setAttribute("data-caption-state", subBuffers && (!Array.isArray(subBuffers) || subBuffers.length) ? "filled" : "empty");
+    chapBuffer && item.media.intent.tracks.push({ id: id + "_chap", kind: "chapters", label: "Chapters", srclang: "en", src: URL.createObjectURL(new Blob([chapBuffer], { type: "text/vtt" })) });
+    MC?.plug("playlist").item?.media.settings.metadata.id === item.media.settings.metadata.id && silence(() => (MC.media.intent.tracks = item.media.intent.tracks));
+    return thumbnail.setAttribute("data-caption-state", subBuffer && (!Array.isArray(subBuffer) || subBuffer.length) ? "filled" : "empty");
   }
   // 2. THE FACTORY (FFmpeg Processing)
   if (!(file instanceof File)) return thumbnail.setAttribute("data-caption-state", item?.media.intent.tracks?.some((t) => t.kind === "captions") ? "filled" : "empty");
   autocancel && thumbnail.setAttribute("data-caption-state", "empty");
   const subs = [];
+  let chap;
   const res = await queue.add(
     async () =>
       await extractTracks(file, id, async (p) => {
         if (p.type === "subtitle") {
-          subs.push(p.data);
-          await DB.set(id, subs, "subtitles");
-          const i = subs.length - 1,
+          const i = subs.push(p.data) - 1,
             { buffer, srclang = "", label = "" } = getSubMeta(p.data);
           item.media.intent.tracks.push({ id: `${id}_${i}`, kind: "captions", label, srclang, default: i === 0, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })) });
-          if (MC?.config.playlist.content?.[MC.media.state.currentItem]?.media.settings.metadata.id === item.media.settings.metadata.id) silence(() => (MC.media.intent.tracks = item.media.intent.tracks));
+          MC?.plug("playlist").item?.media.settings.metadata.id === item.media.settings.metadata.id && silence(() => (MC.media.intent.tracks = item.media.intent.tracks));
         } else if (p.type === "chapter") {
-          await DB.set(id + "_chap", new TextEncoder().encode(p.data), "chapters");
           item.media.intent.tracks?.forEach((t) => t.kind === "chapters" && t.src.startsWith("blob:") && URL.revokeObjectURL(t.src));
-          const chapterTrack = { id: id + "_chap", kind: "chapters", label: "Chapters", srclang: "en", src: URL.createObjectURL(new Blob([p.data], { type: "text/vtt" })) };
-          item.media.intent.tracks = [...item.media.intent.tracks.filter((t) => t.kind !== "chapters"), chapterTrack];
-          if (MC?.config.playlist.content?.[MC.media.state.currentItem]?.media.settings.metadata.id === item.media.settings.metadata.id) silence(() => (MC.media.intent.tracks = item.media.intent.tracks));
+          const track = { id: id + "_chap", kind: "chapters", label: "Chapters", srclang: "en", src: URL.createObjectURL(new Blob([(chap = p.data)], { type: "text/vtt" })) };
+          item.media.intent.tracks = [...item.media.intent.tracks.filter((t) => t.kind !== "chapters"), track];
+          MC?.plug("playlist").item?.media.settings.metadata.id === item.media.settings.metadata.id && silence(() => (MC.media.intent.tracks = item.media.intent.tracks));
         }
       }),
     id,
@@ -671,7 +674,7 @@ async function deployTracks(file, thumbnail, autocancel = !tmg.utils.isDef(Share
     () => thumbnail.setAttribute("data-caption-state", "loading")
   );
   if (res.cancelled) return thumbnail.setAttribute("data-caption-state", "empty");
-  if (!subs.length) await DB.set(id, [], "subtitles");
+  await DB.set(id, subs, "subtitles"), chap && (await DB.set(id + "_chap", chap, "chapters"));
   thumbnail.setAttribute("data-caption-state", subs.length ? "filled" : "empty");
 }
 
@@ -836,9 +839,22 @@ function getSubMeta(data, name = "English") {
   try {
     name = langNames.of(data.lang || "eng");
   } catch {}
-  return { buffer: data.buffer || data, srclang: data.lang?.slice(0, 2) || "en", label: name };
+  return { buffer: data.buffer || data, srclang: data.lang?.slice(0, 2) || "en", label: data.label || name };
+}
+
+function getSubLang(name, title = "") {
+  const clean = tmg.utils
+    .noExtension(name, false)
+    .replace(new RegExp(title.replace(/[^a-z0-9]+/gi, "[^a-z0-9]+"), "i"), "")
+    .replace(/[^a-z]+/gi, " ")
+    .trim()
+    .toLowerCase();
+  try {
+    return langNames.of(clean) ? (clean === "english" ? "eng" : clean) : "eng";
+  } catch {
+    return "eng";
+  }
 }
 
 import { field } from "@t007/input";
-import { isDef } from "@t007/utils";
 field({}); // for inclusion
