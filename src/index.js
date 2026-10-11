@@ -120,7 +120,7 @@ const primaryLang = "eng",
   // whitelist = ["eng", "spa", "fra", "jpn"],
   langNames = new Intl.DisplayNames(["en"], { type: "language" }),
   vi = JSON.parse(localStorage[_lsik] || `{ "visitorId": "${crypto?.randomUUID?.() || tmg.utils.uid()}", "visitCount": 0 }`),
-  stoast = toaster({ autoClose: false, closeButton: false, onClose: (_, user = true) => user && (clearInterval(sessionTInt), stoast.info("Reload the page to be prompted again", { id: "session", icon: true, autoClose: 5000, actions: { Reload: () => location.reload() } })) }),
+  stoast = toaster({ autoClose: false, closeButton: false, onClose: (_, user = true) => user && (clearInterval(sessionTInt), !nums.files ? stoast.info("Reload the page to be prompted again", { id: "session", icon: true, autoClose: 5000, actions: { Reload: () => location.reload() } }) : stoast.dismiss("session")) }),
   scroller = initVScrollerator({ lineHeight: 80, margin: 80, car: document.body }),
   queue = new tmg.AsyncQueue(),
   nums = reactive({ bytes: 0, files: 0, time: 0 }),
@@ -142,6 +142,8 @@ Memory.adapter.get = function (key, reviver) {
   if (state?.config?.lightState) (state.config.light = state.config.lightState), delete state.config.lightState;
   return state;
 }; // V1 -> V2 MIGRATION LAYER
+
+const sessionPromise = Memory.getSession();
 
 (async function logVisitor() {
   vi.isNew = vi.isNew == null ? true : false;
@@ -204,7 +206,7 @@ nums.on("time", ({ value }) => (document.getElementById("total-time").textConten
 // ===========================================================================
 
 window.addEventListener("load", async () => {
-  const session = await Memory.getSession();
+  const session = await sessionPromise;
   if (session) stoast(`You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}`, { id: "session", icon: "🎞️", actions: { [nums.files ? "Combine" : "Restore"]: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: stoast.defaults.onClose } });
   if (session) sessionTInt = setInterval(() => stoast.update("session", { render: `You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}` }), 60000);
 
@@ -309,10 +311,7 @@ function errorUI(error) {
 // SESSION CONTROLLERS
 // ===========================================================================
 
-async function restoreSession({ handles, state }, state = !nums.files ? Memory.getState() : state) {
-  const files = [],
-    sureHandles = [];
-
+async function restoreSession(session, handles = session.handles, state = !nums.files ? Memory.getState() : session.state, files = [], sureHandles = []) {
   stoast.info("Restoring your session now", { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath();
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
