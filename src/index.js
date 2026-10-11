@@ -251,7 +251,7 @@ clearSettingsButton.addEventListener("click", () => clearSettings(true));
       videoFiles = Array.prototype.filter.call(allFiles, (file) => (file.type || tmg.utils.getMimeTypeFromExtension(file.name)).match(/^(video|audio)\//)),
       rejectedCount = allFiles.length - videoFiles.length;
     if (rejectedCount > 0) toast.warn(`You picked ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only media files are supported`);
-    handleFiles(videoFiles, null, handles);
+    stoast.dismiss("session"), handleFiles(videoFiles, null, handles);
   }
   !((!recurse ? "showOpenFilePicker" : "showDirectoryPicker") in window) ? input.addEventListener("change", handleInput) : input.addEventListener("click", (e) => handleInput(e, true));
 });
@@ -267,7 +267,7 @@ clearSettingsButton.addEventListener("click", () => clearSettings(true));
       videoFiles = allFiles.filter((file) => (file.type || tmg.utils.getMimeTypeFromExtension(file.name)).match(/^(video|audio)\//)),
       rejectedCount = allFiles.length - videoFiles.length;
     if (rejectedCount > 0) toast.warn(`You dropped ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only media files are supported`);
-    handleFiles(videoFiles, null, handles);
+    stoast.dismiss("session"), handleFiles(videoFiles, null, handles);
     [videosDropBox, foldersDropBox].forEach((el) => el.classList.remove("active"));
   }
   !("getAsFileSystemHandle" in DataTransferItem.prototype) ? dropBox.addEventListener("drop", handleDrop) : dropBox.addEventListener("drop", (e) => handleDrop(e, true));
