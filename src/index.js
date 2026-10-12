@@ -23,7 +23,7 @@ t007.TOAST_DEFAULT_OPTIONS.closeButton = false;
 // ===========================================================================
 // MEMORY BRIDGE & STORAGE ADAPTERS
 // ===========================================================================
-window.SV = 9; // settings version, bump to reset settings on next load
+window.SV = 10; // settings version, bump to reset settings on next load
 window.MP = window.MC = null;
 
 window.DB = new IndexedDBAdapter({
@@ -107,11 +107,11 @@ const readyLines = {
   ],
   default: [
     { icon: "🎬", body: "Lights, Camera, Action!" },
-    { icon: "✅", body: "Scene Loaded — Ready to Play." },
+    { icon: "✅", body: "Scene Loaded, Ready to Play." },
     { icon: "✨", body: "Showtime Unlocked." },
-    { icon: "🎉", body: "Player Ready – Let the Magic Begin!" },
+    { icon: "🎉", body: "Player Ready, Let the Magic Begin!" },
     { icon: "📽️", body: "The Reel is Spinning..." },
-    { icon: "🎥", body: "Scene One, Take One — Playback Engaged." },
+    { icon: "🎥", body: "Scene One, Take One; Playback Engaged." },
     { icon: "🍿", body: "Popcorn Ready? Your Movie Is." },
     { icon: "🎭", body: "Curtains Up. Prepare to Be Amazed." },
   ],
@@ -199,25 +199,21 @@ nums.on("time", ({ value }) => (document.getElementById("total-time").textConten
   if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist();
 })();
 
+(async function displayToasts() {
+  (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
+  const session = await sessionPromise;
+  if (!session) return;
+  stoast(`You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}`, { id: "session", icon: "🎞️", actions: { [nums.files ? "Combine" : "Restore"]: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: stoast.defaults.onClose } });
+  sessionTInt = setInterval(() => stoast.update("session", { render: `You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}` }), 60000);
+})();
+
 !tmg.utils.IS_MOBILE && setTimeout(() => ffmpeg.load());
 
 // ===========================================================================
 // WINDOW EVENTS & BOOTSTRAPPING
 // ===========================================================================
-
-window.addEventListener("load", async () => {
-  const session = await sessionPromise;
-  if (session) stoast(`You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}`, { id: "session", icon: "🎞️", actions: { [nums.files ? "Combine" : "Restore"]: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: stoast.defaults.onClose } });
-  if (session) sessionTInt = setInterval(() => stoast.update("session", { render: `You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}` }), 60000);
-
-  (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
-
-  document.body.classList.toggle("offline", !navigator.onLine);
-  navigator.onLine &&
-    fetch("https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", { method: "HEAD", cache: "no-cache" })
-      .then((res) => document.body.classList.toggle("offline", !res.ok))
-      .catch(() => document.body.classList.add("offline"));
-});
+// prettier-ignore
+window.addEventListener("load", () => (document.body.classList.toggle("offline", !navigator.onLine), navigator.onLine && fetch("https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", { method: "HEAD", cache: "no-cache" }).then((res) => document.body.classList.toggle("offline", !res.ok)).catch(() => document.body.classList.add("offline"))));
 window.addEventListener("online", () => document.body.classList.remove("offline"));
 window.addEventListener("offline", () => document.body.classList.add("offline"));
 window.addEventListener("beforeinstallprompt", (e) => ((installed = false), (installPrompt = e), (installButton.style.display = "flex")));
@@ -312,7 +308,7 @@ function errorUI(error) {
 // ===========================================================================
 
 async function restoreSession(session, handles = session.handles, state = !nums.files ? Memory.getState() : session.state, files = [], sureHandles = []) {
-  stoast.info("Restoring your session now", { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath();
+  stoast.info(`${nums.files ? "Combining your sessions" : "Restoring your session"} now`, { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath();
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
     try {
@@ -333,8 +329,8 @@ async function restoreSession(session, handles = session.handles, state = !nums.
       await (err === "User denied" ? tmg.utils.deepBreath() : tmg.utils.mockAsync(800));
     }
   }
-  if (sureHandles.length || state?.config.playlist.content?.some((i) => !i.media.intent.src.startsWith("blob:"))) stoast.success("Your session has been restored :)", { id: "session", autoClose: true, actions: false });
-  else return stoast.error("Your session was not restored :(", { id: "session", actions: { Reload: () => location.reload(), Dismiss: () => stoast.dismiss("session") } });
+  if (sureHandles.length || state?.config.playlist.content?.some((i) => !i.media.intent.src.startsWith("blob:"))) stoast.success(`Your ${nums.files ? "sessions have been combined" : "session has been restored"} :)`, { id: "session", autoClose: true, actions: false });
+  else return stoast.error(`Your ${nums.files ? "sessions were not combined" : "session was not restored"} :(`, { id: "session", actions: { Reload: () => location.reload(), Dismiss: () => stoast.dismiss("session") } });
 
   handleFiles(files, state, sureHandles);
 }
@@ -598,6 +594,7 @@ async function handleFiles(files, restored = null, handles = null) {
           light: restored?.config.light ?? { disabled: false, "preview.tease": true },
           devMode: !import.meta.env.PROD,
           "playlist.content": content,
+          "playlist.allowOverride": true,
           "media.intent.src": restored ? content.find((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id)?.media.intent.src : undefined,
           "media.intent.poster": "",
           "media.intent.paused": restored?.media.state.paused ?? true,
@@ -798,7 +795,7 @@ function dispatchPlayerReadyToast(hour = new Date().getHours()) {
 
 const teachColorBasics = tmg.utils.limited(
   (_id) => {
-    if (MC.config.settings.css.syncWithMedia.brandColor) _id = MC.plug("settings.toasts").toast("Visit more settings to change your video's brand color", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Open: () => (toast.dismiss(_id), MC.plug("settings.panel").toggleMore()) } });
+    if (MC?.config.settings.css.syncWithMedia.brandColor) _id = MC.plug("settings.toasts").toast("Visit more settings to change your video's brand color", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Open: () => (toast.dismiss(_id), MC.plug("settings.panel").toggleMore()) } });
   },
   { key: "teach_brandColor", maxTimes: 6, perSession: 2 }
 );
@@ -843,12 +840,8 @@ function getSubMeta(data, name = "English") {
 }
 
 function getSubLang(name, title = "") {
-  const clean = tmg.utils
-    .noExtension(name, false)
-    .replace(new RegExp(title.replace(/[^a-z0-9]+/gi, "[^a-z0-9]+"), "i"), "")
-    .replace(/[^a-z]+/gi, " ")
-    .trim()
-    .toLowerCase();
+  // prettier-ignore
+  const clean = tmg.utils.noExtension(name, false).replace(new RegExp(title.replace(/[^a-z0-9]+/gi, "[^a-z0-9]+"), "i"), "").replace(/[^a-z]+/gi, " ").trim().toLowerCase();
   try {
     return langNames.of(clean) ? (clean === "english" ? "eng" : clean) : "eng";
   } catch {
