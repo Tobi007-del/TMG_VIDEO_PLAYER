@@ -236,7 +236,7 @@ body:has(.dragging) {
   margin-bottom: 40px;
 }
 
-.tmg-media {
+.tmg-host {
   aspect-ratio: 16 / 9;
 }
 
