@@ -1,170 +1,34 @@
-import * as tmg from "tmg-media-player/super";
-import toast, { toaster } from "@t007/toast";
-import { confirm } from "@t007/dialog";
-import { initVScrollerator } from "@t007/utils/hooks/vanilla";
-import { IndexedDBAdapter, LocalStorageAdapter, silence } from "sia-reactor/modules";
-import { reactive } from "sia-reactor";
 import { inject } from "@vercel/analytics";
 import { injectSpeedInsights } from "@vercel/speed-insights";
-import { setPath } from "sia-reactor/utils";
+import toast from "@t007/toast";
+import * as tmg from "tmg-media-player/super";
+import { nums, stoast, installButton, clearSettingsButton, videosDropBox, foldersDropBox } from "./modules/consts";
+import "./modules/storage";
+import { getPickedHandles, getDroppedHandles, getDroppedFiles, getHandlesFiles } from "./modules/handles";
+import { initUI, defaultUI } from "./modules/display";
+import { handleFiles, restoreSession, clearSettings, clearFiles } from "./modules/content";
 
-inject({ mode: import.meta.env.PROD ? "production" : "development" }), injectSpeedInsights(); // Realtime Vercel Analytics
-
-// ===========================================================================
-// GLOBAL CONTEXT & SYSTEM VARS
-// ===========================================================================
-
-window._lsik = "TVP_visitor_info"; // localStorage info key
-window._lsvk = "TVP_settings_version";
-window.canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype;
-window.sessionHandles = []; // global handle access of current session handles
+inject({ mode: import.meta.env.PROD ? "production" : "development" }), injectSpeedInsights();
 t007.TOAST_DEFAULT_OPTIONS.closeButton = false;
 
-// ===========================================================================
-// MEMORY BRIDGE & STORAGE ADAPTERS
-// ===========================================================================
-window.SV = 10; // settings version, bump to reset settings on next load
-window.MP = window.MC = null;
+let installed = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true,
+  installPrompt = null;
 
-window.DB = new IndexedDBAdapter({
-  dbName: "TVP_Sessions",
-  version: 2, // New World
-  debug: true,
-  stores: ["handles", "subtitles", "chapters"], // first is default: "handles"
-  onidb() {
-    if (!canSession) throw new Error("TVP Session Persistence is not needed here");
-  },
-  onversionchange: () => (toast.info(`TVP updated in another ${installed ? "window" : "tab"}. Reloading...`), location.reload()),
-  onblocked: () => toast.warn(`Please close other ${installed ? "windows" : "tabs"} of TVP to apply updates`),
-});
-window.Memory = {
-  adapter: new LocalStorageAdapter({ key: _lssk }),
-  expiryDays: 70 * 7, // the Bible said "seventy times seven", so here we are
-  getState() {
-    return this.adapter.get();
-  },
-  async getSession() {
-    const state = this.getState(),
-      session = await DB.get("last_handles");
-    if (!state?.config?.playlist?.content || (!session && !state.config.playlist.content.some((i) => !i.media.intent.src.startsWith("blob:")))) return null;
-    console.log("🎞 TVP found a session:", state, session);
-    const lastUpdated = session?.lastUpdated || Date.now();
-    return (Date.now() - lastUpdated) / (1000 * 60 * 60 * 24) > this.expiryDays ? (await this.clearSession(), console.log("🎞 TVP cleaned up expired session.")) : { state, handles: session?.handles || [], lastUpdated };
-  },
-  async saveHandles() {
-    const state = this.getState();
-    sessionHandles.length || state?.config.playlist.content?.some((i) => !i.media.intent.src.startsWith("blob:")) ? await DB.set("last_handles", { handles: sessionHandles, lastUpdated: Date.now() }) : await this.clearSession();
-  },
-  async clearSession() {
-    await this.adapter.set(_lssk, { config: { settings: this.getState()?.config.settings || {} } }); // might not wanna clear settings
-    (sessionHandles = []), await DB.clear();
-  },
-  async clearSettings() {
-    const state = this.getState();
-    await this.adapter.set(_lssk, (delete state.config.settings, delete state.config.actions, state));
-    localStorage.removeItem(tmg.consts.FN_KEY);
-  },
-};
-
-// ===========================================================================
-// UI STATE & METRICS
-// ===========================================================================
-
-let installed = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true,
-  installPrompt = null,
-  sessionTInt,
-  video = document.getElementById("video"),
-  placeholderLi = null;
-
-const installButton = document.getElementById("install"),
-  clearSettingsButton = document.getElementById("clear-settings-button"),
-  playerContainer = document.getElementById("video-player-container"),
-  fileList = document.getElementById("file-list"),
-  contentLines = document.getElementsByClassName("content-line"),
-  containers = document.getElementsByClassName("thumbnail-container"),
-  videosDropBox = document.getElementById("videos-drop-box"),
-  foldersDropBox = document.getElementById("folders-drop-box");
-const readyLines = {
-  morning: [
-    { icon: "🌅", body: "A new day, a new story begins." },
-    { icon: "☕", body: "Morning loaded. Your video is hot and fresh." },
-    { icon: "🌤️", body: "Rise and stream" },
-  ],
-  afternoon: [
-    { icon: "🌞", body: "Midday grind meets epic rewind." },
-    { icon: "🥪", body: "Lunch break? Cue the film." },
-    { icon: "🕶️", body: "Cool visuals for the warm sun" },
-  ],
-  evening: [
-    { icon: "🌇", body: "Golden hour, golden content." },
-    { icon: "📺", body: "Relax mode: ON." },
-    { icon: "🍝", body: "Dinner and a digital show" },
-  ],
-  night: [
-    { icon: "🌙", body: "Midnight premiere loaded." },
-    { icon: "🛌", body: "Last one before bed... maybe." },
-    { icon: "💤", body: "Sweet streams are made of this" },
-  ],
-  default: [
-    { icon: "🎬", body: "Lights, Camera, Action!" },
-    { icon: "✅", body: "Scene Loaded, Ready to Play." },
-    { icon: "✨", body: "Showtime Unlocked." },
-    { icon: "🎉", body: "Player Ready, Let the Magic Begin!" },
-    { icon: "📽️", body: "The Reel is Spinning..." },
-    { icon: "🎥", body: "Scene One, Take One; Playback Engaged." },
-    { icon: "🍿", body: "Popcorn Ready? Your Movie Is." },
-    { icon: "🎭", body: "Curtains Up. Prepare to Be Amazed." },
-  ],
-};
-const primaryLang = "eng",
-  // whitelist = ["eng", "spa", "fra", "jpn"],
-  langNames = new Intl.DisplayNames(["en"], { type: "language" }),
-  vi = JSON.parse(localStorage[_lsik] || `{ "visitorId": "${crypto?.randomUUID?.() || tmg.utils.uid()}", "visitCount": 0 }`),
-  stoast = toaster({ autoClose: false, closeButton: false, onClose: (_, user = true) => user && (clearInterval(sessionTInt), !nums.files ? stoast.info("Reload the page to be prompted again", { id: "session", icon: true, autoClose: 5000, actions: { Reload: () => location.reload() } }) : stoast.dismiss("session")) }),
-  scroller = initVScrollerator({ lineHeight: 80, margin: 80, car: document.body }),
-  queue = new tmg.AsyncQueue(),
-  nums = reactive({ bytes: 0, files: 0, time: 0 }),
-  { createFFmpeg, fetchFile } = FFmpeg,
-  ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.js" });
-
-// ===========================================================================
-// INITIALIZATION IIFES (Fire & Forget)
-// ===========================================================================
-
-const prevGet = Memory.adapter.get.bind(Memory.adapter);
-Memory.adapter.get = function (key, reviver) {
-  let state = prevGet(key, reviver);
-  // 1. Legacy Full Wipe
-  if ((state?.playlist && !state.config) || Array.isArray(state?.config?.playlist)) toast.promise(tmg.utils.mockAsync(2500), { pending: "Applying latest updates...", success: "Your session data was cleared due to recent updates.", position: "bottom-left" }), (state = null), this.remove(key), setColors();
-  // 2. Versioned Settings Wipe
-  if ((localStorage[_lsvk] || 0) < SV) state?.config && (toast.promise(tmg.utils.mockAsync(2500), { pending: "Applying latest updates...", success: "Your settings were reset due to recent updates.", position: "bottom-left" }), delete state.config.settings, delete state.config.actions, delete state.config.devMode, this.set(key, state), localStorage.removeItem(tmg.consts.FN_KEY), setColors()), (localStorage[_lsvk] = SV);
-  // 3. Backwards compat
-  if (state?.config?.lightState) (state.config.light = state.config.lightState), delete state.config.lightState;
-  return state;
-}; // V1 -> V2 MIGRATION LAYER
-
-const sessionPromise = Memory.getSession();
-
+// Bootstrapping IIFEs
 (async function logVisitor() {
-  vi.isNew = vi.isNew == null ? true : false;
-  vi.visitCount += 1;
-  vi.lastVisited = vi.lastVisit ? tmg.utils.formatUITime(new Date(vi.lastVisit).getTime() - Date.now(), "date", false) : "Just now";
+  VI.isNew = VI.isNew == null ? true : false;
+  VI.visitCount += 1;
+  VI.lastVisited = VI.lastVisit ? tmg.utils.formatUITime(new Date(VI.lastVisit).getTime() - Date.now(), "date", false) : "Just now";
   try {
-    const response = await fetch("../api/log-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...vi, screenW: screen.width, screenH: screen.height, platform: navigator.platform, touchScreen: navigator.maxTouchPoints > 0, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }) });
-  } catch (err) {
-    // console.error("TVP couldn't log info: ", err);
-  }
-  localStorage[_lsik] = JSON.stringify({ ...vi, lastVisit: new Date().toISOString() });
+    await fetch("../api/log-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...VI, screenW: screen.width, screenH: screen.height, platform: navigator.platform, touchScreen: navigator.maxTouchPoints > 0, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }) });
+  } catch {}
+  localStorage[_lsik] = JSON.stringify({ ...VI, lastVisit: new Date().toISOString() });
 })();
-
-nums.on("bytes", ({ value }) => (document.getElementById("total-size").textContent = tmg.utils.formatSize(value, 2)), { init: true });
-nums.on("files", ({ value }) => (document.getElementById("total-num").textContent = value), { init: true });
-nums.on("time", ({ value }) => (document.getElementById("total-time").textContent = tmg.utils.formatMediaTime({ time: value })), { init: true });
 
 (async function registerServiceWorker() {
   if (tmg.utils.isDef(SharedArrayBuffer)) console.log("✅ TVP isolation active: SharedArrayBuffer is ready for FFmpeg.");
   else console.warn("⚠️ TVP isolation failed: FFmpeg might not work.");
-  if (location.protocol === "file:") return; // Service Workers crash on the file:// protocol!
+  if (location.protocol === "file:") return;
   if (!("serviceWorker" in navigator)) return toast.warn("Offline support is currently unavailable");
   try {
     await navigator.serviceWorker.register("TVP_sw.js");
@@ -200,20 +64,26 @@ nums.on("time", ({ value }) => (document.getElementById("total-time").textConten
 })();
 
 (async function displayToasts() {
-  (vi.isNew || !/(second|minute|hour)/.test(vi.lastVisited)) && toast(vi.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${vi.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
+  (VI.isNew || !/(second|minute|hour)/.test(VI.lastVisited)) && toast(VI.isNew ? `Welcome! you seem new here, do visit again` : `Welcome back! it's been ${VI.lastVisited.replace(" ago", "")} since your last visit`, { icon: "👋" });
   const session = await sessionPromise;
   if (!session) return;
   stoast(`You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}`, { id: "session", icon: "🎞️", actions: { [nums.files ? "Combine" : "Restore"]: () => (clearInterval(sessionTInt), restoreSession(session)), Dismiss: stoast.defaults.onClose } });
-  sessionTInt = setInterval(() => stoast.update("session", { render: `You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}` }), 60000);
+  window.sessionTInt = setInterval(() => stoast.update("session", { render: `You have a session from ${tmg.utils.formatUITime(session.lastUpdated - Date.now(), "date", false)}` }), 60000);
 })();
 
 !tmg.utils.IS_MOBILE && setTimeout(() => ffmpeg.load());
 
-// ===========================================================================
-// WINDOW EVENTS & BOOTSTRAPPING
-// ===========================================================================
-// prettier-ignore
-window.addEventListener("load", () => (document.body.classList.toggle("offline", !navigator.onLine), navigator.onLine && fetch("https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", { method: "HEAD", cache: "no-cache" }).then((res) => document.body.classList.toggle("offline", !res.ok)).catch(() => document.body.classList.add("offline"))));
+// Window Events & Shell Actions
+window.addEventListener(
+  "load",
+  () => (
+    document.body.classList.toggle("offline", !navigator.onLine),
+    navigator.onLine &&
+      fetch("https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", { method: "HEAD", cache: "no-cache" })
+        .then((res) => document.body.classList.toggle("offline", !res.ok))
+        .catch(() => document.body.classList.add("offline"))
+  )
+);
 window.addEventListener("online", () => document.body.classList.remove("offline"));
 window.addEventListener("offline", () => document.body.classList.add("offline"));
 window.addEventListener("beforeinstallprompt", (e) => ((installed = false), (installPrompt = e), (installButton.style.display = "flex")));
@@ -221,17 +91,19 @@ window.addEventListener("appinstalled", () => ((installed = true), (installButto
 
 installButton.addEventListener("click", async () => {
   const res = await installPrompt?.prompt?.();
-  if (res.outcome === "accepted") (installButton.style.display = "none"), (installPrompt = null);
+  if (res?.outcome === "accepted") (installButton.style.display = "none"), (installPrompt = null);
 });
+
 document.getElementById("clear-files-button").addEventListener("click", clearFiles);
 document.getElementById("sort-files-button")?.addEventListener("click", (e) => (MC?.plug("playlist").sort((e.currentTarget.dataset.dir = e.currentTarget.dataset.dir === "desc" ? "asc" : "desc")), (e.currentTarget.style.scale = e.currentTarget.dataset.dir === "desc" ? "1 -1" : "1")));
 document.getElementById("shuffle-files-button")?.addEventListener("click", () => MC?.plug("playlist").shuffle());
 clearSettingsButton.addEventListener("click", () => clearSettings(true));
 
-// ===========================================================================
-// DRAG & DROP PIPELINE
-// ===========================================================================
+nums.on("bytes", ({ value }) => (document.getElementById("total-size").textContent = tmg.utils.formatSize(value, 2)), { init: true });
+nums.on("files", ({ value }) => (document.getElementById("total-num").textContent = value), { init: true });
+nums.on("time", ({ value }) => (document.getElementById("total-time").textContent = tmg.utils.formatMediaTime({ time: value })), { init: true });
 
+// File Pickers
 [
   { input: videosDropBox.lastElementChild, recurse: false },
   { input: foldersDropBox.lastElementChild, recurse: true },
@@ -242,7 +114,6 @@ clearSettingsButton.addEventListener("click", () => clearSettings(true));
     useHandles && e.preventDefault();
     const handles = useHandles ? await getPickedHandles(recurse) : null;
     if (useHandles && !handles?.length) return defaultUI();
-    console.log("📁 TVP Handle Kind:", handles?.[0]?.kind, "Full Object:", handles?.[0]);
     const allFiles = useHandles ? await getHandlesFiles(handles) : e.target.files,
       videoFiles = Array.prototype.filter.call(allFiles, (file) => (file.type || tmg.utils.getMimeTypeFromExtension(file.name)).match(/^(video|audio)\//)),
       rejectedCount = allFiles.length - videoFiles.length;
@@ -252,7 +123,8 @@ clearSettingsButton.addEventListener("click", () => clearSettings(true));
   !((!recurse ? "showOpenFilePicker" : "showDirectoryPicker") in window) ? input.addEventListener("change", handleInput) : input.addEventListener("click", (e) => handleInput(e, true));
 });
 
-[videosDropBox, foldersDropBox].forEach((dropBox, i) => {
+// Drag & Drop
+[videosDropBox, foldersDropBox].forEach((dropBox) => {
   dropBox.addEventListener("dragenter", (e) => (e.preventDefault(), e.currentTarget.classList.add("active")));
   dropBox.addEventListener("dragover", (e) => (e.preventDefault(), (e.dataTransfer.dropEffect = "copy")));
   dropBox.addEventListener("dragleave", (e) => (e.preventDefault(), e.currentTarget.classList.remove("active")));
@@ -268,586 +140,6 @@ clearSettingsButton.addEventListener("click", () => clearSettings(true));
   }
   !("getAsFileSystemHandle" in DataTransferItem.prototype) ? dropBox.addEventListener("drop", handleDrop) : dropBox.addEventListener("drop", (e) => handleDrop(e, true));
 });
-
-// ===========================================================================
-// UI UPDATERS
-// ===========================================================================
-
-function defaultUI() {
-  if (MC?.config.playlist.content?.length || nums.files) return;
-  playerContainer.classList.remove("loading");
-  video.classList.add("stall");
-  document.body.classList.add("light");
-  fileList.innerHTML = `<p id="no-files-text">No videos currently selected :&lpar;</p>`;
-}
-
-function initUI() {
-  if (MC?.config.playlist.content?.length || nums.files) return;
-  playerContainer.classList.add("loading");
-  video.classList.add("stall");
-  document.body.classList.remove("light");
-  fileList.innerHTML = "";
-}
-
-function readyUI() {
-  video.classList.remove("stall"), MC.media.pseudoElement.classList.remove("stall");
-  playerContainer.classList.remove("loading");
-  MC.config.on("settings.css.brandColor", ({ value }) => setColors(value, false), { init: "auto" });
-  MC.config.on("settings.css.themeColor", ({ value }) => setColors(false, value), { init: "auto" });
-}
-
-function errorUI(error) {
-  playerContainer.classList.remove("loading");
-  video.classList.add("stall");
-  document.body.classList.add("light");
-  fileList.innerHTML = `<p id="no-files-text">${error}!</p>`;
-}
-
-// ===========================================================================
-// SESSION CONTROLLERS
-// ===========================================================================
-
-async function restoreSession(session, handles = session.handles, state = !nums.files ? Memory.getState() : session.state, files = [], sureHandles = []) {
-  stoast.info(`${nums.files ? "Combining your sessions" : "Restoring your session"} now`, { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath();
-  for (const handle of handles) {
-    const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
-    try {
-      const resp = await new Promise(async (res, rej) => {
-        if ((await handle.queryPermission({ mode: "read" })) === "granted") return res("User not needed");
-        (function request() {
-          stoast.info(`We need permission to restore ${name}`, { id: "session", actions: { OK: async () => ((await handle.requestPermission({ mode: "read" })) === "granted" ? res() : stoast.warn(`Grant permissions to restore ${handle.name}`, { id: "session", actions: { Retry: request, Skip: () => rej("User denied") } })), DENY: () => rej("User denied") } });
-        })();
-      });
-      const file = handle.kind === "file" ? await handle.getFile() : await getHandlesFiles([handle]);
-      Array.isArray(file) ? files.push(...file.filter((file) => file.type.match(/^(video|audio)\//))) : files.push(file);
-      sureHandles.push(handle);
-      stoast.success(`Restored ${name} successfully`, { id: "session", actions: false });
-      await (resp === "User not needed" ? tmg.utils.deepBreath() : tmg.utils.mockAsync(200));
-    } catch (err) {
-      console.error(`TVP skipped handle "${name}":`, err);
-      stoast.error(`Skipped ${name}, something went wrong`, { id: "session", actions: false });
-      await (err === "User denied" ? tmg.utils.deepBreath() : tmg.utils.mockAsync(800));
-    }
-  }
-  if (sureHandles.length || state?.config.playlist.content?.some((i) => !i.media.intent.src.startsWith("blob:"))) stoast.success(`Your ${nums.files ? "sessions have been combined" : "session has been restored"} :)`, { id: "session", autoClose: true, actions: false });
-  else return stoast.error(`Your ${nums.files ? "sessions were not combined" : "session was not restored"} :(`, { id: "session", actions: { Reload: () => location.reload(), Dismiss: () => stoast.dismiss("session") } });
-
-  handleFiles(files, state, sureHandles);
-}
-
-async function clearSettings(prompt = false) {
-  const ok = prompt && (await confirm("Are you sure you want to clear your settings?", { title: "Clear Settings", confirmText: "Clear" }));
-  if (prompt && !ok) return;
-  await toast.promise(Memory.clearSettings(), { pending: "Clearing settings...", success: { render: "Settings cleared successfully", actions: false }, error: "Failed to clear settings.", id: "settings" });
-  setColors();
-  clearSettingsButton.classList.remove("shown");
-}
-
-async function clearFiles(skipPrompt = false) {
-  const ok = skipPrompt === true || (await confirm("Are you sure you want to clear all files?", { title: "Clear Files", confirmText: "Clear" }));
-  if (!ok) return;
-  toast.dismiss("ready");
-  if (MP) MC.media.intent.paused = true;
-  video.removeAttribute("src"), video.removeAttribute("poster");
-  Array.prototype.forEach.call(containers, (c) => {
-    const vid = c.querySelector("video");
-    if (vid.src?.startsWith("blob:")) URL.revokeObjectURL(vid.src);
-    const plItem = vid.getPlItem?.();
-    plItem?.media?.intent?.tracks?.forEach((t) => t.src.startsWith("blob:") && URL.revokeObjectURL(t.src));
-    queue.drop(vid.dataset.trackId);
-  });
-  video = MP?.detach();
-  MP = MC = null;
-  nums.files = nums.bytes = nums.time = 0;
-  await toast.promise(Memory.clearSession(), { pending: "Clearing files...", success: { render: "Cleared all files from your session, Settings too?", autoClose: 5000, actions: { Clear: () => clearSettings() } }, error: "Failed to clear session files.", id: "settings" });
-  defaultUI(), clearSettingsButton.classList.add("shown");
-}
-
-// ===========================================================================
-// CORE ENGINE: FILE PROCESSING & DEPLOYMENT
-// ===========================================================================
-
-async function handleFiles(files, restored = null, handles = null) {
-  try {
-    const remoteItems = restored?.config.playlist.content?.filter((item) => !item.media.intent.src.startsWith("blob:")) || [];
-    if (!files?.length && !remoteItems.length && !nums.files) return defaultUI();
-    initUI();
-
-    if (handles?.length) (sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))]), Memory.saveHandles();
-    for (const file of (files = !restored ? tmg.utils.smartFlatSort(files) : playlistSort(files, restored.config.playlist))) nums.files++, (nums.bytes += file.size);
-    await tmg.utils.deepBreath();
-
-    const stateMap = new Map(restored?.config.playlist.content?.map((v) => [v.media.settings.metadata.title, v]) || []),
-      list = fileList.appendChild(document.getElementById("media-list") || tmg.utils.createEl("ul", { id: "media-list" })),
-      thumbnails = [];
-
-    const readyNail = (thumbnail, item) => {
-      (thumbnail.src = item.media.intent.src), (thumbnail.poster = item.media.intent.poster), (thumbnail.mediaId = item.media.settings.metadata.id);
-      thumbnail.getPlItem = (plItem = MC?.config.playlist.content.find((v) => v.media.settings.metadata.id === item.media.settings.metadata.id)) => (thumbnail.plItem = plItem ?? thumbnail.plItem ?? item);
-      thumbnail.getPlIndex = () => MC?.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === item.media.settings.metadata.id);
-    };
-    const buildListItem = (file, item) => {
-      const name = file ? file.name : item?.media.settings.metadata.title || "Unknown",
-        ffName = file ? tmg.utils.noExtension(file.name, false) : item?.media.settings.metadata.title;
-      const li = tmg.utils.createEl("li", { className: "content-line" }, { fileName: name });
-      const thumbnail = tmg.utils.createEl(
-        "video",
-        {
-          className: "thumbnail",
-          preload: "metadata",
-          muted: true,
-          playsInline: true,
-          onloadedmetadata: ({ target }, item = thumbnail.getPlItem() ?? item) => {
-            target.currentTime = tmg.utils.parseIfPercent(MC?.config.light.preview.max ?? 4, target.duration, 0.25);
-            if (item) (item.media.status.duration = target.duration), (restored || !file) && thumbnail.parentElement.style.setProperty("--video-progress-position", item.media.status.isLive ? 1 : tmg.utils.safeNum(item.settings.time.start / target.duration));
-          },
-          onerror: ({ target }) => {
-            file && li.classList.add("error");
-            if (!file || tmg.utils.safeNum(target.duration)) return;
-            li.querySelector(".file-duration span:last-child").classList.add("failed");
-            li.querySelector(".file-duration span:last-child").innerHTML = "Failed to Load";
-          },
-        },
-        { captionState: "waiting" }
-      );
-      thumbnail.ffName = ffName;
-      if (!file) readyNail(thumbnail, item);
-      const thumbnailContainer = tmg.utils.createEl("span", { className: "thumbnail-container paused", innerHTML: `<button><svg class="play-icon" preserveAspectRatio="xMidYMid meet" viewBox="0 0 25 25"><path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg><svg class="playing-icon" width="24" height="24" viewBox="0 0 24 24" class="bars-animated"><rect x="4" width="3" height="10" fill="white"></rect><rect x="10" width="3" height="10" fill="white"></rect><rect x="16" width="3" height="10" fill="white"></rect></svg></button>`, onclick: () => MC.plug("playlist").moveTo(thumbnail.getPlIndex()) }).appendChild(thumbnail).parentElement;
-      tmg.utils.isDef(item?.media.status.duration) && thumbnailContainer.style.setProperty("--video-progress-position", item.media.status.isLive ? 1 : tmg.utils.safeNum(item.settings.time.start / item.media.status.duration));
-      const captionsInput = tmg.utils.createEl("input", {
-        type: "file",
-        accept: ".srt, .vtt",
-        multiple: true,
-        onchange: async (e) => {
-          const files = Array.from(e.target.files).filter((f) => ["srt", "vtt"].includes(tmg.utils.getExtension(f.name)));
-          if (!files.length) return (thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported");
-          const plItem = thumbnail.getPlItem(),
-            subs = [],
-            tracks = [];
-          for (let i = 0; i < files.length; i++) {
-            const name = files[i].name;
-            let txt = await files[i].text();
-            tmg.utils.getExtension(name) === "srt" && (txt = tmg.utils.srtToVtt(txt));
-            const data = { buffer: new TextEncoder().encode(txt), lang: getSubLang(name, thumbnail.ffName) },
-              { buffer, srclang = "", label = "" } = getSubMeta(data);
-            subs.push(data), tracks.push({ id: `${name}_${i}`, kind: "captions", label, srclang, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })), default: i === 0 });
-          }
-          plItem.media.intent.tracks = [...plItem.media.intent.tracks.filter((t) => t.kind !== "captions"), ...tracks];
-          MC.plug("playlist").item?.media.settings.metadata.id === plItem.media.settings.metadata.id && silence(() => (MC.media.intent.tracks = plItem.media.intent.tracks));
-          await DB.set((thumbnail.dataset.trackId ??= plItem.media.settings.metadata.id + "_sub"), subs, "subtitles");
-          thumbnail.dataset.captionState = "filled";
-        },
-        oncancel: () => (thumbnail.dataset.captionState = "empty"),
-      });
-      const captionsBtn = tmg.utils.createEl("button", { title: "(Toggle / DblClick→Load) Captions", className: "captions-btn", innerHTML: `<svg viewBox="0 0 25 25" style="scale: 1.15;"><path d="M18,11H16.5V10.5H14.5V13.5H16.5V13H18V14A1,1 0 0,1 17,15H14A1,1 0 0,1 13,14V10A1,1 0 0,1 14,9H17A1,1 0 0,1 18,10M11,11H9.5V10.5H7.5V13.5H9.5V13H11V14A1,1 0 0,1 10,15H7A1,1 0 0,1 6,14V10A1,1 0 0,1 7,9H10A1,1 0 0,1 11,10M19,4H5C3.89,4 3,4.89 3,6V18A2,2 0 0,0 5,20H19A2,2 0 0,0 21,18V6C21,4.89 20.1,4 19,4Z"/><svg>` }).appendChild(captionsInput).parentElement;
-      tmg.utils.addSafeClicks(
-        captionsBtn,
-        ({ target }) => {
-          if (target.matches("input")) return;
-          if (thumbnail.dataset.captionState === "empty") {
-            thumbnail._captionTid = setTimeout(() => (thumbnail.dataset.captionState = "loading"), 1000);
-            return captionsBtn.querySelector("input").click();
-          } else if (thumbnail.dataset.captionState === "filled") {
-            const plItem = thumbnail.getPlItem();
-            plItem?.media.intent.tracks?.forEach((t) => t.kind === "captions" && t.src.startsWith("blob:") && URL.revokeObjectURL(t.src));
-            if (!thumbnail.dataset.trackId.startsWith("tmg-")) DB.remove(thumbnail.dataset.trackId, "subtitles");
-            if (plItem.media) plItem.media.intent.tracks = plItem.media.intent.tracks.filter((t) => t.kind !== "captions");
-            if (MC.plug("playlist").item?.media.settings.metadata.id === plItem.media.settings.metadata.id) silence(() => (MC.media.intent.tracks = plItem.media.intent.tracks));
-          } else if (!queue.drop(thumbnail.dataset.trackId)) return;
-          thumbnail.dataset.captionState = "empty";
-        },
-        async () => thumbnail.dataset.captionState === "empty" && file && (await deployTracks(file, thumbnail, false))
-      );
-      const deleteBtn = tmg.utils.createEl("button", { title: "Remove Video", className: "delete-btn", innerHTML: `<svg width="20px" height="20px" viewBox="0 0 24 24" fill="none"><path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h4a1 1 0 1 1 0 2h-1.069l-.867 12.142A2 2 0 0 1 17.069 22H6.93a2 2 0 0 1-1.995-1.858L4.07 8H3a1 1 0 0 1 0-2h4V4zm2 2h6V4H9v2zM6.074 8l.857 12H17.07l.857-12H6.074zM10 10a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" fill="#0D0D0D"/></svg>`, onclick: () => (MC?.config.playlist.content?.length > 1 ? MC?.plug("playlist").remove(thumbnail.getPlIndex()) : clearFiles()) });
-      li.cleanUpDB = () => {
-        if (file && thumbnail.src?.startsWith("blob:")) URL.revokeObjectURL(thumbnail.src);
-        const plItem = thumbnail.getPlItem();
-        plItem?.media.intent.tracks?.forEach((t) => t.src.startsWith("blob:") && URL.revokeObjectURL(t.src));
-        const tId = thumbnail.dataset.trackId;
-        tId && (queue.drop(tId), DB.remove(tId, "subtitles"), DB.remove(tId + "_chap", "chapters"));
-        if (!file) return;
-        const hIdx = sessionHandles.findIndex((h) => h.name === file.name);
-        hIdx !== -1 && (sessionHandles.splice(hIdx, 1), Memory.saveHandles());
-        nums.files--, (nums.bytes -= file.size);
-      };
-      const dragHandle = tmg.utils.createEl("span", { title: "Drag to Reorder", className: "drag-handle", innerHTML: `<svg fill="#000000" height="20px" width="20px" viewBox="0 0 24 24"><path d="M10,6H6V2h4V6z M18,2h-4v4h4V2z M10,10H6v4h4V10z M18,10h-4v4h4V10z M10,18H6v4h4V18z M18,18h-4v4h4V18z"/></svg>` });
-      dragHandle.addEventListener(
-        "pointerdown",
-        (e) => {
-          navigator.vibrate?.([50]);
-          let initialOffsetY = list.getBoundingClientRect().top,
-            initialScrollY = document.body.scrollTop;
-          li.parentElement.insertBefore((placeholderLi = tmg.utils.createEl("div", { className: "drag-placeholder" }, {}, { cssText: `height:${li.offsetHeight}px;width:${li.offsetWidth}px;` })), li.nextElementSibling);
-          li.classList.add("dragging");
-          li.style.top = `${(li.top = tmg.utils.clamp(0, e.clientY - initialOffsetY - li.offsetHeight / 2, list.offsetHeight - li.offsetHeight))}px`;
-          ["pointermove", "pointerup", "pointercancel"].forEach((e, i) => document.addEventListener(e, !i ? onPointerMove : onPointerUp));
-          function onPointerMove(e) {
-            e.preventDefault();
-            tmg.utils.RAFLoop("listItemDragging", () => {
-              li.style.top = `${(li.top = tmg.utils.clamp(0, document.body.scrollTop - initialScrollY + e.clientY - initialOffsetY - li.offsetHeight / 2, list.offsetHeight - li.offsetHeight))}px`;
-              scroller.drive(e.clientY, !(li.top > 0 && li.top < list.offsetHeight - li.offsetHeight));
-              const afterLine = tmg.utils.getElSiblingAt(e.clientY, "y", list.querySelectorAll(".content-line:not(.dragging)"));
-              afterLine ? list.insertBefore(placeholderLi, afterLine) : list.append(placeholderLi);
-            });
-          }
-          function onPointerUp() {
-            navigator.vibrate?.([50]);
-            tmg.utils.cancelRAFLoop("listItemDragging");
-            scroller.reset();
-            li.classList.remove("dragging");
-            placeholderLi.parentElement.replaceChild(li, placeholderLi), (placeholderLi = null);
-            syncPlaylist();
-            ["pointermove", "pointerup", "pointercancel"].forEach((e, i) => document.removeEventListener(e, !i ? onPointerMove : onPointerUp));
-          }
-        },
-        { passive: false }
-      );
-      li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${ffName}</span></p>${file ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${item?.media.status.isLive ? "LIVE" : item?.media.status.duration ? tmg.utils.formatMediaTime({ time: item.media.status.duration }) : !file ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(!file && !tmg.utils.getExtension(item.media.intent.src, false) ? [] : [captionsBtn]), deleteBtn, dragHandle);
-      return { li, thumbnail, container: thumbnailContainer };
-    };
-
-    for (let i = 0; i < files.length; i++) {
-      const ffName = tmg.utils.noExtension(files[i].name, false),
-        state = stateMap.get(ffName);
-      if ((restored && !state) || !!Array.prototype.find.call(containers, (c) => c.lastElementChild.ffName === ffName)) {
-        nums.files--, (nums.bytes -= files[i].size);
-        thumbnails.push(null);
-        continue;
-      }
-      const item = buildListItem(files[i], state);
-      thumbnails.push(item.thumbnail), list.append(item.li), files.length < 50 && (await tmg.utils.breath());
-    }
-    for (const rItem of remoteItems) {
-      if (Array.prototype.find.call(containers, (c) => c.lastElementChild.mediaId === rItem.media.settings.metadata.id)) {
-        thumbnails.push(null);
-        continue;
-      }
-      const item = buildListItem(null, rItem);
-      thumbnails.push(item.thumbnail), list.append(item.li), remoteItems.length < 50 && (await tmg.utils.breath());
-    }
-
-    const content = [];
-    const deployVideos = async (files) => {
-      for (let i = 0; i < files.length; i++) {
-        if (!thumbnails[i]) continue;
-        const url = URL.createObjectURL(files[i]),
-          state = stateMap.get(thumbnails[i].ffName),
-          item = state ?? { media: { intent: { tracks: [] }, settings: { metadata: { id: tmg.utils.uid(), title: thumbnails[i].ffName, artist: "TMG Video Player", profile: "assets/icons/tmg-icon.jpeg", links: { artist: "https://tmg-video-player.vercel.app", profile: "https://github.com/Tobi007-del/tmg-media-player" } } } }, settings: { time: { start: 0 }, controlPanel: { timeline: { previews: true } } } };
-        item._renderedLi = thumbnails[i].closest("li");
-        (item.media.intent.src = url), (item.media.intent.poster = ""), (item.media.intent.tracks = item.media.intent.tracks.filter((t) => !t.src.startsWith("blob:")));
-        content.push(item), readyNail(thumbnails[i], item);
-      }
-      for (let i = 0; i < remoteItems.length; i++) {
-        const thumbIdx = files.length + i;
-        if (!thumbnails[thumbIdx]) continue;
-        const item = remoteItems[i];
-        item._renderedLi = thumbnails[thumbIdx].closest("li");
-        content.push(item);
-      }
-      if (restored) {
-        const orderMap = new Map(restored.config.playlist.content.map((v, i) => [v.media.settings.metadata.id, i]));
-        content.sort((a, b) => (orderMap.get(a.media.settings.metadata.id) ?? Infinity) - (orderMap.get(b.media.settings.metadata.id) ?? Infinity));
-      }
-      if (!MC) {
-        const setUpList = (renderList) => {
-          MC.config.on("playlist.content", ({ currentTarget: { value } }) => {
-            if (!value || !document.getElementById("media-list")) return;
-            for (let i = (nums.time = 0); i < value.length; i++) value[i].media.settings.metadata.id || setPath(value[i], "media.settings.metadata.id", tmg.utils.uid()), (nums.time += tmg.utils.safeNum(value[i].media.status.duration));
-            (renderList ??= tmg.utils.createListRenderer({
-              container: list,
-              getKey: (item) => item.media.settings.metadata.id,
-              createNode: (item) => {
-                let li = item._renderedLi;
-                if (!li) {
-                  const { li: resLi, thumbnail } = buildListItem(null, item);
-                  (li = resLi), deployTracks(undefined, (thumbnails.push(thumbnail), thumbnail), undefined, item);
-                } else delete item._renderedLi;
-                return li;
-              },
-              updateNode: (li, item, index) => {
-                li.classList.toggle("playing", MC.config.light.disabled && index === MC.media.state.currentItem);
-                li.querySelector("video").poster = item.media.intent.poster;
-                li.querySelector(".file-name span:last-child").textContent = item.media.settings.metadata.title || li.dataset.fileName || "";
-                if (item.media.status.duration) li.querySelector(".file-duration span:last-child").textContent = item.media.status.isLive ? "LIVE" : tmg.utils.formatMediaTime({ time: item.media.status.duration });
-              },
-              initNode: (li, register) => li.querySelector("video")?.mediaId && register(li.querySelector("video").mediaId),
-              destroyNode: (li) => {
-                const id = li.querySelector("video")?.mediaId,
-                  idx = thumbnails.findIndex((t) => t?.mediaId === id);
-                idx !== -1 && thumbnails.splice(idx, 1), !MC.config.playlist.content.some((item) => item.media.settings.metadata.id === id) && li.cleanUpDB?.();
-              },
-            }))(value);
-          });
-        };
-        video.addEventListener(
-          "tmginit",
-          () => {
-            (MC = MP.ctlr).media.once("status.loadedMetadata", () => (setTimeout(dispatchPlayerReadyToast, 500), setTimeout(teachColorBasics, 3000)));
-            MC.media.on("state.currentTime", ({ value }) => value > 3 && MC.config.light.disabled && containers[MC.media.state.currentItem]?.style.setProperty("--video-progress-position", tmg.utils.getMediaProgress(MC.media)));
-            MC.media.on("state.paused", ({ value }) => containers[MC.media.state.currentItem]?.classList.toggle("paused", value));
-            MC.media.on("state.currentItem", ({ value }) => MC.config.light.disabled && Array.prototype.forEach.call(contentLines, (line, i) => line.classList.toggle("playing", i === value)));
-            readyUI(), setUpList();
-          },
-          { once: true }
-        );
-        (MP = new tmg.Player({
-          light: restored?.config.light ?? { disabled: false, "preview.tease": true },
-          devMode: !import.meta.env.PROD,
-          "playlist.content": content,
-          "playlist.allowOverride": true,
-          "media.intent.src": restored ? content.find((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id)?.media.intent.src : undefined,
-          "media.intent.poster": "",
-          "media.intent.paused": restored?.media.state.paused ?? true,
-          "media.settings.metadata": { artist: "TMG Video Player", profile: "assets/icons/tmg-icon.jpeg", links: { artist: "https://tmg-video-player.vercel.app", profile: "https://github.com/Tobi007-del/tmg-media-player" } },
-          "settings.captions.font.size.value": 200,
-          "settings.captions.font.weight.value": 700,
-          "settings.captions.background.opacity.value": 0,
-          "settings.captions.characterEdgeStyle.value": "drop-shadow",
-          "settings.overlay.behavior.value": "auto",
-          "settings.keys.showOverlay": false,
-          "settings.controlPanel.progressBar": true,
-          "settings.css.syncWithMedia.brandColor": true,
-          "settings.frame.main.usePoster": false,
-          // "settings.volume.factor": 2,
-          "settings.persist": { key: _lssk, adapter: Memory.adapter, throttle: 2500, strict: true, beforeHydrate: (p) => (p.config && (delete p.config.playlist, delete p.config.light), p.media?.settings && delete p.media.settings.metadata, p.media?.state && delete p.media.state.paused) },
-          "settings.persist.blacklist.media": ["state.src", "state.sources", "state.srcObject", "state.tracks", "state.poster", "state.fullscreen", "state.pictureInPicture"],
-          noPlugList: [],
-          safeDetach: true,
-        })).attach(video);
-      } else MC.config.playlist.content = [...(MC.config.playlist.content || []), ...content];
-    };
-    (nums.files || remoteItems.length) && (deployVideos(files), await tmg.utils.deepBreath());
-    (nums.files || remoteItems.length) && (await Promise.all(thumbnails.map(async (t, i) => t && (await deployTracks(i < files.length ? files[i] : undefined, t, undefined)))));
-    if (!nums.files && !MC?.config.playlist.content?.length) return defaultUI();
-  } catch (error) {
-    console.error("TVP files handling failed:", error), errorUI(error);
-  }
-}
-
-// ===========================================================================
-// FFmpeg PIPELINE: TEXT TRACKS EXTRACTION
-// ===========================================================================
-
-async function deployTracks(file, thumbnail, autocancel = !tmg.utils.isDef(SharedArrayBuffer) || tmg.utils.IS_MOBILE, item = thumbnail.getPlItem()) {
-  const id = (thumbnail.dataset.trackId = thumbnail.dataset.trackId ?? item.media.settings.metadata.id + "_sub");
-  thumbnail.setAttribute("data-caption-state", item?.media.intent.tracks[0] ? "loading" : "waiting");
-  // 1. THE VAULT CHECK (Instant IDB Access)
-  const subBuffer = await DB.get(id, "subtitles"),
-    chapBuffer = await DB.get(id + "_chap", "chapters");
-  if (subBuffer || chapBuffer) {
-    console.log(`✨TVP IDB Vault Hit: Tracks restored for ${id}`);
-    item.media.intent.tracks = item.media.intent.tracks.filter((t) => t.kind !== "captions" && t.kind !== "chapters");
-    subBuffer &&
-      (Array.isArray(subBuffer) ? subBuffer : [subBuffer]).forEach((data, i, _) => {
-        const { buffer, srclang = "", label = "" } = getSubMeta(data);
-        item.media.intent.tracks.push({ id: `${id}_${i}`, kind: "captions", label, srclang, default: i === 0, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })) });
-      });
-    chapBuffer && item.media.intent.tracks.push({ id: id + "_chap", kind: "chapters", label: "Chapters", srclang: "en", src: URL.createObjectURL(new Blob([chapBuffer], { type: "text/vtt" })) });
-    MC?.plug("playlist").item?.media.settings.metadata.id === item.media.settings.metadata.id && silence(() => (MC.media.intent.tracks = item.media.intent.tracks));
-    return thumbnail.setAttribute("data-caption-state", subBuffer && (!Array.isArray(subBuffer) || subBuffer.length) ? "filled" : "empty");
-  }
-  // 2. THE FACTORY (FFmpeg Processing)
-  if (!(file instanceof File)) return thumbnail.setAttribute("data-caption-state", item?.media.intent.tracks?.some((t) => t.kind === "captions") ? "filled" : "empty");
-  autocancel && thumbnail.setAttribute("data-caption-state", "empty");
-  const subs = [];
-  let chap;
-  const res = await queue.add(
-    async () =>
-      await extractTracks(file, id, async (p) => {
-        if (p.type === "subtitle") {
-          const i = subs.push(p.data) - 1,
-            { buffer, srclang = "", label = "" } = getSubMeta(p.data);
-          item.media.intent.tracks.push({ id: `${id}_${i}`, kind: "captions", label, srclang, default: i === 0, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })) });
-          MC?.plug("playlist").item?.media.settings.metadata.id === item.media.settings.metadata.id && silence(() => (MC.media.intent.tracks = item.media.intent.tracks));
-        } else if (p.type === "chapter") {
-          item.media.intent.tracks?.forEach((t) => t.kind === "chapters" && t.src.startsWith("blob:") && URL.revokeObjectURL(t.src));
-          const track = { id: id + "_chap", kind: "chapters", label: "Chapters", srclang: "en", src: URL.createObjectURL(new Blob([(chap = p.data)], { type: "text/vtt" })) };
-          item.media.intent.tracks = [...item.media.intent.tracks.filter((t) => t.kind !== "chapters"), track];
-          MC?.plug("playlist").item?.media.settings.metadata.id === item.media.settings.metadata.id && silence(() => (MC.media.intent.tracks = item.media.intent.tracks));
-        }
-      }),
-    id,
-    autocancel,
-    () => thumbnail.setAttribute("data-caption-state", "loading")
-  );
-  if (res.cancelled) return thumbnail.setAttribute("data-caption-state", "empty");
-  await DB.set(id, subs, "subtitles"), chap && (await DB.set(id + "_chap", chap, "chapters"));
-  thumbnail.setAttribute("data-caption-state", subs.length ? "filled" : "empty");
-}
-
-async function extractTracks(file, id, onProgress) {
-  const metaName = `meta${id}.txt`,
-    inputName = `video${id}${tmg.utils.getExtension(file.name)}`;
-  try {
-    !ffmpeg.isLoaded() && (await ffmpeg.load());
-    console.log(`🎥 TVP processing file with FFmpeg: '${file.name}'`);
-    ffmpeg.FS("writeFile", inputName, await fetchFile(file));
-    let logData = "";
-    ffmpeg.setLogger(({ message }) => (logData += message + "\n"));
-    await ffmpeg.run("-i", inputName, "-f", "ffmetadata", metaName).catch(() => {});
-    ffmpeg.setLogger(() => {});
-    let match,
-      idx = 0;
-    const sstreams = [],
-      sregex = /Stream #\d+:\d+.*?(?:\(([a-zA-Z]{2,3})\))?: Subtitle/g;
-    while ((match = sregex.exec(logData)) !== null) sstreams.push({ index: idx++, lang: match[1] || "eng" });
-    sstreams.sort((a, b) => (a.lang === primaryLang ? -1 : b.lang === primaryLang ? 1 : a.index - b.index));
-    console.log(`🛠 Extracting ${sstreams.length} streams dynamically...`);
-    try {
-      const chapStr = metadataToVTT(new TextDecoder().decode(ffmpeg.FS("readFile", metaName)));
-      chapStr && (await onProgress({ type: "chapter", data: chapStr }), console.log("✅ Chapter metadata deployed."));
-      ffmpeg.FS("unlink", metaName);
-    } catch (e) {
-      console.log("⚠️ No embedded metadata found.");
-    }
-    for (const target of sstreams) {
-      // if (!whitelist.includes(target.lang)) continue;
-      const subName = `cue${id}_${target.index}.vtt`;
-      try {
-        await ffmpeg.run("-i", inputName, "-map", `0:s:${target.index}`, "-f", "webvtt", subName);
-        await onProgress({ type: "subtitle", data: { buffer: ffmpeg.FS("readFile", subName), lang: target.lang } });
-        ffmpeg.FS("unlink", subName); // console.log(`✅ Subtitle ${target.index} (${target.lang}) deployed.`);
-      } catch (e) {
-        console.log(`⚠️ No embedded stream ${target.index} found.`);
-      }
-    }
-    return { success: true };
-  } catch (err) {
-    return console.error("❌ TVP tracks extraction failed:", err), { success: false, error: err.toString() };
-  } finally {
-    try {
-      ffmpeg.FS("unlink", inputName);
-    } catch {}
-  }
-}
-
-// ===========================================================================
-// BROWSER FILE SYSTEM HANDLERS
-// ===========================================================================
-
-async function getDroppedFiles(e, preTask) {
-  e.preventDefault();
-  const dtItems = e.dataTransfer.items || [];
-  if (dtItems.length > 0) preTask?.();
-  const traverseFileTree = async (item) => {
-    return new Promise((resolve) => {
-      if (item.isFile) item.file(resolve, () => resolve([]));
-      else if (item.isDirectory)
-        item.createReader().readEntries(async (entries) => {
-          try {
-            const nestedFiles = await Promise.all(entries.map(traverseFileTree));
-            resolve(nestedFiles.flat());
-          } catch {
-            resolve([]);
-          }
-        });
-      else resolve([]);
-    });
-  };
-  const promises = [];
-  for (let i = 0; i < dtItems.length; i++) {
-    const entry = dtItems[i].webkitGetAsEntry?.();
-    promises.push(entry ? traverseFileTree(entry) : Promise.resolve(dtItems[i].kind === "file" ? dtItems[i].getAsFile() : []));
-  }
-  return (await Promise.all(promises)).flat().filter(Boolean);
-}
-
-async function getDroppedHandles(e, preTask) {
-  const dtTtems = e.dataTransfer.items || [];
-  if (dtTtems.length > 0) preTask?.();
-  const handlePromises = Array.prototype.map.call(dtTtems, (item) => (item.getAsFileSystemHandle ? item.getAsFileSystemHandle() : null));
-  return (await Promise.all(handlePromises)).filter(Boolean);
-}
-
-async function getPickedHandles(directory = false) {
-  try {
-    const options = { multiple: true, id: "tvp_file_picker", startIn: "videos", types: [{ description: "TVP Video Files", accept: { "video/*": [".mp4", ".mkv", ".webm", ".avi", ".mov", ".flv", ".mpeg", ".mp3", ".ogg"] } }] };
-    return directory ? [await window.showDirectoryPicker?.(options)] : await window.showOpenFilePicker?.(options);
-  } catch (err) {
-    return []; // user cancelled
-  }
-}
-
-async function getHandlesFiles(handles) {
-  const files = [];
-  for (const h of handles) {
-    if (h.kind === "file") files.push(await h.getFile());
-    else if (h.kind === "directory")
-      for await (const entry of h.values()) {
-        if (entry.kind === "file") files.push(await entry.getFile());
-        else if (entry.kind === "directory" && entry.name[0] !== ".") files.push(...(await getHandlesFiles([entry])));
-      }
-  }
-  return files;
-}
-
-// ===========================================================================
-// UTILITIES & NOTIFICATIONS
-// ===========================================================================
-
-function dispatchPlayerReadyToast(hour = new Date().getHours()) {
-  if (!nums.files) return;
-  const timeLines = readyLines[hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : hour >= 17 && hour < 21 ? "evening" : "night"] || [],
-    combined = [...timeLines, ...readyLines.default, ...timeLines],
-    { body, icon } = combined[Math.floor(Math.random() * combined.length)];
-  toast(body, { id: "ready", vibrate: true, icon, image: "assets/images/lone-tree.jpg" });
-}
-
-const teachColorBasics = tmg.utils.limited(
-  (_id) => {
-    if (MC?.config.settings.css.syncWithMedia.brandColor) _id = MC.plug("settings.toasts").toast("Visit more settings to change your video's brand color", { icon: "🎨", autoClose: 15000, hideProgressBar: false, actions: { Open: () => (toast.dismiss(_id), MC.plug("settings.panel").toggleMore()) } });
-  },
-  { key: "teach_brandColor", maxTimes: 6, perSession: 2 }
-);
-
-function syncPlaylist() {
-  const map = Object.fromEntries(MC.config.playlist.content?.map((v) => [v.media.settings.metadata.id, v]) || []);
-  MC.config.playlist.content = Array.from(contentLines, (li) => map[li.querySelector("video")?.mediaId]).filter(Boolean);
-}
-
-function playlistSort(files, playlist) {
-  return Array.from(playlist.content || [], (item) => files.find((f) => f.name.startsWith(item.media.settings.metadata.title))).filter(Boolean);
-}
-
-function metadataToVTT(metaText) {
-  const blocks = metaText.split("[CHAPTER]");
-  if (blocks.length <= 1) return null; // No chapters found
-  const formatTime = (seconds) => {
-    const str = (v, pad = 2) => Math.floor(v).toString().padStart(pad, "0");
-    return `${str(seconds / 3600)}:${str((seconds % 3600) / 60)}:${str(seconds % 60)}.${str((seconds % 1) * 1000, 3)}`;
-  };
-  let vtt = "WEBVTT\n\n";
-  const chapters = [];
-  for (let i = 1, len = blocks.length; i < len; i++) {
-    const block = blocks[i].trim(),
-      tbMch = block.match(/TIMEBASE=(\d+)\/(\d+)/),
-      startMch = block.match(/START=(\d+)/),
-      endMch = block.match(/END=(\d+)/),
-      titleMch = block.match(/title=(.+)/i);
-    if (tbMch && startMch && endMch) {
-      const tb = parseInt(tbMch[1], 10) / parseInt(tbMch[2], 10);
-      chapters.push({ start: parseInt(startMch[1], 10) * tb, end: parseInt(endMch[1], 10) * tb, title: titleMch ? titleMch[1].trim() : `Chapter ${i}` });
-    }
-  }
-  return !chapters.length ? null : (chapters.forEach((ch) => (vtt += `${formatTime(ch.start)} --> ${formatTime(ch.end)}\n${ch.title}\n\n`)), vtt);
-}
-
-function getSubMeta(data, name = "English") {
-  try {
-    name = langNames.of(data.lang || "eng");
-  } catch {}
-  return { buffer: data.buffer || data, srclang: data.lang?.slice(0, 2) || "en", label: data.label || name };
-}
-
-function getSubLang(name, title = "") {
-  // prettier-ignore
-  const clean = tmg.utils.noExtension(name, false).replace(new RegExp(title.replace(/[^a-z0-9]+/gi, "[^a-z0-9]+"), "i"), "").replace(/[^a-z]+/gi, " ").trim().toLowerCase();
-  try {
-    return langNames.of(clean) ? (clean === "english" ? "eng" : clean) : "eng";
-  } catch {
-    return "eng";
-  }
-}
 
 import { field } from "@t007/input";
 field({}); // for inclusion

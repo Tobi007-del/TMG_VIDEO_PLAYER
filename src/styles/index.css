@@ -708,7 +708,8 @@ body.light #files-ui-container :is(button, p) {
   }
 }
 
-.paused rect {
+.paused rect,
+body:not(:has(.tmg-media-paused)) .magic-text {
   animation-play-state: paused;
 }
 
