@@ -3,6 +3,8 @@ import { toaster } from "@t007/toast";
 import { reactive } from "sia-reactor";
 import { initVScrollerator } from "@t007/utils/hooks/vanilla";
 
+tmg.consts.CONFIG_BUILD.actions.blacklist.push(/_renderedLi/);
+
 // System Keys
 window._lsik = "TVP_visitor_info";
 window._lsvk = "TVP_settings_version";
