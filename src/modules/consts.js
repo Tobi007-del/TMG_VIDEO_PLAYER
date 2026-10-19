@@ -7,7 +7,7 @@ import { initVScrollerator } from "@t007/utils/hooks/vanilla";
 window._lsik = "TVP_visitor_info";
 window._lsvk = "TVP_settings_version";
 window._lssk ||= "TVP_last_session_state";
-window.SV = 11;
+window.SV = 12;
 window.VI = JSON.parse(localStorage[_lsik] || `{"visitorId":"${crypto?.randomUUID?.() || tmg.utils.uid()}","visitCount":0}`);
 window.MP = window.MC = null;
 window.canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype;
