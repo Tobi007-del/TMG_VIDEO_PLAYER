@@ -33,22 +33,13 @@ let installed = matchMedia("(display-mode: standalone)").matches || navigator.st
   try {
     await navigator.serviceWorker.register("TVP_sw.js");
   } catch (err) {
-    toast.error("Offline caching failed due to " + err.message);
+    toast.error(`Offline caching failed due to ${err.message}`);
     toast("Don’t worry, your local videos still play fine", { vibrate: true, icon: "🎬" });
   }
 })();
 
 (async function launchOpenedFiles() {
-  if (!("launchQueue" in window)) return;
-  launchQueue.setConsumer(async (launchParams) => {
-    if (!launchParams?.files?.length) return;
-    initUI();
-    const allFiles = await getHandlesFiles(launchParams.files),
-      videoFiles = allFiles.filter((file) => (file.type || tmg.utils.getMimeTypeFromExtension(file.name)).match(/^(video|audio)\//)),
-      rejectedCount = allFiles.length - videoFiles.length;
-    if (rejectedCount > 0) toast.warn(`You opened ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only media files are supported`);
-    handleFiles(videoFiles, null, launchParams.files);
-  });
+  "launchQueue" in window && launchQueue.setConsumer(async ({ files }) => files?.length && (initUI(), ingest(await getHandlesFiles(files), "opened", files)));
 })();
 
 (async function checkVaultUsage() {
@@ -114,11 +105,7 @@ nums.on("time", ({ value }) => (document.getElementById("total-time").textConten
     useHandles && e.preventDefault();
     const handles = useHandles ? await getPickedHandles(recurse) : null;
     if (useHandles && !handles?.length) return defaultUI();
-    const allFiles = useHandles ? await getHandlesFiles(handles) : e.target.files,
-      videoFiles = Array.prototype.filter.call(allFiles, (file) => (file.type || tmg.utils.getMimeTypeFromExtension(file.name)).match(/^(video|audio)\//)),
-      rejectedCount = allFiles.length - videoFiles.length;
-    if (rejectedCount > 0) toast.warn(`You picked ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only media files are supported`);
-    stoast.dismiss("session"), handleFiles(videoFiles, null, handles);
+    ingest(useHandles ? await getHandlesFiles(handles) : e.target.files, "picked", handles);
   }
   !((!recurse ? "showOpenFilePicker" : "showDirectoryPicker") in window) ? input.addEventListener("change", handleInput) : input.addEventListener("click", (e) => handleInput(e, true));
 });
@@ -130,16 +117,21 @@ nums.on("time", ({ value }) => (document.getElementById("total-time").textConten
   dropBox.addEventListener("dragleave", (e) => (e.preventDefault(), e.currentTarget.classList.remove("active")));
   async function handleDrop(e, useHandles = false) {
     e.preventDefault();
-    const handles = useHandles ? await getDroppedHandles(e, initUI) : null,
-      allFiles = useHandles ? await getHandlesFiles(handles) : await getDroppedFiles(e, initUI),
-      videoFiles = allFiles.filter((file) => (file.type || tmg.utils.getMimeTypeFromExtension(file.name)).match(/^(video|audio)\//)),
-      rejectedCount = allFiles.length - videoFiles.length;
-    if (rejectedCount > 0) toast.warn(`You dropped ${rejectedCount} unsupported file${rejectedCount == 1 ? "" : "s"}. Only media files are supported`);
-    stoast.dismiss("session"), handleFiles(videoFiles, null, handles);
+    const handles = useHandles ? await getDroppedHandles(e, initUI) : null;
+    ingest(useHandles ? await getHandlesFiles(handles) : await getDroppedFiles(e, initUI), "dropped", handles);
     [videosDropBox, foldersDropBox].forEach((el) => el.classList.remove("active"));
   }
   !("getAsFileSystemHandle" in DataTransferItem.prototype) ? dropBox.addEventListener("drop", handleDrop) : dropBox.addEventListener("drop", (e) => handleDrop(e, true));
 });
+
+function ingest(allFiles, verb, handles) {
+  const files = [],
+    subs = [];
+  for (const f of allFiles) (f.type || tmg.utils.getMimeTypeFromExtension(f.name)).match(/^(video|audio)\//) ? files.push(f) : /\.(srt|vtt)$/i.test(f.name) && subs.push(f);
+  const rej = allFiles.length - files.length - subs.length;
+  if (rej > 0) toast.warn(`You ${verb} ${rej} unsupported file${rej == 1 ? "" : "s"}. Only media files are supported`);
+  stoast.dismiss("session"), handleFiles(files, null, handles, subs);
+}
 
 import { field } from "@t007/input";
 field({}); // for inclusion

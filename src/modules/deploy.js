@@ -9,6 +9,28 @@ window.ffmpeg = createFFmpeg({ log: false, corePath: "assets/ffmpeg/ffmpeg-core.
 // MAIN TRACK DEPLOYMENT & EXTRACTION
 // ===========================================================================
 
+export async function deploySubs(files, thumbnail) {
+  if (!files?.length) return;
+  const plItem = thumbnail.getPlItem(),
+    id = (thumbnail.dataset.trackId ??= plItem.media.settings.metadata.id + "_sub"),
+    subs = [],
+    tracks = [];
+  for (let i = 0; i < files.length; i++) {
+    const name = files[i].name;
+    let txt = await files[i].text();
+    tmg.utils.getExtension(name) === "srt" && (txt = tmg.utils.srtToVtt(txt));
+    const data = { buffer: new TextEncoder().encode(txt), lang: getSubLang(name, thumbnail.ffName) },
+      { buffer, srclang = "", label = "" } = getSubMeta(data);
+    subs.push(data), tracks.push({ id: `${id}_${i}`, kind: "captions", label, srclang, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })), default: i === 0 });
+  }
+  silence(() => {
+    plItem.media.intent.tracks = [...plItem.media.intent.tracks.filter((t) => t.kind !== "captions"), ...tracks];
+    MC?.plug("playlist")?.item?.media.settings.metadata.id === plItem.media.settings.metadata.id && (MC.media.intent.tracks = plItem.media.intent.tracks);
+  });
+  await DB.set(id, subs, "subtitles");
+  thumbnail.dataset.captionState = "filled";
+}
+
 export async function deployTracks(file, thumbnail, autocancel = !tmg.utils.isDef(SharedArrayBuffer) || tmg.utils.IS_MOBILE, item = thumbnail.getPlItem()) {
   const id = (thumbnail.dataset.trackId = thumbnail.dataset.trackId ?? item.media.settings.metadata.id + "_sub");
   thumbnail.setAttribute("data-caption-state", item?.media.intent.tracks[0] ? "loading" : "waiting");
@@ -17,7 +39,7 @@ export async function deployTracks(file, thumbnail, autocancel = !tmg.utils.isDe
     chapBuffer = await DB.get(id + "_chap", "chapters");
   if (subBuffer || chapBuffer) {
     silence(() => {
-      item.media.intent.tracks = item.media.intent.tracks.filter((t) => (subBuffer && t.kind === "captions") || (chapBuffer && t.kind === "chapters") ? false : true);
+      item.media.intent.tracks = item.media.intent.tracks.filter((t) => ((subBuffer && t.kind === "captions") || (chapBuffer && t.kind === "chapters") ? false : true));
       subBuffer &&
         (Array.isArray(subBuffer) ? subBuffer : [subBuffer]).forEach((data, i, _) => {
           const { buffer, srclang = "", label = "" } = getSubMeta(data);
@@ -111,7 +133,9 @@ export async function extractTracks(file, id, onProgress) {
 // ===========================================================================
 
 export const primaryLang = "eng",
-  langNames = new Intl.DisplayNames(["en"], { type: "language" });
+  langNames = new Intl.DisplayNames(["en"], { type: "language" }),
+  langMap = new Map();
+for (let i = 0; i < 26; i++) for (let j = 0, c, n; j < 26; j++) (c = String.fromCharCode(97 + i, 97 + j)), (n = langNames.of(c)) !== c && (langMap.set(c, c), langMap.set(n.toLowerCase(), c));
 
 export function metadataToVTT(metaText) {
   const blocks = metaText.split("[CHAPTER]");
@@ -152,3 +176,25 @@ export function getSubLang(name, title = "") {
     return "eng";
   }
 }
+
+const isTag = (t) => /^(forced|sdh|cc)$/.test(t) || langMap.has(t) || (t.length === 3 && !/\d/.test(t) && langNames.of(t) !== t),
+  tokenize = (n) => tmg.utils.noExtension(n).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean),
+  toSubTokens = (n, toks = tokenize(n)) => {
+    toks.length > 1 && /^\d+$/.test(toks.at(-1)) && isTag(toks.at(-2)) && toks.pop();
+    while (toks.length > 1 && isTag(toks.at(-1))) toks.pop();
+    return new Set(toks);
+  };
+
+export function matchSubsToThumbnails(subFiles, thumbnails, map = new Map()) {
+  for (const s of subFiles) {
+    let best = null, maxJ = 0, sToks = toSubTokens(s.name);
+    for (const t of thumbnails) {
+      if (!t) continue;
+      const vToks = new Set(tokenize(t.ffName)), inter = [...sToks].filter((k) => vToks.has(k)).length, j = inter / (sToks.size + vToks.size - inter);
+      j > maxJ && j > 0.2 && ((maxJ = j), (best = t));
+    }
+    best && (map.has(best) ? map.get(best).push(s) : map.set(best, [s]));
+  }
+  return map;
+}// Tnks to JACCARD SIMILARITY COEFFICIENT for the matching algorithm.
+

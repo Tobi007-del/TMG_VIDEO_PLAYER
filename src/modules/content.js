@@ -4,7 +4,7 @@ import * as tmg from "tmg-media-player/super";
 import { silence } from "sia-reactor/modules";
 import { setPath } from "sia-reactor/utils";
 import { fileList, contentLines, containers, clearSettingsButton, nums, deletedHandles, scroller, stoast, queue, defaults } from "./consts";
-import { deployTracks, getSubLang, getSubMeta } from "./ffmpeg";
+import { deployTracks, deploySubs, matchSubsToThumbnails } from "./deploy";
 import { getHandlesFiles } from "./handles";
 import { initUI, defaultUI, readyUI, errorUI, dispatchPlayerReadyToast, teachColorBasics, playlistSort } from "./display";
 
@@ -65,7 +65,7 @@ export async function restoreSession(session, handles = session.handles, state =
   handleFiles(files, state, sureHandles);
 }
 
-export async function handleFiles(files, restored = null, handles = null) {
+export async function handleFiles(files, restored = null, handles = null, subFiles = []) {
   try {
     const remoteItems = restored?.config.playlist.content?.filter((item) => !item.media.intent.src.startsWith("blob:")) || [];
     if (!files?.length && !remoteItems.length && !nums.files) return defaultUI();
@@ -174,8 +174,11 @@ export async function handleFiles(files, restored = null, handles = null) {
         (window.MP = newMP), (window.MC = newMP.ctlr), newMP.attach(video);
       } else MC.config.playlist.content = [...(MC.config.playlist.content || []), ...content];
     };
-    (nums.files || remoteItems.length) && (deployVideos(files), await tmg.utils.deepBreath());
-    (nums.files || remoteItems.length) && (await Promise.all(thumbnails.map(async (t, i) => t && (await deployTracks(i < files.length ? files[i] : t.getPlItem()?.media.intent.src, t, undefined)))));
+    if (nums.files || remoteItems.length) {
+      deployVideos(files), await tmg.utils.deepBreath();
+      const subMap = subFiles.length ? (files.length === 1 ? new Map([[thumbnails[0], subFiles]]) : matchSubsToThumbnails(subFiles, thumbnails)) : null;
+      await Promise.all(thumbnails.map(async (t, i, _, m = subMap?.get(t)) => t && (m?.length ? await deploySubs(m, t) : await deployTracks(i < files.length ? files[i] : t.getPlItem()?.media.intent.src, t, undefined))));
+    }
     if (!nums.files && !MC?.config.playlist.content?.length) return defaultUI();
   } catch (error) {
     console.error("TVP files handling failed:", error), errorUI(error);
@@ -221,25 +224,9 @@ export const buildListItem = (file, item, restored = false) => {
     accept: ".srt, .vtt",
     multiple: true,
     onchange: async (e) => {
-      const files = Array.from(e.target.files).filter((f) => ["srt", "vtt"].includes(tmg.utils.getExtension(f.name)));
+      const files = Array.from(e.target.files).filter((f) => /\.(srt|vtt)$/i.test(f.name));
       if (!files.length) return (thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported");
-      const plItem = thumbnail.getPlItem(),
-        subs = [],
-        tracks = [];
-      for (let i = 0; i < files.length; i++) {
-        const name = files[i].name;
-        let txt = await files[i].text();
-        tmg.utils.getExtension(name) === "srt" && (txt = tmg.utils.srtToVtt(txt));
-        const data = { buffer: new TextEncoder().encode(txt), lang: getSubLang(name, thumbnail.ffName) },
-          { buffer, srclang = "", label = "" } = getSubMeta(data);
-        subs.push(data), tracks.push({ id: `${name}_${i}`, kind: "captions", label, srclang, src: URL.createObjectURL(new Blob([buffer], { type: "text/vtt" })), default: i === 0 });
-      }
-      silence(() => {
-        plItem.media.intent.tracks = [...plItem.media.intent.tracks.filter((t) => t.kind !== "captions"), ...tracks];
-        MC.plug("playlist").item?.media.settings.metadata.id === plItem.media.settings.metadata.id && (MC.media.intent.tracks = plItem.media.intent.tracks);
-      });
-      await DB.set((thumbnail.dataset.trackId ??= plItem.media.settings.metadata.id + "_sub"), subs, "subtitles");
-      thumbnail.dataset.captionState = "filled";
+      await deploySubs(files, thumbnail);
     },
     oncancel: () => (thumbnail.dataset.captionState = "empty"),
   });
