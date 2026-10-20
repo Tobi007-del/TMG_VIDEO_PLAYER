@@ -244,7 +244,7 @@ body:has(.dragging) {
   margin-bottom: 0px;
 }
 
-#video-player-container.loading:has(#video.stall) {
+#video-player-container.loading:has(#video.stall:not(.tmg-host)) {
   position: relative;
   max-width: 700px;
   width: 90dvw;
@@ -253,15 +253,12 @@ body:has(.dragging) {
 
 body:has(#video.stall) #clear-files-button,
 body:not(:has(#video.stall)) #clear-settings-button,
-#clear-settings-button:not(.shown) {
+#clear-settings-button:not(.shown),
+#video.stall:not(.tmg-host) {
   display: none;
 }
 
-#video.stall {
-  display: none;
-}
-
-#video-player-container.loading::before {
+#video-player-container.loading:not(:has(.tmg-host))::before {
   display: block;
 }
 

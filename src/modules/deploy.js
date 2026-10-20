@@ -178,6 +178,7 @@ export function getSubLang(name, title = "") {
 }
 
 const isTag = (t) => /^(forced|sdh|cc)$/.test(t) || langMap.has(t) || (t.length === 3 && !/\d/.test(t) && langNames.of(t) !== t),
+  // prettier-ignore
   tokenize = (n) => tmg.utils.noExtension(n).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean),
   toSubTokens = (n, toks = tokenize(n)) => {
     toks.length > 1 && /^\d+$/.test(toks.at(-1)) && isTag(toks.at(-2)) && toks.pop();
@@ -187,14 +188,17 @@ const isTag = (t) => /^(forced|sdh|cc)$/.test(t) || langMap.has(t) || (t.length 
 
 export function matchSubsToThumbnails(subFiles, thumbnails, map = new Map()) {
   for (const s of subFiles) {
-    let best = null, maxJ = 0, sToks = toSubTokens(s.name);
+    let best = null,
+      maxJ = 0,
+      sToks = toSubTokens(s.name);
     for (const t of thumbnails) {
       if (!t) continue;
-      const vToks = new Set(tokenize(t.ffName)), inter = [...sToks].filter((k) => vToks.has(k)).length, j = inter / (sToks.size + vToks.size - inter);
+      const vToks = new Set(tokenize(t.ffName)),
+        inter = [...sToks].filter((k) => vToks.has(k)).length,
+        j = inter / (sToks.size + vToks.size - inter);
       j > maxJ && j > 0.2 && ((maxJ = j), (best = t));
     }
     best && (map.has(best) ? map.get(best).push(s) : map.set(best, [s]));
   }
   return map;
-}// Tnks to JACCARD SIMILARITY COEFFICIENT for the matching algorithm.
-
+} // Tnks to JACCARD SIMILARITY COEFFICIENT for the matching algorithm.

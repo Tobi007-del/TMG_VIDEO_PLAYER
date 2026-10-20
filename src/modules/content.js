@@ -140,7 +140,7 @@ export async function handleFiles(files, restored = null, handles = null, subFil
               updateNode: (li, item, index) => {
                 li.classList.toggle("playing", MC.config.light.disabled && index === MC.media.state.currentItem);
                 li.querySelector("video").poster = item.media.intent.poster;
-                li.querySelector(".file-name span:last-child").textContent = item.media.settings.metadata.title || ""; // user can override
+                li.querySelector(".file-name span:last-child").innerHTML = item.media.settings.metadata.title || "<i>Unknown</i>";
                 if (item.media.status.duration) li.querySelector(".file-duration span:last-child").textContent = item.media.status.isLive ? "LIVE" : tmg.utils.formatMediaTime({ time: item.media.status.duration });
               },
               initNode: (li, register) => li.querySelector("video")?.mediaId && register(li.querySelector("video").mediaId),
@@ -164,13 +164,7 @@ export async function handleFiles(files, restored = null, handles = null, subFil
           },
           { once: true }
         );
-        const newMP = new tmg.Player({
-          ...defaults,
-          "light.disabled": restored?.config.light.disabled ?? false,
-          "playlist.content": content,
-          "media.intent.src": restored ? content.find((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id)?.media.intent.src : undefined,
-          "media.intent.paused": restored?.media.state.paused ?? true,
-        });
+        const newMP = new tmg.Player({ ...defaults, "light.disabled": restored?.config.light.disabled ?? false, "playlist.content": content, "media.intent.src": restored ? content.find((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id)?.media.intent.src : undefined, "media.intent.paused": restored?.media.state.paused ?? true });
         (window.MP = newMP), (window.MC = newMP.ctlr), newMP.attach(video);
       } else MC.config.playlist.content = [...(MC.config.playlist.content || []), ...content];
     };
@@ -192,9 +186,8 @@ export const readyNail = (thumbnail, item) => {
 };
 
 export const buildListItem = (file, item, restored = false) => {
-  const name = file ? file.name : item?.media.settings.metadata.title || "Unknown",
-    ffName = file ? tmg.utils.noExtension(file.name, false) : item?.media.settings.metadata.title;
-  const li = tmg.utils.createEl("li", { className: "content-line" }, { fileName: name });
+  const ffName = file ? tmg.utils.noExtension(file.name, false) : item?.media.settings.metadata.title,
+    li = tmg.utils.createEl("li", { className: "content-line" }, { fileName: file ? file.name : item?.media.settings.metadata.title || "" });
   const thumbnail = tmg.utils.createEl(
     "video",
     {
@@ -297,6 +290,6 @@ export const buildListItem = (file, item, restored = false) => {
     },
     { passive: false }
   );
-  li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${ffName}</span></p>${file ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${item?.media.status.isLive ? "LIVE" : item?.media.status.duration ? tmg.utils.formatMediaTime({ time: item.media.status.duration }) : !file ? "Remote" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(!file && !tmg.utils.getExtension(item.media.intent.src, false) ? [] : [captionsBtn]), deleteBtn, dragHandle);
+  li.append(thumbnailContainer, tmg.utils.createEl("span", { className: "file-info-wrapper", innerHTML: `<p class="file-name"><span>Name: </span><span>${ffName || "<i>Unknown</i>"}</span></p>${file ? `<p class="file-size"><span>Size: </span><span>${file ? tmg.utils.formatSize(file.size) : "N/A"}</span></p>` : ""}<p class="file-duration"><span>Duration: </span><span>${item?.media.status.isLive ? "LIVE" : item?.media.status.duration ? tmg.utils.formatMediaTime({ time: item.media.status.duration }) : !file ? "-:--" : restored ? "Reinitializing..." : "Initializing..."}</span></p>` }), ...(!file && !tmg.utils.getExtension(item.media.intent.src, false) ? [] : [captionsBtn]), deleteBtn, dragHandle);
   return { li, thumbnail, container: thumbnailContainer };
 };
