@@ -179,7 +179,7 @@ export function getSubLang(name, title = "") {
 
 const isTag = (t) => /^(forced|sdh|cc)$/.test(t) || langMap.has(t) || (t.length === 3 && !/\d/.test(t) && langNames.of(t) !== t),
   // prettier-ignore
-  tokenize = (n) => tmg.utils.noExtension(n).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean),
+  tokenize = (n) => tmg.utils.noExtension(n).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).map((t) => t.replace(/^(s|e)0+(\d+)$/, "$1$2")),
   toSubTokens = (n, toks = tokenize(n)) => {
     toks.length > 1 && /^\d+$/.test(toks.at(-1)) && isTag(toks.at(-2)) && toks.pop();
     while (toks.length > 1 && isTag(toks.at(-1))) toks.pop();
