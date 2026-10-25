@@ -9,7 +9,7 @@ tmg.consts.CONFIG_BUILD.actions.blacklist.push(/_renderedLi/);
 window._lsik = "TVP_visitor_info";
 window._lsvk = "TVP_settings_version";
 window._lssk ||= "TVP_last_session_state";
-window.SV = 12;
+window.SV = 13;
 window.VI = JSON.parse(localStorage[_lsik] || `{"visitorId":"${crypto?.randomUUID?.() || tmg.utils.uid()}","visitCount":0}`);
 window.MP = window.MC = null;
 window.canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype;
