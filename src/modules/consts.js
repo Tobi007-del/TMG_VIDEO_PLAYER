@@ -9,7 +9,7 @@ tmg.consts.CONFIG_BUILD.actions.blacklist.push(/_renderedLi/);
 window._lsik = "TVP_visitor_info";
 window._lsvk = "TVP_settings_version";
 window._lssk ||= "TVP_last_session_state";
-window.SV = 13;
+window.SV = 14;
 window.VI = JSON.parse(localStorage[_lsik] || `{"visitorId":"${crypto?.randomUUID?.() || tmg.utils.uid()}","visitCount":0}`);
 window.MP = window.MC = null;
 window.canSession = "launchQueue" in window || "showOpenFilePicker" in window || "showDirectoryPicker" in window || "getAsFileSystemHandle" in DataTransferItem.prototype;
@@ -41,6 +41,11 @@ export const nums = reactive({ bytes: 0, files: 0, time: 0 }),
     "settings.controlPanel.progressBar": true,
     "settings.css.syncWithMedia.brandColor": true,
     "settings.frame.main.usePoster": false,
+    "settings.voice.ai": {
+      model: "gemini-3.5-flash-lite",
+      apiKey: import.meta.env.GEMINI_API_KEY || "",
+      endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    },
     "settings.persist": {
       key: _lssk,
       throttle: 2500,
