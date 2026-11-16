@@ -12,7 +12,7 @@ export async function clearSettings(prompt = false) {
   const ok = prompt && (await confirm("Are you sure you want to clear your settings?", { title: "Clear Settings", confirmText: "Clear" }));
   if (prompt && !ok) return;
   await toast.promise(Memory.clearSettings(), { pending: "Clearing settings...", success: { render: "Settings cleared successfully", actions: false }, error: "Failed to clear settings.", id: "settings" });
-  setColors(), clearSettingsButton.classList.remove("shown");
+  (setColors(), clearSettingsButton.classList.remove("shown"));
 }
 
 export async function clearFiles(skipPrompt = false) {
@@ -20,7 +20,7 @@ export async function clearFiles(skipPrompt = false) {
   if (!ok) return;
   toast.dismiss("ready");
   if (MP) MC.media.intent.paused = true;
-  video.removeAttribute("src"), video.removeAttribute("poster");
+  (video.removeAttribute("src"), video.removeAttribute("poster"));
   Array.prototype.forEach.call(containers, (c) => {
     const vid = c.querySelector("video");
     if (vid.src?.startsWith("blob:")) URL.revokeObjectURL(vid.src);
@@ -34,11 +34,11 @@ export async function clearFiles(skipPrompt = false) {
   deletedHandles.clear();
   nums.files = nums.bytes = nums.time = 0;
   await toast.promise(Memory.clearSession(), { pending: "Clearing files...", success: { render: "Cleared all files from your session, Settings too?", autoClose: 5000, actions: { Clear: () => clearSettings() } }, error: "Failed to clear session files.", id: "settings" });
-  defaultUI(), clearSettingsButton.classList.add("shown");
+  (defaultUI(), clearSettingsButton.classList.add("shown"));
 }
 
 export async function restoreSession(session, handles = session.handles, state = !nums.files ? Memory.getState() : session.state, files = [], sureHandles = []) {
-  stoast.info(`${nums.files ? "Combining your sessions" : "Restoring your session"} now`, { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath();
+  (stoast.info(`${nums.files ? "Combining your sessions" : "Restoring your session"} now`, { id: "session", icon: true, actions: false }), await tmg.utils.deepBreath());
   for (const handle of handles) {
     const name = `${handle.name} ${handle.kind === "file" ? "" : "folder"}`;
     try {
@@ -71,8 +71,8 @@ export async function handleFiles(files, restored = null, handles = null, subFil
     if (!files?.length && !remoteItems.length && !nums.files) return defaultUI();
     initUI();
 
-    if (handles?.length) (window.sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))]), Memory.saveHandles();
-    for (const file of (files = !restored ? tmg.utils.smartFlatSort(files) : playlistSort(files, restored.config.playlist))) nums.files++, (nums.bytes += file.size);
+    if (handles?.length) ((window.sessionHandles = [...sessionHandles, ...handles.filter((h) => !sessionHandles.some((sh) => sh.name === h.name))]), Memory.saveHandles());
+    for (const file of (files = !restored ? tmg.utils.smartFlatSort(files) : playlistSort(files, restored.config.playlist))) (nums.files++, (nums.bytes += file.size));
     await tmg.utils.deepBreath();
 
     const stateMap = new Map(restored?.config.playlist.content?.map((v) => [v.media.settings.metadata.title, v]) || []),
@@ -83,12 +83,12 @@ export async function handleFiles(files, restored = null, handles = null, subFil
       const ffName = tmg.utils.noExtension(files[i].name, false),
         state = stateMap.get(ffName);
       if ((restored && !state) || !!Array.prototype.find.call(containers, (c) => c.lastElementChild.ffName === ffName)) {
-        nums.files--, (nums.bytes -= files[i].size);
+        (nums.files--, (nums.bytes -= files[i].size));
         thumbnails.push(null);
         continue;
       }
       const item = buildListItem(files[i], state, restored);
-      thumbnails.push(item.thumbnail), list.append(item.li), files.length < 50 && (await tmg.utils.breath());
+      (thumbnails.push(item.thumbnail), list.append(item.li), files.length < 50 && (await tmg.utils.breath()));
     }
     for (const rItem of remoteItems) {
       if (Array.prototype.find.call(containers, (c) => c.lastElementChild.mediaId === rItem.media.settings.metadata.id)) {
@@ -96,7 +96,7 @@ export async function handleFiles(files, restored = null, handles = null, subFil
         continue;
       }
       const item = buildListItem(null, rItem, restored);
-      thumbnails.push(item.thumbnail), list.append(item.li), remoteItems.length < 50 && (await tmg.utils.breath());
+      (thumbnails.push(item.thumbnail), list.append(item.li), remoteItems.length < 50 && (await tmg.utils.breath()));
     }
 
     const content = [];
@@ -107,8 +107,8 @@ export async function handleFiles(files, restored = null, handles = null, subFil
           state = stateMap.get(thumbnails[i].ffName),
           item = state ?? { media: { intent: { tracks: [] }, settings: { metadata: { id: tmg.utils.uid(), title: thumbnails[i].ffName, artist: "TMG Video Player", profile: "assets/icons/tmg-icon.jpeg", links: { artist: "https://tmg-video-player.vercel.app", profile: "https://github.com/Tobi007-del/tmg-media-player" } } } }, settings: { time: { start: 0 }, controlPanel: { timeline: { previews: true } } } };
         item._renderedLi = thumbnails[i].closest("li");
-        (item.media.intent.src = url), (item.media.intent.poster = ""), (item.media.intent.tracks = item.media.intent.tracks.filter((t) => !t.src.startsWith("blob:")));
-        content.push(item), readyNail(thumbnails[i], item);
+        ((item.media.intent.src = url), (item.media.intent.poster = ""), (item.media.intent.tracks = item.media.intent.tracks.filter((t) => !t.src.startsWith("blob:"))));
+        (content.push(item), readyNail(thumbnails[i], item));
       }
       for (let i = 0; i < remoteItems.length; i++) {
         const thumbIdx = files.length + i;
@@ -125,17 +125,17 @@ export async function handleFiles(files, restored = null, handles = null, subFil
         const setUpList = (renderList) => {
           MC.config.on("playlist.content", ({ currentTarget: { value } }) => {
             if (!value || !document.getElementById("media-list")) return;
-            for (let i = (nums.time = 0); i < value.length; i++) value[i].media.settings.metadata.id || setPath(value[i], "media.settings.metadata.id", tmg.utils.uid()), (nums.time += tmg.utils.safeNum(value[i].media.status.duration));
+            for (let i = (nums.time = 0); i < value.length; i++) (value[i].media.settings.metadata.id || setPath(value[i], "media.settings.metadata.id", tmg.utils.uid()), (nums.time += tmg.utils.safeNum(value[i].media.status.duration)));
             (renderList ??= tmg.utils.createListRenderer({
               container: list,
               getKey: (item) => item.media.settings.metadata.id,
               createNode: (item) => {
                 let li = item._renderedLi;
-                if (li) return delete item._renderedLi, li;
+                if (li) return (silence(() => delete item._renderedLi), li);
                 const stashed = deletedHandles.get(item.media.settings.metadata.id);
-                if (stashed) stashed.handle && (sessionHandles.push(stashed.handle), Memory.saveHandles()), stashed.file && (nums.files++, (nums.bytes += stashed.file.size)), deletedHandles.delete(item.media.settings.metadata.id);
+                if (stashed) (stashed.handle && (sessionHandles.push(stashed.handle), Memory.saveHandles()), stashed.file && (nums.files++, (nums.bytes += stashed.file.size)), deletedHandles.delete(item.media.settings.metadata.id));
                 const { li: resLi, thumbnail } = buildListItem(stashed?.file || null, item);
-                return stashed?.file && readyNail(thumbnail, item), deployTracks(stashed?.file || item.media.intent.src, (thumbnails.push(thumbnail), thumbnail), undefined, item), resLi;
+                return (stashed?.file && readyNail(thumbnail, item), deployTracks(stashed?.file || item.media.intent.src, (thumbnails.push(thumbnail), thumbnail), undefined, item), resLi);
               },
               updateNode: (li, item, index) => {
                 li.classList.toggle("playing", MC.config.light.disabled && index === MC.media.state.currentItem);
@@ -147,7 +147,7 @@ export async function handleFiles(files, restored = null, handles = null, subFil
               destroyNode: (li) => {
                 const id = li.querySelector("video")?.mediaId,
                   idx = thumbnails.findIndex((t) => t?.mediaId === id);
-                idx !== -1 && thumbnails.splice(idx, 1), !MC.config.playlist.content.some((item) => item.media.settings.metadata.id === id) && li.cleanUpDB?.(true);
+                (idx !== -1 && thumbnails.splice(idx, 1), !MC.config.playlist.content.some((item) => item.media.settings.metadata.id === id) && li.cleanUpDB?.(true));
               },
             }))(value);
           });
@@ -160,27 +160,27 @@ export async function handleFiles(files, restored = null, handles = null, subFil
             mc.media.on("state.currentTime", ({ value }) => value > 3 && mc.config.light.disabled && containers[mc.media.state.currentItem]?.style.setProperty("--video-progress-position", tmg.utils.getMediaProgress(mc.media)));
             mc.media.on("state.paused", ({ value }) => containers[mc.media.state.currentItem]?.classList.toggle("paused", value));
             mc.media.on("state.currentItem", ({ value }) => mc.config.light.disabled && Array.prototype.forEach.call(contentLines, (line, i) => line.classList.toggle("playing", i === value)));
-            readyUI(), setUpList();
+            (readyUI(), setUpList());
           },
           { once: true }
         );
         const newMP = new tmg.Player({ ...defaults, "light.disabled": restored?.config.light.disabled ?? false, "playlist.content": content, "media.intent.src": restored ? content.find((item) => item.media.settings.metadata.id === restored.media.settings.metadata.id)?.media.intent.src : undefined, "media.intent.paused": restored?.media.state.paused ?? true });
-        (window.MP = newMP), (window.MC = newMP.ctlr), newMP.attach(video);
+        ((window.MP = newMP), (window.MC = newMP.ctlr), newMP.attach(video));
       } else MC.config.playlist.content = [...(MC.config.playlist.content || []), ...content];
     };
     if (nums.files || remoteItems.length) {
-      deployVideos(files), await tmg.utils.deepBreath();
+      (deployVideos(files), await tmg.utils.deepBreath());
       const subMap = subFiles.length ? (files.length === 1 ? new Map([[thumbnails[0], subFiles]]) : matchSubsToThumbnails(subFiles, thumbnails)) : null;
       await Promise.all(thumbnails.map(async (t, i, _, m = subMap?.get(t)) => t && (m?.length ? await deploySubs(m, t) : await deployTracks(i < files.length ? files[i] : t.getPlItem()?.media.intent.src, t, undefined))));
     }
     if (!nums.files && !MC?.config.playlist.content?.length) return defaultUI();
   } catch (error) {
-    console.error("TVP files handling failed:", error), errorUI(error);
+    (console.error("TVP files handling failed:", error), errorUI(error));
   }
 }
 
 export const readyNail = (thumbnail, item) => {
-  (thumbnail.src = item.media.intent.src), (thumbnail.poster = item.media.intent.poster), (thumbnail.mediaId = item.media.settings.metadata.id);
+  ((thumbnail.src = item.media.intent.src), (thumbnail.poster = item.media.intent.poster), (thumbnail.mediaId = item.media.settings.metadata.id));
   thumbnail.getPlItem = (plItem = MC?.config.playlist.content.find((v) => v.media.settings.metadata.id === item.media.settings.metadata.id)) => (thumbnail.plItem = plItem ?? thumbnail.plItem ?? item);
   thumbnail.getPlIndex = () => MC?.config.playlist.content.findIndex((v) => v.media.settings.metadata.id === item.media.settings.metadata.id);
 };
@@ -197,7 +197,7 @@ export const buildListItem = (file, item, restored = false) => {
       playsInline: true,
       onloadedmetadata: ({ target }, item = thumbnail.getPlItem() ?? item) => {
         target.currentTime = tmg.utils.parseIfPercent(MC?.config.light.preview.max ?? 4, target.duration, 0.25);
-        if (item) silence(() => (item.media.status.duration = target.duration)), (restored || !file) && thumbnail.parentElement.style.setProperty("--video-progress-position", item.media.status.isLive ? 1 : tmg.utils.safeNum(item.settings.time.start / target.duration));
+        if (item) (silence(() => (item.media.status.duration = target.duration)), (restored || !file) && thumbnail.parentElement.style.setProperty("--video-progress-position", item.media.status.isLive ? 1 : tmg.utils.safeNum(item.settings.time.start / target.duration)));
       },
       onerror: ({ target }) => {
         file && li.classList.add("error");
@@ -218,7 +218,7 @@ export const buildListItem = (file, item, restored = false) => {
     multiple: true,
     onchange: async (e) => {
       const files = Array.from(e.target.files).filter((f) => /\.(srt|vtt)$/i.test(f.name));
-      if (!files.length) return (thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported");
+      if (!files.length) return ((thumbnail.dataset.captionState = "empty"), toast.warn("Only .srt and .vtt caption files are currently supported"));
       await deploySubs(files, thumbnail);
     },
     oncancel: () => (thumbnail.dataset.captionState = "empty"),
@@ -254,8 +254,8 @@ export const buildListItem = (file, item, restored = false) => {
     if (!file) return;
     const hIdx = sessionHandles.findIndex((h) => h.name === file.name),
       handle = hIdx !== -1 ? sessionHandles.splice(hIdx, 1)[0] : null;
-    handle && Memory.saveHandles(), light && deletedHandles.set(thumbnail.mediaId, { handle, file });
-    nums.files--, (nums.bytes -= file.size);
+    (handle && Memory.saveHandles(), light && deletedHandles.set(thumbnail.mediaId, { handle, file }));
+    (nums.files--, (nums.bytes -= file.size));
   };
   const dragHandle = tmg.utils.createEl("span", { title: "Drag to Reorder", className: "drag-handle", innerHTML: `<svg fill="#000000" height="20px" width="20px" viewBox="0 0 24 24"><path d="M10,6H6V2h4V6z M18,2h-4v4h4V2z M10,10H6v4h4V10z M18,10h-4v4h4V10z M10,18H6v4h4V18z M18,18h-4v4h4V18z"/></svg>` });
   dragHandle.addEventListener(
@@ -267,7 +267,7 @@ export const buildListItem = (file, item, restored = false) => {
         initialOffsetY = list.getBoundingClientRect().top,
         initialScrollY = document.body.scrollTop,
         placeholderLi = tmg.utils.createEl("div", { className: "drag-placeholder" }, {}, { cssText: `height:${li.offsetHeight}px;width:${li.offsetWidth}px;` });
-      list.insertBefore(placeholderLi, li.nextElementSibling), li.classList.add("dragging");
+      (list.insertBefore(placeholderLi, li.nextElementSibling), li.classList.add("dragging"));
       li.style.top = `${(li.top = tmg.utils.clamp(0, e.clientY - initialOffsetY - li.offsetHeight / 2, list.offsetHeight - li.offsetHeight))}px`;
       function onPointerMove(e) {
         e.preventDefault();
@@ -283,7 +283,7 @@ export const buildListItem = (file, item, restored = false) => {
         tmg.utils.cancelRAFLoop("listItemDragging");
         scroller.reset();
         li.classList.remove("dragging");
-        placeholderLi.parentElement.replaceChild(li, placeholderLi), (placeholderLi = null), MC?.plug("playlist").move(oldIdx, Array.prototype.indexOf.call(contentLines, li));
+        (placeholderLi.parentElement.replaceChild(li, placeholderLi), (placeholderLi = null), MC?.plug("playlist").move(oldIdx, Array.prototype.indexOf.call(contentLines, li)));
         ["pointermove", "pointerup", "pointercancel"].forEach((e, i) => document.removeEventListener(e, !i ? onPointerMove : onPointerUp));
       }
       ["pointermove", "pointerup", "pointercancel"].forEach((evt) => document.addEventListener(evt, evt === "pointermove" ? onPointerMove : onPointerUp, { passive: false }));
