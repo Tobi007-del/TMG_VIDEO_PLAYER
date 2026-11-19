@@ -68,6 +68,6 @@ addEventListener("activate", (event) =>
 
 addEventListener("fetch", (event) => {
   if (!isCacheable(event.request)) return;
-  // event.respondWith((event.request.destination === "document" ? networkFirst : cacheFirstWithRefresh)(event.request));
-  event.respondWith((event.request.destination !== "image" ? networkFirst : cacheFirstWithRefresh)(event.request)); // during dev
+  event.respondWith((event.request.destination === "document" ? networkFirst : cacheFirstWithRefresh)(event.request)); //
+  // event.respondWith((event.request.destination !== "image" ? networkFirst : cacheFirstWithRefresh)(event.request)); // during dev
 });
