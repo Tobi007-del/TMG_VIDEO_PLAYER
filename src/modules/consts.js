@@ -76,5 +76,5 @@ export const queue = new tmg.AsyncQueue(),
 export const stoast = toaster({
   autoClose: false,
   closeButton: false,
-  onClose: (_, user = true) => user && (clearInterval(sessionTInt), !nums.files ? stoast.info("Reload the page to be prompted again", { id: "session", icon: true, autoClose: 5000, actions: { Reload: () => location.reload() } }) : stoast.dismiss("session")),
+  onClose: (_, user = true) => user && sessionTInt && (clearInterval(sessionTInt), (sessionTInt = null), !nums.files && stoast.info("Reload the page to be prompted again", { id: "session", icon: true, autoClose: 5000, actions: { Reload: () => location.reload() } })),
 });
