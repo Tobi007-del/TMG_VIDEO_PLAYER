@@ -50,6 +50,6 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "sia-reactor": "^1.0.0",
-    "tmg-media-player": "^0.0.91"
+    "tmg-media-player": "^1.0.0"
   }
 }
