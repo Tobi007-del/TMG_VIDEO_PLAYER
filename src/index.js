@@ -19,9 +19,14 @@ let installed = matchMedia("(display-mode: standalone)").matches || navigator.st
   VI.isNew = VI.isNew == null ? true : false;
   VI.visitCount += 1;
   VI.lastVisited = VI.lastVisit ? tmg.utils.formatUITime(new Date(VI.lastVisit).getTime() - Date.now(), "date", false) : "Just now";
+  const payload = { ...VI, screenW: screen.width, screenH: screen.height, platform: navigator.platform, touchScreen: navigator.maxTouchPoints > 0, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
   try {
-    await fetch("../api/log-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...VI, screenW: screen.width, screenH: screen.height, platform: navigator.platform, touchScreen: navigator.maxTouchPoints > 0, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }) });
-  } catch {}
+    const res = await fetch("../api/log-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+      data = await res.json();
+    console.log(`${VI.isNew ? "✨ TVP New" : "🔄 TVP Returning"}: #${VI.visitCount} | IP (${data.ip}) | ${data.geo?.city || "Unknown City"}, ${data.geo?.country || "Unknown Country"}`, { sent: payload, received: data });
+  } catch (err) {
+    console.error("TVP failed logging:", err);
+  }
   localStorage[_lsik] = JSON.stringify({ ...VI, lastVisit: new Date().toISOString() });
 })();
 

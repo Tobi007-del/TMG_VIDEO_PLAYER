@@ -6,7 +6,7 @@
   "type": "module",
   "description": "TVP is a simple video player that allows you to play videos from your local device in your web browser.",
   "author": "Oketade Oluwatobiloba <tobioketade007@gmail.com>",
-  "main": "main.cjs",
+  "main": "src/main.cjs",
   "scripts": {
     "dev": "vite",
     "start": "vercel dev --listen 5173",
@@ -43,13 +43,13 @@
     "vite": "^8.0.1"
   },
   "dependencies": {
-    "@t007/dialog": "^0.0.64",
-    "@t007/input": "^0.0.63",
-    "@t007/toast": "^0.0.70",
-    "@t007/utils": "^0.0.64",
+    "@t007/dialog": "^1.0.0",
+    "@t007/input": "^1.0.0",
+    "@t007/toast": "^1.0.0",
+    "@t007/utils": "^1.0.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "sia-reactor": "^0.0.63",
+    "sia-reactor": "^1.0.0",
     "tmg-media-player": "^0.0.91"
   }
 }

@@ -10,12 +10,12 @@ function createWindow() {
       height: 720,
       title: "TMG Video Player",
       autoHideMenuBar: true,
-      icon: path.join(__dirname, isDev ? 'public/favicon.ico' : 'build/favicon.ico'),
+      icon: path.join(__dirname, isDev ? '../public/favicon.ico' : '../build/favicon.ico'),
       webPreferences: { nodeIntegration: false, contextIsolation: false, webSecurity: false },
     });
 
   if (isDev) return mainWindow.loadURL('http://localhost:5173'), mainWindow.webContents.openDevTools();
-  mainWindow.loadFile(path.join(__dirname, 'build/index.html'));
+  mainWindow.loadFile(path.join(__dirname, '../build/index.html'));
 }
 
 app.whenReady().then(() => {
